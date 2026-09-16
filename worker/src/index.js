@@ -9,6 +9,7 @@ const CAFE24_REDIRECT_URI =
 const CAFE24_SCOPES = ["mall.read_product", "mall.read_order"];
 const TOKEN_KEY = "cafe24:admin-token";
 const STATE_PREFIX = "cafe24:oauth-state:";
+const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 function corsHeaders(origin) {
   const headers = {
@@ -47,13 +48,7 @@ function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
 
-async function exchangeCodeForToken(code, env) {
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    code,
-    redirect_uri: CAFE24_REDIRECT_URI
-  });
-
+async function tokenRequest(params, env) {
   const response = await fetch(
     `https://${CAFE24_MALL_ID}.cafe24api.com/api/v2/oauth/token`,
     {
@@ -65,17 +60,63 @@ async function exchangeCodeForToken(code, env) {
         )}`,
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: body.toString()
+      body: new URLSearchParams(params).toString()
     }
   );
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(
-      `Cafe24 token exchange failed (${response.status}): ${JSON.stringify(payload)}`
+      `Cafe24 token request failed (${response.status}): ${JSON.stringify(payload)}`
     );
   }
   return payload;
+}
+
+async function exchangeCodeForToken(code, env) {
+  return tokenRequest(
+    {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: CAFE24_REDIRECT_URI
+    },
+    env
+  );
+}
+
+async function refreshAdminToken(refreshToken, env) {
+  return tokenRequest(
+    {
+      grant_type: "refresh_token",
+      refresh_token: refreshToken
+    },
+    env
+  );
+}
+
+function shouldRefreshToken(token) {
+  if (!token?.expires_at) return false;
+  const expiresAt = Date.parse(token.expires_at);
+  if (!Number.isFinite(expiresAt)) return false;
+  return Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS;
+}
+
+async function getAdminToken(env) {
+  if (!env.CAFE24_AUTH) return null;
+
+  const raw = await env.CAFE24_AUTH.get(TOKEN_KEY);
+  if (!raw) return null;
+
+  let token = JSON.parse(raw);
+  if (shouldRefreshToken(token)) {
+    if (!token.refresh_token) {
+      throw new Error("Cafe24 refresh token is missing");
+    }
+    token = await refreshAdminToken(token.refresh_token, env);
+    await env.CAFE24_AUTH.put(TOKEN_KEY, JSON.stringify(token));
+  }
+
+  return token;
 }
 
 export default {
@@ -190,25 +231,38 @@ export default {
         );
       }
 
-      const raw = await env.CAFE24_AUTH.get(TOKEN_KEY);
-      if (!raw) {
-        return json({ ok: true, connected: false }, {}, origin);
-      }
+      try {
+        const token = await getAdminToken(env);
+        if (!token) {
+          return json({ ok: true, connected: false }, {}, origin);
+        }
 
-      const token = JSON.parse(raw);
-      return json(
-        {
-          ok: true,
-          connected: true,
-          mall_id: token.mall_id || CAFE24_MALL_ID,
-          shop_no: token.shop_no || 1,
-          scopes: token.scopes || [],
-          expires_at: token.expires_at || null,
-          refresh_token_expires_at: token.refresh_token_expires_at || null
-        },
-        {},
-        origin
-      );
+        return json(
+          {
+            ok: true,
+            connected: true,
+            mall_id: token.mall_id || CAFE24_MALL_ID,
+            shop_no: token.shop_no || 1,
+            scopes: token.scopes || [],
+            expires_at: token.expires_at || null,
+            refresh_token_expires_at: token.refresh_token_expires_at || null,
+            automatic_refresh: true
+          },
+          {},
+          origin
+        );
+      } catch (error) {
+        return json(
+          {
+            ok: false,
+            connected: false,
+            error: "token_refresh_failed",
+            detail: String(error.message || error)
+          },
+          { status: 502 },
+          origin
+        );
+      }
     }
 
     if (url.pathname === "/") {
