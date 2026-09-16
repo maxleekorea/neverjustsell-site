@@ -3,6 +3,12 @@
   document.documentElement.classList.add('njs-ready');
   if (!isHome) return;
 
+  const media = {
+    profile: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png',
+    lecture: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png',
+    book: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png'
+  };
+
   const boot = () => {
     const mount = document.querySelector('#contents') || document.querySelector('main') || document.querySelector('.contents') || document.querySelector('#container');
     if (!mount || document.querySelector('#njs-home')) return;
@@ -48,11 +54,9 @@
                 <a class="njs-btn njs-btn-line" href="https://seller.liveklass.com" target="_blank" rel="noopener">온라인 강의</a>
               </div>
             </div>
-            <div class="njs-hero-visual" aria-label="맥작가 프로필 이미지 영역">
-              <div class="njs-photo-placeholder">
-                <span class="njs-photo-label">MACJAGGA</span>
-                <strong>NEVER<br>JUST<br>SELL</strong>
-                <small>프로필 사진 연결 예정</small>
+            <div class="njs-hero-visual" aria-label="맥작가 프로필">
+              <div style="width:100%;min-height:100%;overflow:hidden;background:#b8b8b8;">
+                <img src="${media.profile}" alt="맥작가 프로필" style="display:block;width:100%;height:100%;min-height:618px;object-fit:cover;object-position:center center;">
               </div>
             </div>
           </div>
@@ -69,13 +73,8 @@
 
         <section class="njs-book" id="book">
           <div class="njs-shell njs-book-grid">
-            <div class="njs-book-art" aria-hidden="true">
-              <div class="njs-book-object">
-                <p>NEVER JUST SELL SMARTSTORE</p>
-                <h2>그냥 팔지 말라<br>스마트스토어</h2>
-                <div class="njs-barcode"></div>
-                <small>맥작가 지음</small>
-              </div>
+            <div class="njs-book-art">
+              <img src="${media.book}" alt="그냥 팔지 말라 스마트스토어 책" style="display:block;width:min(100%,520px);height:auto;filter:drop-shadow(28px 32px 22px rgba(0,0,0,.28));">
             </div>
             <div class="njs-book-copy">
               <p class="njs-eyebrow njs-eyebrow-light">BOOK</p>
@@ -125,7 +124,9 @@
 
         <section class="njs-lecture" id="lecture">
           <div class="njs-shell njs-lecture-grid">
-            <div class="njs-lecture-visual"><span>LECTURE</span><strong>현장의 경험을<br>강연으로 전합니다.</strong><small>강연 사진 연결 예정</small></div>
+            <div style="min-height:520px;overflow:hidden;background:#ddd;">
+              <img src="${media.lecture}" alt="맥작가 오프라인 강연" style="display:block;width:100%;height:100%;min-height:520px;object-fit:cover;object-position:center center;">
+            </div>
             <div class="njs-lecture-copy">
               <p class="njs-section-no">04 / OFFLINE LECTURE</p>
               <h2>기업 · 기관 · 교육기관 강연</h2>
