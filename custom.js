@@ -11,8 +11,50 @@
 
   const boot = () => {
     const mount = document.querySelector('#contents') || document.querySelector('main') || document.querySelector('.contents') || document.querySelector('#container');
-    if (!mount || document.querySelector('#njs-home')) return;
+    if (!mount) return;
 
+    const params = new URLSearchParams(location.search);
+    const isVimeoTest = params.get('vimeo-test') === '1';
+
+    if (isVimeoTest) {
+      [...mount.children].forEach((el) => el.classList.add('njs-original-home'));
+      document.documentElement.classList.add('njs-home-active');
+
+      const testRoot = document.createElement('div');
+      testRoot.id = 'njs-vimeo-test';
+      testRoot.innerHTML = `
+        <div style="min-height:100vh;background:#f4f0ea;color:#151311;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;padding:48px 24px 80px;box-sizing:border-box;">
+          <div style="width:min(100%,1120px);margin:0 auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:28px;">
+              <div>
+                <div style="font-size:12px;font-weight:800;letter-spacing:.12em;color:#4c2600;margin-bottom:8px;">VIMEO EMBED TEST</div>
+                <h1 style="margin:0;font-size:clamp(28px,4vw,48px);line-height:1.1;letter-spacing:-.04em;">강의 플레이어 테스트</h1>
+              </div>
+              <a href="/" style="color:#151311;text-decoration:none;border-bottom:1px solid #151311;padding-bottom:2px;font-size:14px;font-weight:700;">홈으로</a>
+            </div>
+
+            <div style="background:#111;padding:0;box-shadow:0 24px 60px rgba(0,0,0,.12);">
+              <div style="position:relative;padding-top:56.25%;overflow:hidden;">
+                <iframe src="https://player.vimeo.com/video/1227267267?badge=0&autopause=0&player_id=0&app_id=58479&dnt=1" frameborder="0" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" referrerpolicy="strict-origin-when-cross-origin" style="position:absolute;top:0;left:0;width:100%;height:100%;" title="Vimeo 강의 테스트 영상"></iframe>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#d9d1c8;margin-top:28px;border:1px solid #d9d1c8;">
+              <div style="background:#fff;padding:22px;"><strong style="display:block;font-size:13px;margin-bottom:7px;">확인 1</strong><span style="font-size:14px;line-height:1.6;color:#655f59;">영상이 정상 재생되는지 확인합니다.</span></div>
+              <div style="background:#fff;padding:22px;"><strong style="display:block;font-size:13px;margin-bottom:7px;">확인 2</strong><span style="font-size:14px;line-height:1.6;color:#655f59;">Vimeo 로고와 불필요한 버튼이 숨겨졌는지 봅니다.</span></div>
+              <div style="background:#fff;padding:22px;"><strong style="display:block;font-size:13px;margin-bottom:7px;">확인 3</strong><span style="font-size:14px;line-height:1.6;color:#655f59;">모바일에서도 비율과 전체화면이 정상인지 확인합니다.</span></div>
+            </div>
+
+            <p style="margin:22px 0 0;font-size:13px;line-height:1.7;color:#7b746d;">이 주소는 테스트용이며 사이트 메뉴에는 노출되지 않습니다.</p>
+          </div>
+        </div>
+      `;
+      mount.prepend(testRoot);
+      document.title = 'Vimeo 강의 플레이어 테스트 | NEVER JUST SELL';
+      return;
+    }
+
+    if (document.querySelector('#njs-home')) return;
     [...mount.children].forEach((el) => el.classList.add('njs-original-home'));
 
     const root = document.createElement('div');
