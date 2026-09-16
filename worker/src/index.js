@@ -4,11 +4,15 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 
 const CAFE24_MALL_ID = "neverjustsell";
+const CAFE24_PRIMARY_DOMAIN = "https://www.neverjustsell.com";
 const CAFE24_REDIRECT_URI =
   "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
 const CAFE24_SCOPES = ["mall.read_product", "mall.read_order"];
+const CUSTOMER_SCOPE = "mall.read_customer_identifier";
 const TOKEN_KEY = "cafe24:admin-token";
-const STATE_PREFIX = "cafe24:oauth-state:";
+const ADMIN_STATE_PREFIX = "cafe24:admin-oauth-state:";
+const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
+const CUSTOMER_TEST_KEY = "cafe24:customer-test";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 function corsHeaders(origin) {
@@ -78,8 +82,41 @@ async function tokenRequest(params, env) {
   return payload;
 }
 
+async function customerTokenRequest(params, env) {
+  const response = await fetch(`${CAFE24_PRIMARY_DOMAIN}/api/v2/oauth/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth(
+        env.CAFE24_CLIENT_ID,
+        env.CAFE24_CLIENT_SECRET
+      )}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams(params).toString()
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 customer token request failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
 async function exchangeCodeForToken(code, env) {
   return tokenRequest(
+    {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: CAFE24_REDIRECT_URI
+    },
+    env
+  );
+}
+
+async function exchangeCustomerCodeForToken(code, env) {
+  return customerTokenRequest(
     {
       grant_type: "authorization_code",
       code,
@@ -155,6 +192,26 @@ async function cafe24AdminGet(path, env, params = {}) {
   return payload;
 }
 
+async function getCustomerIdentifier(customerAccessToken) {
+  const response = await fetch(
+    `${CAFE24_PRIMARY_DOMAIN}/api/v2/customers/identifier`,
+    {
+      headers: {
+        Authorization: `Basic ${customerAccessToken}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 customer identifier failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -190,7 +247,7 @@ export default {
       }
 
       const state = crypto.randomUUID();
-      await env.CAFE24_AUTH.put(`${STATE_PREFIX}${state}`, "1", {
+      await env.CAFE24_AUTH.put(`${ADMIN_STATE_PREFIX}${state}`, "1", {
         expirationTtl: 600
       });
 
@@ -202,6 +259,31 @@ export default {
       authUrl.searchParams.set("state", state);
       authUrl.searchParams.set("redirect_uri", CAFE24_REDIRECT_URI);
       authUrl.searchParams.set("scope", CAFE24_SCOPES.join(" "));
+
+      return Response.redirect(authUrl.toString(), 302);
+    }
+
+    if (url.pathname === "/oauth/cafe24/customer/start") {
+      if (!configReady(env)) {
+        return json(
+          { ok: false, error: "cafe24_not_configured" },
+          { status: 503 },
+          origin
+        );
+      }
+
+      const state = crypto.randomUUID();
+      await env.CAFE24_AUTH.put(`${CUSTOMER_STATE_PREFIX}${state}`, "1", {
+        expirationTtl: 600
+      });
+
+      const authUrl = new URL(`${CAFE24_PRIMARY_DOMAIN}/api/v2/oauth/authorize`);
+      authUrl.searchParams.set("response_type", "code");
+      authUrl.searchParams.set("client_id", env.CAFE24_CLIENT_ID);
+      authUrl.searchParams.set("state", state);
+      authUrl.searchParams.set("redirect_uri", CAFE24_REDIRECT_URI);
+      authUrl.searchParams.set("scope", CUSTOMER_SCOPE);
+      authUrl.searchParams.set("shop_no", "1");
 
       return Response.redirect(authUrl.toString(), 302);
     }
@@ -226,16 +308,59 @@ export default {
         );
       }
 
-      const stateKey = `${STATE_PREFIX}${state}`;
-      const validState = await env.CAFE24_AUTH.get(stateKey);
-      if (!validState) {
+      const customerStateKey = `${CUSTOMER_STATE_PREFIX}${state}`;
+      const adminStateKey = `${ADMIN_STATE_PREFIX}${state}`;
+      const [customerState, adminState] = await Promise.all([
+        env.CAFE24_AUTH.get(customerStateKey),
+        env.CAFE24_AUTH.get(adminStateKey)
+      ]);
+
+      if (customerState) {
+        await env.CAFE24_AUTH.delete(customerStateKey);
+        try {
+          const tokenData = await exchangeCustomerCodeForToken(code, env);
+          const identifierData = await getCustomerIdentifier(tokenData.access_token);
+
+          await env.CAFE24_AUTH.put(
+            CUSTOMER_TEST_KEY,
+            JSON.stringify({
+              token: tokenData,
+              identifier: identifierData.identifier || null,
+              authenticated_at: new Date().toISOString()
+            }),
+            { expirationTtl: 1800 }
+          );
+
+          return html(`<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>회원 인증 완료</title></head>
+<body style="font-family:Arial,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;line-height:1.6">
+<h1>카페24 회원 인증 완료</h1>
+<p>로그인 회원을 안전하게 식별하는 테스트가 완료되었습니다.</p>
+<p>회원 아이디와 토큰 값은 이 화면에 표시하지 않습니다.</p>
+<p>이 창을 닫고 ChatGPT로 돌아가면 됩니다.</p>
+</body></html>`);
+        } catch (error) {
+          return json(
+            {
+              ok: false,
+              error: "customer_auth_failed",
+              detail: String(error.message || error)
+            },
+            { status: 502 },
+            origin
+          );
+        }
+      }
+
+      if (!adminState) {
         return json(
           { ok: false, error: "invalid_or_expired_state" },
           { status: 401 },
           origin
         );
       }
-      await env.CAFE24_AUTH.delete(stateKey);
+      await env.CAFE24_AUTH.delete(adminStateKey);
 
       try {
         const tokenData = await exchangeCodeForToken(code, env);
@@ -299,6 +424,32 @@ export default {
           origin
         );
       }
+    }
+
+    if (url.pathname === "/oauth/cafe24/customer/status") {
+      const raw = env.CAFE24_AUTH
+        ? await env.CAFE24_AUTH.get(CUSTOMER_TEST_KEY)
+        : null;
+      if (!raw) {
+        return json({ ok: true, customer_authenticated: false }, {}, origin);
+      }
+
+      const record = JSON.parse(raw);
+      return json(
+        {
+          ok: true,
+          customer_authenticated: true,
+          member_id_received: Boolean(record.token?.user_id),
+          identifier_received: Boolean(record.identifier?.user_identifier),
+          shop_no: record.identifier?.shop_no || record.token?.shop_no || null,
+          scope_ok: Array.isArray(record.token?.scopes)
+            ? record.token.scopes.includes(CUSTOMER_SCOPE)
+            : false,
+          authenticated_at: record.authenticated_at || null
+        },
+        {},
+        origin
+      );
     }
 
     if (url.pathname === "/cafe24/api-check") {
