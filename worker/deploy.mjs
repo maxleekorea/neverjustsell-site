@@ -4,6 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const required = ["CAFE24_CLIENT_ID", "CAFE24_CLIENT_SECRET"];
+const present = Object.fromEntries(required.map((key) => [key, Boolean(process.env[key])]));
+console.log("Cloudflare build secrets detected:", present);
+
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length) {
