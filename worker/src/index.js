@@ -48,6 +48,11 @@ function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
 
+function dateDaysAgo(daysAgo = 0) {
+  const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  return date.toISOString().slice(0, 10);
+}
+
 async function tokenRequest(params, env) {
   const response = await fetch(
     `https://${CAFE24_MALL_ID}.cafe24api.com/api/v2/oauth/token`,
@@ -298,13 +303,21 @@ export default {
 
     if (url.pathname === "/cafe24/api-check") {
       try {
+        const startDate = dateDaysAgo(30);
+        const endDate = dateDaysAgo(0);
+
         const [products, orders] = await Promise.all([
           cafe24AdminGet("/products", env, {
             shop_no: 1,
             limit: 1,
             fields: "product_no,product_name"
           }),
-          cafe24AdminGet("/orders/count", env, { shop_no: 1 })
+          cafe24AdminGet("/orders/count", env, {
+            shop_no: 1,
+            start_date: startDate,
+            end_date: endDate,
+            date_type: "order_date"
+          })
         ]);
 
         const firstProduct = Array.isArray(products.products)
@@ -317,6 +330,10 @@ export default {
             admin_api: "connected",
             product_read: true,
             order_read: true,
+            order_check_range: {
+              start_date: startDate,
+              end_date: endDate
+            },
             first_product: firstProduct
               ? {
                   product_no: firstProduct.product_no,
