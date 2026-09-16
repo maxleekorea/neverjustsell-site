@@ -119,6 +119,37 @@ async function getAdminToken(env) {
   return token;
 }
 
+async function cafe24AdminGet(path, env, params = {}) {
+  const token = await getAdminToken(env);
+  if (!token?.access_token) {
+    throw new Error("Cafe24 Admin access token is not connected");
+  }
+
+  const apiUrl = new URL(
+    `https://${CAFE24_MALL_ID}.cafe24api.com/api/v2/admin${path}`
+  );
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      apiUrl.searchParams.set(key, String(value));
+    }
+  }
+
+  const response = await fetch(apiUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${token.access_token}`,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -257,6 +288,53 @@ export default {
             ok: false,
             connected: false,
             error: "token_refresh_failed",
+            detail: String(error.message || error)
+          },
+          { status: 502 },
+          origin
+        );
+      }
+    }
+
+    if (url.pathname === "/cafe24/api-check") {
+      try {
+        const [products, orders] = await Promise.all([
+          cafe24AdminGet("/products", env, {
+            shop_no: 1,
+            limit: 1,
+            fields: "product_no,product_name"
+          }),
+          cafe24AdminGet("/orders/count", env, { shop_no: 1 })
+        ]);
+
+        const firstProduct = Array.isArray(products.products)
+          ? products.products[0] || null
+          : null;
+
+        return json(
+          {
+            ok: true,
+            admin_api: "connected",
+            product_read: true,
+            order_read: true,
+            first_product: firstProduct
+              ? {
+                  product_no: firstProduct.product_no,
+                  product_name: firstProduct.product_name
+                }
+              : null,
+            order_count: Number.isFinite(Number(orders.count))
+              ? Number(orders.count)
+              : orders.count ?? null
+          },
+          {},
+          origin
+        );
+      } catch (error) {
+        return json(
+          {
+            ok: false,
+            admin_api: "failed",
             detail: String(error.message || error)
           },
           { status: 502 },
