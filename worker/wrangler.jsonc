@@ -2,5 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "neverjustsell-course-access",
   "main": "src/index.js",
-  "compatibility_date": "2026-09-16"
+  "compatibility_date": "2026-09-16",
+  "kv_namespaces": [
+    {
+      "binding": "CAFE24_AUTH"
+    }
+  ]
 }
