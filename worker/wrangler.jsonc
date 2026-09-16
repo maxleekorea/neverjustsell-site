@@ -3,12 +3,6 @@
   "name": "neverjustsell-course-access",
   "main": "src/index.js",
   "compatibility_date": "2026-09-16",
-  "secrets": {
-    "required": [
-      "CAFE24_CLIENT_ID",
-      "CAFE24_CLIENT_SECRET"
-    ]
-  },
   "kv_namespaces": [
     {
       "binding": "CAFE24_AUTH"
