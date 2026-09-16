@@ -1,5 +1,49 @@
 (() => {
-  const isHome = location.pathname === '/' || location.pathname === '/index.html';
+  const path = location.pathname;
+  const isHome = path === '/' || path === '/index.html';
+  const oauthReturnKey = 'njs:cafe24-customer-oauth-return';
+  const oauthReturnAtKey = 'njs:cafe24-customer-oauth-return-at';
+  const pageParams = new URLSearchParams(location.search);
+  const loginReturnUrl = pageParams.get('returnUrl');
+
+  // Cafe24's stock member-login skin can send a successful login to /index.html
+  // instead of preserving the OAuth returnUrl. Keep only our Cafe24 OAuth return
+  // and resume it once after the customer reaches the home page.
+  if (
+    path === '/member/login.html' &&
+    loginReturnUrl &&
+    loginReturnUrl.startsWith('/api/v2/oauth/authorize')
+  ) {
+    try {
+      sessionStorage.setItem(oauthReturnKey, loginReturnUrl);
+      sessionStorage.setItem(oauthReturnAtKey, String(Date.now()));
+    } catch (_) {}
+  }
+
+  if (isHome) {
+    try {
+      const pendingReturn = sessionStorage.getItem(oauthReturnKey);
+      const savedAt = Number(sessionStorage.getItem(oauthReturnAtKey) || '0');
+      const isFresh = savedAt > 0 && Date.now() - savedAt < 10 * 60 * 1000;
+
+      if (
+        pendingReturn &&
+        pendingReturn.startsWith('/api/v2/oauth/authorize') &&
+        isFresh
+      ) {
+        sessionStorage.removeItem(oauthReturnKey);
+        sessionStorage.removeItem(oauthReturnAtKey);
+        location.replace(pendingReturn);
+        return;
+      }
+
+      if (pendingReturn || savedAt) {
+        sessionStorage.removeItem(oauthReturnKey);
+        sessionStorage.removeItem(oauthReturnAtKey);
+      }
+    } catch (_) {}
+  }
+
   document.documentElement.classList.add('njs-ready');
   if (!isHome) return;
 
