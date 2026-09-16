@@ -1,11 +1,14 @@
 import app from "./index.js";
 
 const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
+const CAFE24_ADMIN_DOMAIN = "https://neverjustsell.cafe24api.com";
 const CAFE24_REDIRECT_URI =
   "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
 const CUSTOMER_SCOPE = "mall.read_customer_identifier";
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const CUSTOMER_TEST_KEY = "cafe24:customer-test";
+const ADMIN_TOKEN_KEY = "cafe24:admin-token";
+const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -29,6 +32,11 @@ function configReady(env) {
       env.CAFE24_CLIENT_SECRET &&
       env.CAFE24_AUTH
   );
+}
+
+function dateDaysAgo(daysAgo = 0) {
+  const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  return date.toISOString().slice(0, 10);
 }
 
 async function exchangeCustomerCodeForToken(code, env) {
@@ -72,6 +80,73 @@ async function getCustomerIdentifier(customerAccessToken) {
   if (!response.ok) {
     throw new Error(
       `Cafe24 customer identifier failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
+async function refreshAdminToken(refreshToken, env) {
+  const response = await fetch(`${CAFE24_ADMIN_DOMAIN}/api/v2/oauth/token`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${basicAuth(
+        env.CAFE24_CLIENT_ID,
+        env.CAFE24_CLIENT_SECRET
+      )}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken
+    }).toString()
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 admin token refresh failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
+async function getAdminToken(env) {
+  const raw = await env.CAFE24_AUTH.get(ADMIN_TOKEN_KEY);
+  if (!raw) throw new Error("Cafe24 Admin access token is not connected");
+
+  let token = JSON.parse(raw);
+  const expiresAt = Date.parse(token.expires_at || "");
+  if (
+    Number.isFinite(expiresAt) &&
+    Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS
+  ) {
+    if (!token.refresh_token) throw new Error("Cafe24 refresh token is missing");
+    token = await refreshAdminToken(token.refresh_token, env);
+    await env.CAFE24_AUTH.put(ADMIN_TOKEN_KEY, JSON.stringify(token));
+  }
+  return token;
+}
+
+async function cafe24AdminGet(path, env, params = {}) {
+  const token = await getAdminToken(env);
+  const apiUrl = new URL(`${CAFE24_ADMIN_DOMAIN}/api/v2/admin${path}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      apiUrl.searchParams.set(key, String(value));
+    }
+  }
+
+  const response = await fetch(apiUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${token.access_token}`,
+      "Content-Type": "application/json"
+    }
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`
     );
   }
   return payload;
@@ -159,6 +234,94 @@ export default {
             );
           }
         }
+      }
+    }
+
+    if (url.pathname === "/cafe24/member-orders-test") {
+      if (!configReady(env)) {
+        return json(
+          { ok: false, error: "cafe24_not_configured" },
+          { status: 503 }
+        );
+      }
+
+      try {
+        const raw = await env.CAFE24_AUTH.get(CUSTOMER_TEST_KEY);
+        if (!raw) {
+          return json(
+            { ok: false, error: "customer_test_session_missing" },
+            { status: 401 }
+          );
+        }
+
+        const record = JSON.parse(raw);
+        const memberId = record.token?.user_id;
+        if (!memberId) {
+          return json(
+            { ok: false, error: "member_id_missing" },
+            { status: 422 }
+          );
+        }
+
+        const startDate = dateDaysAgo(89);
+        const endDate = dateDaysAgo(0);
+        const payload = await cafe24AdminGet("/orders", env, {
+          shop_no: 1,
+          start_date: startDate,
+          end_date: endDate,
+          date_type: "order_date",
+          member_id: memberId,
+          embed: "items",
+          limit: 100
+        });
+
+        const orders = Array.isArray(payload.orders) ? payload.orders : [];
+        const paymentStatuses = [...new Set(orders.map((o) => o.payment_status).filter(Boolean))];
+        const paidFlags = [...new Set(orders.map((o) => o.paid).filter(Boolean))];
+        const canceledFlags = [...new Set(orders.map((o) => o.canceled).filter(Boolean))];
+        const productNos = [
+          ...new Set(
+            orders.flatMap((order) =>
+              Array.isArray(order.items)
+                ? order.items.map((item) => item.product_no).filter(Boolean)
+                : []
+            )
+          )
+        ];
+        const itemStatuses = [
+          ...new Set(
+            orders.flatMap((order) =>
+              Array.isArray(order.items)
+                ? order.items.map((item) => item.order_status).filter(Boolean)
+                : []
+            )
+          )
+        ];
+
+        return json({
+          ok: true,
+          member_authenticated: true,
+          member_id_used: true,
+          order_check_range: {
+            start_date: startDate,
+            end_date: endDate
+          },
+          order_count: orders.length,
+          payment_statuses: paymentStatuses,
+          paid_flags: paidFlags,
+          canceled_flags: canceledFlags,
+          product_nos: productNos,
+          item_statuses: itemStatuses
+        });
+      } catch (error) {
+        return json(
+          {
+            ok: false,
+            error: "member_order_lookup_failed",
+            detail: String(error.message || error)
+          },
+          { status: 502 }
+        );
       }
     }
 
