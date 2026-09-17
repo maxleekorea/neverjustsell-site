@@ -10,13 +10,19 @@ const REVOKED_STATUS_PREFIXES = new Set(["C", "R", "E"]);
 const ENTITLEMENT_START_DATE = "2026-01-01";
 const ORDER_WINDOW_DAYS = 89;
 
-// Temporary technical mapping. Product 11 is only for the completed access-control test.
-// Real course products will be added here after Cafe24 assigns their product numbers.
 const COURSE_CATALOG = {
   "access-test": {
     productNo: 11,
     title: "강의실 연결 테스트",
     vimeoId: "1227267267",
+    accessType: "paid",
+    visible: false
+  },
+  "free-lesson-1": {
+    productNo: 12,
+    title: "무료 1강",
+    vimeoId: null,
+    accessType: "public",
     visible: false
   }
 };
@@ -77,7 +83,6 @@ function buildOrderWindows(startDate, endDate) {
     const candidateStart = addUtcDays(windowEnd, -ORDER_WINDOW_DAYS);
     const windowStart = candidateStart < startDate ? startDate : candidateStart;
     windows.push({ startDate: windowStart, endDate: windowEnd });
-
     if (windowStart === startDate) break;
     windowEnd = addUtcDays(windowStart, -1);
   }
@@ -115,10 +120,7 @@ async function refreshAdminToken(refreshToken, env) {
   const response = await fetch(`${CAFE24_ADMIN_DOMAIN}/api/v2/oauth/token`, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${basicAuth(
-        env.CAFE24_CLIENT_ID,
-        env.CAFE24_CLIENT_SECRET
-      )}`,
+      Authorization: `Basic ${basicAuth(env.CAFE24_CLIENT_ID, env.CAFE24_CLIENT_SECRET)}`,
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: new URLSearchParams({
@@ -129,9 +131,7 @@ async function refreshAdminToken(refreshToken, env) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      `Cafe24 admin token refresh failed (${response.status}): ${JSON.stringify(payload)}`
-    );
+    throw new Error(`Cafe24 admin token refresh failed (${response.status}): ${JSON.stringify(payload)}`);
   }
   return payload;
 }
@@ -143,10 +143,7 @@ async function getAdminToken(env) {
 
   let token = JSON.parse(raw);
   const expiresAt = Date.parse(token.expires_at || "");
-  if (
-    Number.isFinite(expiresAt) &&
-    Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS
-  ) {
+  if (Number.isFinite(expiresAt) && Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS) {
     if (!token.refresh_token) throw new Error("Cafe24 refresh token is missing");
     token = await refreshAdminToken(token.refresh_token, env);
     await env.CAFE24_AUTH.put(ADMIN_TOKEN_KEY, JSON.stringify(token));
@@ -171,9 +168,7 @@ async function cafe24AdminGet(path, env, params = {}) {
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      `Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`
-    );
+    throw new Error(`Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`);
   }
   return payload;
 }
@@ -187,10 +182,8 @@ function isPaymentConfirmed(order, item) {
 function isItemRevoked(order, item) {
   if (order?.canceled === "T") return true;
   if (order?.refund_status === "T") return true;
-
   const status = String(item?.order_status || order?.order_status || "");
-  if (!status) return false;
-  return REVOKED_STATUS_PREFIXES.has(status.slice(0, 1));
+  return status ? REVOKED_STATUS_PREFIXES.has(status.slice(0, 1)) : false;
 }
 
 function hasValidCourseItem(order, productNo) {
@@ -199,7 +192,6 @@ function hasValidCourseItem(order, productNo) {
     if (Number(item?.product_no) !== productNo) return false;
     if (!isPaymentConfirmed(order, item)) return false;
     if (isItemRevoked(order, item)) return false;
-
     const status = String(item?.order_status || order?.order_status || "");
     return !status || status.startsWith("N");
   });
@@ -246,7 +238,6 @@ async function getCourseAccessResult(request, env, productNo) {
 
     const orders = Array.isArray(payload.orders) ? payload.orders : [];
     matchingOrderCount += orders.length;
-
     if (orders.some((order) => hasValidCourseItem(order, productNo))) {
       access = true;
       break;
@@ -262,10 +253,7 @@ async function getCourseAccessResult(request, env, productNo) {
       reason: access ? "paid_purchase_verified" : "no_valid_paid_purchase",
       product_no: productNo,
       matching_order_count: matchingOrderCount,
-      check_range: {
-        start_date: ENTITLEMENT_START_DATE,
-        end_date: endDate
-      },
+      check_range: { start_date: ENTITLEMENT_START_DATE, end_date: endDate },
       verified_at: new Date().toISOString()
     }
   };
@@ -275,16 +263,10 @@ async function checkCourseAccess(request, env, url) {
   const productNo = Number(url.searchParams.get("product_no"));
   if (!Number.isInteger(productNo) || productNo <= 0) {
     return json(
-      {
-        ok: false,
-        access: false,
-        error: "invalid_product_no",
-        example: "/course-access?product_no=123"
-      },
+      { ok: false, access: false, error: "invalid_product_no", example: "/course-access?product_no=123" },
       { status: 400 }
     );
   }
-
   const result = await getCourseAccessResult(request, env, productNo);
   return json(result.body, { status: result.status });
 }
@@ -324,14 +306,29 @@ function renderClassroomError(title = "내 강의실") {
   );
 }
 
+function renderCoursePlayer(course, label = "MY CLASSROOM") {
+  const player = course.vimeoId
+    ? `<div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(course.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)}"></iframe></div>`
+    : `<p class="note">영상 연결 준비 중입니다.</p>`;
+
+  return html(
+    classroomShell(
+      course.title,
+      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${player}<a class="action secondary" href="https://www.neverjustsell.com/">홈으로</a></section>`
+    )
+  );
+}
+
 async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.member_id) return renderLoginRequired("내 강의실");
 
-  const visibleCourses = Object.entries(COURSE_CATALOG).filter(([, course]) => course.visible);
+  const paidCourses = Object.entries(COURSE_CATALOG).filter(
+    ([, course]) => course.visible && course.accessType === "paid"
+  );
   const accessible = [];
 
-  for (const [slug, course] of visibleCourses) {
+  for (const [slug, course] of paidCourses) {
     const result = await getCourseAccessResult(request, env, course.productNo);
     if (result.body.access) accessible.push({ slug, course });
   }
@@ -375,8 +372,11 @@ async function renderClassroom(request, env, url) {
     );
   }
 
-  const result = await getCourseAccessResult(request, env, course.productNo);
+  if (course.accessType === "public") {
+    return renderCoursePlayer(course, "FREE CLASS");
+  }
 
+  const result = await getCourseAccessResult(request, env, course.productNo);
   if (result.status >= 500) return renderClassroomError(course.title);
   if (!result.body.authenticated) return renderLoginRequired(course.title);
 
@@ -390,12 +390,7 @@ async function renderClassroom(request, env, url) {
     );
   }
 
-  return html(
-    classroomShell(
-      course.title,
-      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">${escapeHtml(course.title)}</h1><p class="desc">구매 내역이 확인되었습니다.</p><div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(course.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)}"></iframe></div><a class="action secondary" href="/classroom">내 강의실로</a></section>`
-    )
-  );
+  return renderCoursePlayer(course);
 }
 
 export default {
