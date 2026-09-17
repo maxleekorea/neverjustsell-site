@@ -7,13 +7,17 @@ const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const VALID_PAYMENT_STATUSES = new Set(["T", "A", "P"]);
 const REVOKED_STATUS_PREFIXES = new Set(["C", "R", "E"]);
+const ENTITLEMENT_START_DATE = "2026-01-01";
+const ORDER_WINDOW_DAYS = 89;
 
-// Temporary technical mapping. Product 11 is the current test product, not the final course product.
+// Temporary technical mapping. Product 11 is only for the completed access-control test.
+// Real course products will be added here after Cafe24 assigns their product numbers.
 const COURSE_CATALOG = {
   "access-test": {
     productNo: 11,
     title: "강의실 연결 테스트",
-    vimeoId: "1227267267"
+    vimeoId: "1227267267",
+    visible: false
   }
 };
 
@@ -33,6 +37,7 @@ function html(body, init = {}) {
     "default-src 'self'; style-src 'unsafe-inline'; frame-src https://player.vimeo.com; img-src 'self' data:; base-uri 'none'; form-action 'self'"
   );
   headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("X-Frame-Options", "DENY");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   return new Response(body, { ...init, headers });
 }
@@ -50,9 +55,34 @@ function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
 
-function dateDaysAgo(daysAgo = 0) {
-  const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+function isoDate(date) {
   return date.toISOString().slice(0, 10);
+}
+
+function todayDate() {
+  return isoDate(new Date());
+}
+
+function addUtcDays(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return isoDate(date);
+}
+
+function buildOrderWindows(startDate, endDate) {
+  const windows = [];
+  let windowEnd = endDate;
+
+  while (windowEnd >= startDate) {
+    const candidateStart = addUtcDays(windowEnd, -ORDER_WINDOW_DAYS);
+    const windowStart = candidateStart < startDate ? startDate : candidateStart;
+    windows.push({ startDate: windowStart, endDate: windowEnd });
+
+    if (windowStart === startDate) break;
+    windowEnd = addUtcDays(windowStart, -1);
+  }
+
+  return windows;
 }
 
 function parseCookies(request) {
@@ -179,7 +209,7 @@ async function getCourseAccessResult(request, env, productNo) {
   if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
     return {
       status: 503,
-      body: { ok: false, access: false, error: "cafe24_not_configured" }
+      body: { ok: false, authenticated: false, access: false, error: "cafe24_not_configured" }
     };
   }
 
@@ -197,21 +227,31 @@ async function getCourseAccessResult(request, env, productNo) {
     };
   }
 
-  const startDate = dateDaysAgo(89);
-  const endDate = dateDaysAgo(0);
-  const payload = await cafe24AdminGet("/orders", env, {
-    shop_no: 1,
-    start_date: startDate,
-    end_date: endDate,
-    date_type: "order_date",
-    member_id: session.member_id,
-    product_no: productNo,
-    embed: "items",
-    limit: 100
-  });
+  const endDate = todayDate();
+  const windows = buildOrderWindows(ENTITLEMENT_START_DATE, endDate);
+  let matchingOrderCount = 0;
+  let access = false;
 
-  const orders = Array.isArray(payload.orders) ? payload.orders : [];
-  const access = orders.some((order) => hasValidCourseItem(order, productNo));
+  for (const window of windows) {
+    const payload = await cafe24AdminGet("/orders", env, {
+      shop_no: 1,
+      start_date: window.startDate,
+      end_date: window.endDate,
+      date_type: "order_date",
+      member_id: session.member_id,
+      product_no: productNo,
+      embed: "items",
+      limit: 100
+    });
+
+    const orders = Array.isArray(payload.orders) ? payload.orders : [];
+    matchingOrderCount += orders.length;
+
+    if (orders.some((order) => hasValidCourseItem(order, productNo))) {
+      access = true;
+      break;
+    }
+  }
 
   return {
     status: 200,
@@ -221,9 +261,9 @@ async function getCourseAccessResult(request, env, productNo) {
       access,
       reason: access ? "paid_purchase_verified" : "no_valid_paid_purchase",
       product_no: productNo,
-      matching_order_count: orders.length,
+      matching_order_count: matchingOrderCount,
       check_range: {
-        start_date: startDate,
+        start_date: ENTITLEMENT_START_DATE,
         end_date: endDate
       },
       verified_at: new Date().toISOString()
@@ -257,21 +297,79 @@ function classroomShell(title, content) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)} | NEVER JUST SELL</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;margin-bottom:48px}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px}.desc{color:#aaa;line-height:1.7;margin:0}.video{position:relative;width:100%;padding-top:56.25%;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}
+*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;padding-top:56.25%;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}@media(max-width:560px){.card{padding:22px}.secondary{margin-left:0;display:table}}
 </style>
 </head>
-<body><main class="wrap"><div class="brand">NEVER JUST SELL</div>${content}</main></body>
+<body><main class="wrap"><div class="top"><a class="brand" href="https://www.neverjustsell.com/">NEVER JUST SELL</a><a class="home" href="https://www.neverjustsell.com/">홈으로</a></div>${content}</main></body>
 </html>`;
 }
 
+function renderLoginRequired(title) {
+  return html(
+    classroomShell(
+      title,
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="/oauth/cafe24/customer/start">회원 인증하기</a></section>`
+    ),
+    { status: 401 }
+  );
+}
+
+function renderClassroomError(title = "내 강의실") {
+  return html(
+    classroomShell(
+      title,
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">강의실을 불러오지 못했습니다.</h1><p class="desc">잠시 후 다시 시도해 주세요.</p></section>`
+    ),
+    { status: 502 }
+  );
+}
+
+async function renderClassroomHome(request, env) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.member_id) return renderLoginRequired("내 강의실");
+
+  const visibleCourses = Object.entries(COURSE_CATALOG).filter(([, course]) => course.visible);
+  const accessible = [];
+
+  for (const [slug, course] of visibleCourses) {
+    const result = await getCourseAccessResult(request, env, course.productNo);
+    if (result.body.access) accessible.push({ slug, course });
+  }
+
+  if (accessible.length === 0) {
+    return html(
+      classroomShell(
+        "내 강의실",
+        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">현재 수강 가능한 강의가 없습니다. 결제가 완료된 강의는 이곳에 자동으로 표시됩니다.</p><a class="action" href="https://www.neverjustsell.com/">강의 둘러보기</a></section>`
+      )
+    );
+  }
+
+  const cards = accessible
+    .map(
+      ({ slug, course }) =>
+        `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>계속 수강하기</p></a>`
+    )
+    .join("");
+
+  return html(
+    classroomShell(
+      "내 강의실",
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">구매가 확인된 강의만 표시됩니다.</p></section><div class="grid">${cards}</div>`
+    )
+  );
+}
+
 async function renderClassroom(request, env, url) {
-  const slug = url.searchParams.get("course") || "access-test";
+  const slug = url.searchParams.get("course");
+  if (!slug) return renderClassroomHome(request, env);
+
   const course = COURSE_CATALOG[slug];
   if (!course) {
     return html(
       classroomShell(
         "강의를 찾을 수 없습니다",
-        `<section class="card"><div class="eyebrow">COURSE</div><h1 class="title">강의를 찾을 수 없습니다.</h1><p class="desc">등록되지 않은 강의입니다.</p></section>`
+        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">강의를 찾을 수 없습니다.</h1><p class="desc">주소를 다시 확인해 주세요.</p><a class="action" href="/classroom">내 강의실로</a></section>`
       ),
       { status: 404 }
     );
@@ -279,21 +377,14 @@ async function renderClassroom(request, env, url) {
 
   const result = await getCourseAccessResult(request, env, course.productNo);
 
-  if (!result.body.authenticated) {
-    return html(
-      classroomShell(
-        course.title,
-        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">로그인이 필요합니다.</h1><p class="desc">카페24 회원 인증 후 구매 내역을 확인합니다.</p><a class="action" href="/oauth/cafe24/customer/start">회원 인증하기</a></section>`
-      ),
-      { status: 401 }
-    );
-  }
+  if (result.status >= 500) return renderClassroomError(course.title);
+  if (!result.body.authenticated) return renderLoginRequired(course.title);
 
   if (!result.body.access) {
     return html(
       classroomShell(
         course.title,
-        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">결제가 확인된 수강권이 없거나, 주문이 취소·환불되었습니다.</p><p class="note">상품번호 ${course.productNo} · 확인 결과 ${escapeHtml(result.body.reason)}</p></section>`
+        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a><a class="action secondary" href="https://www.neverjustsell.com/">강의 둘러보기</a></section>`
       ),
       { status: 403 }
     );
@@ -302,7 +393,7 @@ async function renderClassroom(request, env, url) {
   return html(
     classroomShell(
       course.title,
-      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">${escapeHtml(course.title)}</h1><p class="desc">구매 내역이 확인되었습니다.</p><div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(course.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)}"></iframe></div><p class="note">이 페이지는 로그인 세션과 카페24의 현재 주문 상태를 다시 확인한 뒤에만 영상을 제공합니다.</p></section>`
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">${escapeHtml(course.title)}</h1><p class="desc">구매 내역이 확인되었습니다.</p><div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(course.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)}"></iframe></div><a class="action secondary" href="/classroom">내 강의실로</a></section>`
     )
   );
 }
@@ -330,14 +421,8 @@ export default {
     if (url.pathname === "/classroom") {
       try {
         return await renderClassroom(request, env, url);
-      } catch (error) {
-        return html(
-          classroomShell(
-            "강의실 오류",
-            `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">강의실을 불러오지 못했습니다.</h1><p class="desc">잠시 후 다시 시도해 주세요.</p></section>`
-          ),
-          { status: 502 }
-        );
+      } catch {
+        return renderClassroomError();
       }
     }
 
