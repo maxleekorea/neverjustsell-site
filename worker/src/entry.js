@@ -7,6 +7,9 @@ const CAFE24_REDIRECT_URI =
 const CUSTOMER_SCOPE = "mall.read_customer_identifier";
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const CUSTOMER_TEST_KEY = "cafe24:customer-test";
+const SESSION_PREFIX = "cafe24:customer-session:";
+const SESSION_COOKIE = "njs_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
@@ -37,6 +40,58 @@ function configReady(env) {
 function dateDaysAgo(daysAgo = 0) {
   const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
   return date.toISOString().slice(0, 10);
+}
+
+function parseCookies(request) {
+  const header = request.headers.get("Cookie") || "";
+  const cookies = {};
+  for (const part of header.split(";")) {
+    const index = part.indexOf("=");
+    if (index <= 0) continue;
+    const key = part.slice(0, index).trim();
+    const value = part.slice(index + 1).trim();
+    if (key) cookies[key] = decodeURIComponent(value);
+  }
+  return cookies;
+}
+
+function sessionCookie(sessionId) {
+  return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function expiredSessionCookie() {
+  return `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+}
+
+async function createCustomerSession(env, record) {
+  const sessionId = crypto.randomUUID();
+  await env.CAFE24_AUTH.put(
+    `${SESSION_PREFIX}${sessionId}`,
+    JSON.stringify(record),
+    { expirationTtl: SESSION_TTL_SECONDS }
+  );
+  return sessionId;
+}
+
+async function getCustomerSession(request, env) {
+  if (!env.CAFE24_AUTH) return null;
+  const sessionId = parseCookies(request)[SESSION_COOKIE];
+  if (!sessionId) return null;
+  const raw = await env.CAFE24_AUTH.get(`${SESSION_PREFIX}${sessionId}`);
+  if (!raw) return null;
+  try {
+    const record = JSON.parse(raw);
+    return { sessionId, record };
+  } catch {
+    return null;
+  }
+}
+
+async function deleteCustomerSession(request, env) {
+  const sessionId = parseCookies(request)[SESSION_COOKIE];
+  if (sessionId && env.CAFE24_AUTH) {
+    await env.CAFE24_AUTH.delete(`${SESSION_PREFIX}${sessionId}`);
+  }
 }
 
 async function exchangeCustomerCodeForToken(code, env) {
@@ -152,6 +207,58 @@ async function cafe24AdminGet(path, env, params = {}) {
   return payload;
 }
 
+async function getOrderSummaryForMember(memberId, env) {
+  const startDate = dateDaysAgo(89);
+  const endDate = dateDaysAgo(0);
+  const payload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    start_date: startDate,
+    end_date: endDate,
+    date_type: "order_date",
+    member_id: memberId,
+    embed: "items",
+    limit: 100
+  });
+
+  const orders = Array.isArray(payload.orders) ? payload.orders : [];
+  const paymentStatuses = [
+    ...new Set(orders.map((o) => o.payment_status).filter(Boolean))
+  ];
+  const paidFlags = [...new Set(orders.map((o) => o.paid).filter(Boolean))];
+  const canceledFlags = [
+    ...new Set(orders.map((o) => o.canceled).filter(Boolean))
+  ];
+  const productNos = [
+    ...new Set(
+      orders.flatMap((order) =>
+        Array.isArray(order.items)
+          ? order.items.map((item) => item.product_no).filter(Boolean)
+          : []
+      )
+    )
+  ];
+  const itemStatuses = [
+    ...new Set(
+      orders.flatMap((order) =>
+        Array.isArray(order.items)
+          ? order.items.map((item) => item.order_status).filter(Boolean)
+          : []
+      )
+    )
+  ];
+
+  return {
+    startDate,
+    endDate,
+    orders,
+    paymentStatuses,
+    paidFlags,
+    canceledFlags,
+    productNos,
+    itemStatuses
+  };
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -203,26 +310,44 @@ export default {
           try {
             const tokenData = await exchangeCustomerCodeForToken(code, env);
             const identifierData = await getCustomerIdentifier(tokenData.access_token);
+            const record = {
+              member_id: tokenData.user_id || null,
+              identifier: identifierData.identifier || null,
+              shop_no:
+                identifierData.identifier?.shop_no || tokenData.shop_no || 1,
+              scopes: Array.isArray(tokenData.scopes) ? tokenData.scopes : [],
+              authenticated_at: new Date().toISOString()
+            };
 
+            if (!record.member_id || !record.identifier?.user_identifier) {
+              throw new Error("Cafe24 customer identity is incomplete");
+            }
+
+            const sessionId = await createCustomerSession(env, record);
+
+            // Legacy test record kept briefly only so old diagnostic URLs do not break.
             await env.CAFE24_AUTH.put(
               CUSTOMER_TEST_KEY,
               JSON.stringify({
                 token: tokenData,
                 identifier: identifierData.identifier || null,
-                authenticated_at: new Date().toISOString()
+                authenticated_at: record.authenticated_at
               }),
               { expirationTtl: 1800 }
             );
 
-            return html(`<!doctype html>
+            return html(
+              `<!doctype html>
 <html lang="ko">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>회원 인증 완료</title></head>
 <body style="font-family:Arial,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;line-height:1.6">
 <h1>카페24 회원 인증 완료</h1>
-<p>로그인 회원을 안전하게 식별하는 테스트가 완료되었습니다.</p>
+<p>회원별 보안 세션이 생성되었습니다.</p>
 <p>회원 아이디와 토큰 값은 이 화면에 표시하지 않습니다.</p>
-<p>이 창을 닫고 ChatGPT로 돌아가면 됩니다.</p>
-</body></html>`);
+<p><a href="/session/status">세션 상태 확인</a></p>
+</body></html>`,
+              { headers: { "Set-Cookie": sessionCookie(sessionId) } }
+            );
           } catch (error) {
             return json(
               {
@@ -237,7 +362,37 @@ export default {
       }
     }
 
-    if (url.pathname === "/cafe24/member-orders-test") {
+    if (url.pathname === "/session/status") {
+      const session = await getCustomerSession(request, env);
+      if (!session) {
+        return json({ ok: true, authenticated: false });
+      }
+      return json({
+        ok: true,
+        authenticated: true,
+        member_id_received: Boolean(session.record.member_id),
+        identifier_received: Boolean(session.record.identifier?.user_identifier),
+        shop_no: session.record.shop_no || null,
+        scope_ok: Array.isArray(session.record.scopes)
+          ? session.record.scopes.includes(CUSTOMER_SCOPE)
+          : false,
+        authenticated_at: session.record.authenticated_at || null,
+        session_mode: "per_browser"
+      });
+    }
+
+    if (url.pathname === "/session/logout") {
+      await deleteCustomerSession(request, env);
+      return json(
+        { ok: true, authenticated: false },
+        { headers: { "Set-Cookie": expiredSessionCookie() } }
+      );
+    }
+
+    if (
+      url.pathname === "/cafe24/member-orders" ||
+      url.pathname === "/cafe24/member-orders-test"
+    ) {
       if (!configReady(env)) {
         return json(
           { ok: false, error: "cafe24_not_configured" },
@@ -246,72 +401,45 @@ export default {
       }
 
       try {
-        const raw = await env.CAFE24_AUTH.get(CUSTOMER_TEST_KEY);
-        if (!raw) {
+        let memberId = null;
+        let sessionMode = "per_browser";
+        const session = await getCustomerSession(request, env);
+        if (session?.record?.member_id) {
+          memberId = session.record.member_id;
+        } else if (url.pathname.endsWith("-test")) {
+          // Temporary fallback for the old diagnostic endpoint only.
+          const raw = await env.CAFE24_AUTH.get(CUSTOMER_TEST_KEY);
+          if (raw) {
+            const legacy = JSON.parse(raw);
+            memberId = legacy.token?.user_id || null;
+            sessionMode = "legacy_test";
+          }
+        }
+
+        if (!memberId) {
           return json(
-            { ok: false, error: "customer_test_session_missing" },
+            { ok: false, error: "customer_session_missing" },
             { status: 401 }
           );
         }
 
-        const record = JSON.parse(raw);
-        const memberId = record.token?.user_id;
-        if (!memberId) {
-          return json(
-            { ok: false, error: "member_id_missing" },
-            { status: 422 }
-          );
-        }
-
-        const startDate = dateDaysAgo(89);
-        const endDate = dateDaysAgo(0);
-        const payload = await cafe24AdminGet("/orders", env, {
-          shop_no: 1,
-          start_date: startDate,
-          end_date: endDate,
-          date_type: "order_date",
-          member_id: memberId,
-          embed: "items",
-          limit: 100
-        });
-
-        const orders = Array.isArray(payload.orders) ? payload.orders : [];
-        const paymentStatuses = [...new Set(orders.map((o) => o.payment_status).filter(Boolean))];
-        const paidFlags = [...new Set(orders.map((o) => o.paid).filter(Boolean))];
-        const canceledFlags = [...new Set(orders.map((o) => o.canceled).filter(Boolean))];
-        const productNos = [
-          ...new Set(
-            orders.flatMap((order) =>
-              Array.isArray(order.items)
-                ? order.items.map((item) => item.product_no).filter(Boolean)
-                : []
-            )
-          )
-        ];
-        const itemStatuses = [
-          ...new Set(
-            orders.flatMap((order) =>
-              Array.isArray(order.items)
-                ? order.items.map((item) => item.order_status).filter(Boolean)
-                : []
-            )
-          )
-        ];
+        const summary = await getOrderSummaryForMember(memberId, env);
 
         return json({
           ok: true,
           member_authenticated: true,
           member_id_used: true,
+          session_mode: sessionMode,
           order_check_range: {
-            start_date: startDate,
-            end_date: endDate
+            start_date: summary.startDate,
+            end_date: summary.endDate
           },
-          order_count: orders.length,
-          payment_statuses: paymentStatuses,
-          paid_flags: paidFlags,
-          canceled_flags: canceledFlags,
-          product_nos: productNos,
-          item_statuses: itemStatuses
+          order_count: summary.orders.length,
+          payment_statuses: summary.paymentStatuses,
+          paid_flags: summary.paidFlags,
+          canceled_flags: summary.canceledFlags,
+          product_nos: summary.productNos,
+          item_statuses: summary.itemStatuses
         });
       } catch (error) {
         return json(
