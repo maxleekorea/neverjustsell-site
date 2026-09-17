@@ -5,6 +5,7 @@ const SESSION_PREFIX = "cafe24:customer-session:";
 const SESSION_COOKIE = "njs_session";
 const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+const ACCESS_TOKEN_LIFETIME_MS = 2 * 60 * 60 * 1000;
 const VALID_PAYMENT_STATUSES = new Set(["T", "A", "P"]);
 const REVOKED_STATUS_PREFIXES = new Set(["C", "R", "E"]);
 const ENTITLEMENT_START_DATE = "2026-01-01";
@@ -100,6 +101,28 @@ function buildOrderWindows(startDate, endDate) {
   return windows;
 }
 
+function parseCafe24Timestamp(value) {
+  if (!value) return NaN;
+  const text = String(value).trim();
+  if (!text) return NaN;
+  if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(text)) return Date.parse(text);
+  return Date.parse(`${text}+09:00`);
+}
+
+function shouldRefreshAdminToken(token) {
+  const expiresAt = parseCafe24Timestamp(token?.expires_at);
+  if (Number.isFinite(expiresAt)) {
+    return Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS;
+  }
+
+  const issuedAt = parseCafe24Timestamp(token?.issued_at);
+  if (Number.isFinite(issuedAt)) {
+    return Date.now() >= issuedAt + ACCESS_TOKEN_LIFETIME_MS - TOKEN_REFRESH_MARGIN_MS;
+  }
+
+  return false;
+}
+
 function parseCookies(request) {
   const header = request.headers.get("Cookie") || "";
   const cookies = {};
@@ -146,23 +169,38 @@ async function refreshAdminToken(refreshToken, env) {
   return payload;
 }
 
+async function saveRefreshedAdminToken(refreshToken, env) {
+  if (!refreshToken) throw new Error("Cafe24 refresh token is missing");
+  const token = await refreshAdminToken(refreshToken, env);
+  await env.CAFE24_AUTH.put(ADMIN_TOKEN_KEY, JSON.stringify(token));
+  return token;
+}
+
 async function getAdminToken(env) {
   if (!env.CAFE24_AUTH) throw new Error("Cafe24 KV binding is missing");
   const raw = await env.CAFE24_AUTH.get(ADMIN_TOKEN_KEY);
   if (!raw) throw new Error("Cafe24 Admin access token is not connected");
 
   let token = JSON.parse(raw);
-  const expiresAt = Date.parse(token.expires_at || "");
-  if (Number.isFinite(expiresAt) && Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS) {
-    if (!token.refresh_token) throw new Error("Cafe24 refresh token is missing");
-    token = await refreshAdminToken(token.refresh_token, env);
-    await env.CAFE24_AUTH.put(ADMIN_TOKEN_KEY, JSON.stringify(token));
+  if (shouldRefreshAdminToken(token)) {
+    token = await saveRefreshedAdminToken(token.refresh_token, env);
   }
   return token;
 }
 
+async function fetchAdminGet(apiUrl, accessToken) {
+  const response = await fetch(apiUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    }
+  });
+  const payload = await response.json().catch(() => ({}));
+  return { response, payload };
+}
+
 async function cafe24AdminGet(path, env, params = {}) {
-  const token = await getAdminToken(env);
+  let token = await getAdminToken(env);
   const apiUrl = new URL(`${CAFE24_ADMIN_DOMAIN}/api/v2/admin${path}`);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== "") {
@@ -170,17 +208,25 @@ async function cafe24AdminGet(path, env, params = {}) {
     }
   }
 
-  const response = await fetch(apiUrl.toString(), {
-    headers: {
-      Authorization: `Bearer ${token.access_token}`,
-      "Content-Type": "application/json"
+  let result = await fetchAdminGet(apiUrl, token.access_token);
+
+  if (result.response.status === 401) {
+    const latestRaw = await env.CAFE24_AUTH.get(ADMIN_TOKEN_KEY);
+    const latest = latestRaw ? JSON.parse(latestRaw) : token;
+
+    if (latest?.access_token && latest.access_token !== token.access_token) {
+      token = latest;
+    } else {
+      token = await saveRefreshedAdminToken(latest?.refresh_token || token.refresh_token, env);
     }
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(`Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`);
+
+    result = await fetchAdminGet(apiUrl, token.access_token);
   }
-  return payload;
+
+  if (!result.response.ok) {
+    throw new Error(`Cafe24 Admin API failed (${result.response.status}): ${JSON.stringify(result.payload)}`);
+  }
+  return result.payload;
 }
 
 function isPaymentConfirmed(order, item) {
