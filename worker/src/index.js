@@ -14,6 +14,7 @@ const ADMIN_STATE_PREFIX = "cafe24:admin-oauth-state:";
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const CUSTOMER_TEST_KEY = "cafe24:customer-test";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+const ACCESS_TOKEN_LIFETIME_MS = 2 * 60 * 60 * 1000;
 
 function corsHeaders(origin) {
   const headers = {
@@ -55,6 +56,14 @@ function basicAuth(clientId, clientSecret) {
 function dateDaysAgo(daysAgo = 0) {
   const date = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
   return date.toISOString().slice(0, 10);
+}
+
+function parseCafe24Timestamp(value) {
+  if (!value) return NaN;
+  const text = String(value).trim();
+  if (!text) return NaN;
+  if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(text)) return Date.parse(text);
+  return Date.parse(`${text}+09:00`);
 }
 
 async function tokenRequest(params, env) {
@@ -137,10 +146,24 @@ async function refreshAdminToken(refreshToken, env) {
 }
 
 function shouldRefreshToken(token) {
-  if (!token?.expires_at) return false;
-  const expiresAt = Date.parse(token.expires_at);
-  if (!Number.isFinite(expiresAt)) return false;
-  return Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS;
+  const expiresAt = parseCafe24Timestamp(token?.expires_at);
+  if (Number.isFinite(expiresAt)) {
+    return Date.now() >= expiresAt - TOKEN_REFRESH_MARGIN_MS;
+  }
+
+  const issuedAt = parseCafe24Timestamp(token?.issued_at);
+  if (Number.isFinite(issuedAt)) {
+    return Date.now() >= issuedAt + ACCESS_TOKEN_LIFETIME_MS - TOKEN_REFRESH_MARGIN_MS;
+  }
+
+  return false;
+}
+
+async function saveRefreshedAdminToken(refreshToken, env) {
+  if (!refreshToken) throw new Error("Cafe24 refresh token is missing");
+  const token = await refreshAdminToken(refreshToken, env);
+  await env.CAFE24_AUTH.put(TOKEN_KEY, JSON.stringify(token));
+  return token;
 }
 
 async function getAdminToken(env) {
@@ -151,18 +174,25 @@ async function getAdminToken(env) {
 
   let token = JSON.parse(raw);
   if (shouldRefreshToken(token)) {
-    if (!token.refresh_token) {
-      throw new Error("Cafe24 refresh token is missing");
-    }
-    token = await refreshAdminToken(token.refresh_token, env);
-    await env.CAFE24_AUTH.put(TOKEN_KEY, JSON.stringify(token));
+    token = await saveRefreshedAdminToken(token.refresh_token, env);
   }
 
   return token;
 }
 
+async function fetchAdminGet(apiUrl, accessToken) {
+  const response = await fetch(apiUrl.toString(), {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    }
+  });
+  const payload = await response.json().catch(() => ({}));
+  return { response, payload };
+}
+
 async function cafe24AdminGet(path, env, params = {}) {
-  const token = await getAdminToken(env);
+  let token = await getAdminToken(env);
   if (!token?.access_token) {
     throw new Error("Cafe24 Admin access token is not connected");
   }
@@ -176,20 +206,27 @@ async function cafe24AdminGet(path, env, params = {}) {
     }
   }
 
-  const response = await fetch(apiUrl.toString(), {
-    headers: {
-      Authorization: `Bearer ${token.access_token}`,
-      "Content-Type": "application/json"
-    }
-  });
+  let result = await fetchAdminGet(apiUrl, token.access_token);
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
+  if (result.response.status === 401) {
+    const latestRaw = await env.CAFE24_AUTH.get(TOKEN_KEY);
+    const latest = latestRaw ? JSON.parse(latestRaw) : token;
+
+    if (latest?.access_token && latest.access_token !== token.access_token) {
+      token = latest;
+    } else {
+      token = await saveRefreshedAdminToken(latest?.refresh_token || token.refresh_token, env);
+    }
+
+    result = await fetchAdminGet(apiUrl, token.access_token);
+  }
+
+  if (!result.response.ok) {
     throw new Error(
-      `Cafe24 Admin API failed (${response.status}): ${JSON.stringify(payload)}`
+      `Cafe24 Admin API failed (${result.response.status}): ${JSON.stringify(result.payload)}`
     );
   }
-  return payload;
+  return result.payload;
 }
 
 async function getCustomerIdentifier(customerAccessToken) {
