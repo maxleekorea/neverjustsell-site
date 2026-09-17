@@ -12,13 +12,6 @@ const ENTITLEMENT_START_DATE = "2026-01-01";
 const ORDER_WINDOW_DAYS = 89;
 
 const COURSE_CATALOG = {
-  "access-test": {
-    productNo: 11,
-    title: "강의실 연결 테스트",
-    vimeoId: "1227267267",
-    accessType: "paid",
-    visible: false
-  },
   "free-lesson-1": {
     productNo: 12,
     title: "무료 1강",
@@ -28,12 +21,12 @@ const COURSE_CATALOG = {
   },
   "paid-course": {
     productNo: 13,
-    title: "유료 강의",
+    title: "유료 강의 테스트",
     accessType: "paid",
     visible: true,
     lessons: [
-      { title: "1강", vimeoId: "1227604364" },
-      { title: "2강", vimeoId: "1227604365" }
+      { title: "테스트 영상 1", vimeoId: "1227604364" },
+      { title: "테스트 영상 2", vimeoId: "1227604365" }
     ]
   }
 };
