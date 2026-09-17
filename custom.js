@@ -47,6 +47,9 @@
   document.documentElement.classList.add('njs-ready');
   if (!isHome) return;
 
+  const classroomUrl = 'https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom';
+  const freeLessonUrl = `${classroomUrl}?course=free-lesson-1`;
+
   const media = {
     profile: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png',
     lecture: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png',
@@ -122,6 +125,7 @@
           </nav>
           <div class="njs-utility">
             <a href="/member/login.html">로그인</a>
+            <a href="${classroomUrl}">내 강의실</a>
             <a href="/order/basket.html">장바구니</a>
           </div>
         </div>
@@ -137,7 +141,7 @@
               <p class="njs-hero-name">온라인 커머스 작가 · 사업가 <strong>맥작가</strong></p>
               <div class="njs-actions">
                 <a class="njs-btn njs-btn-dark" href="#book">책 보기</a>
-                <a class="njs-btn njs-btn-line" href="https://seller.liveklass.com" target="_blank" rel="noopener">온라인 강의</a>
+                <a class="njs-btn njs-btn-line" href="#class">온라인 강의</a>
               </div>
             </div>
             <div class="njs-hero-visual" aria-label="맥작가 프로필">
@@ -185,7 +189,7 @@
           <div class="njs-shell">
             <div class="njs-section-head">
               <div><p class="njs-section-no">02 / CLASS</p><h2>온라인 강의</h2></div>
-              <a class="njs-text-link" href="https://seller.liveklass.com" target="_blank" rel="noopener">강의 사이트 보기 →</a>
+              <a class="njs-text-link" href="${freeLessonUrl}">무료 1강 보기 →</a>
             </div>
             <div class="njs-class-grid">
               <article><span>01</span><h3>온라인 유통업의 본질</h3><p>상품을 파는 기술보다 먼저 유통과 시장이 작동하는 구조를 이해합니다.</p></article>
