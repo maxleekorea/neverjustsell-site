@@ -24,6 +24,16 @@ const COURSE_CATALOG = {
     vimeoId: "1227267267",
     accessType: "public",
     visible: false
+  },
+  "paid-course": {
+    productNo: 13,
+    title: "유료 강의",
+    accessType: "paid",
+    visible: true,
+    lessons: [
+      { title: "1강", vimeoId: "1227604364" },
+      { title: "2강", vimeoId: "1227604365" }
+    ]
   }
 };
 
@@ -279,7 +289,7 @@ function classroomShell(title, content) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(title)} | NEVER JUST SELL</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;padding-top:56.25%;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}@media(max-width:560px){.card{padding:22px}.secondary{margin-left:0;display:table}}
+*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;padding-top:56.25%;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}@media(max-width:560px){.card{padding:22px}.secondary{margin-left:0;display:table}}
 </style>
 </head>
 <body><main class="wrap"><div class="top"><a class="brand" href="https://www.neverjustsell.com/">NEVER JUST SELL</a><a class="home" href="https://www.neverjustsell.com/">홈으로</a></div>${content}</main></body>
@@ -306,15 +316,36 @@ function renderClassroomError(title = "내 강의실") {
   );
 }
 
-function renderCoursePlayer(course, label = "MY CLASSROOM") {
-  const player = course.vimeoId
-    ? `<div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(course.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)}"></iframe></div>`
+function getCourseLessons(course) {
+  if (Array.isArray(course.lessons) && course.lessons.length > 0) return course.lessons;
+  if (course.vimeoId) return [{ title: course.title, vimeoId: course.vimeoId }];
+  return [];
+}
+
+function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = null) {
+  const lessons = getCourseLessons(course);
+  const requestedLesson = Number(url?.searchParams.get("lesson") || 1);
+  const lessonNumber = Number.isInteger(requestedLesson) && requestedLesson >= 1 && requestedLesson <= lessons.length
+    ? requestedLesson
+    : 1;
+  const selectedLesson = lessons[lessonNumber - 1] || null;
+
+  const player = selectedLesson?.vimeoId
+    ? `<div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(selectedLesson.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)} ${escapeHtml(selectedLesson.title)}"></iframe></div>`
     : `<p class="note">영상 연결 준비 중입니다.</p>`;
+
+  const lessonNavigation = lessons.length > 1
+    ? `<div class="lesson-list">${lessons.map((lesson, index) => `<a class="lesson-link${index + 1 === lessonNumber ? " active" : ""}" href="/classroom?course=${encodeURIComponent(slug)}&lesson=${index + 1}">${escapeHtml(lesson.title)}</a>`).join("")}</div>`
+    : "";
+
+  const lessonTitle = selectedLesson && lessons.length > 1
+    ? `<p class="desc">${escapeHtml(selectedLesson.title)}</p>`
+    : "";
 
   return html(
     classroomShell(
       course.title,
-      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${player}<a class="action secondary" href="https://www.neverjustsell.com/">홈으로</a></section>`
+      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${lessonTitle}${lessonNavigation}${player}<a class="action secondary" href="${course.accessType === "paid" ? "/classroom" : "https://www.neverjustsell.com/"}">${course.accessType === "paid" ? "내 강의실로" : "홈으로"}</a></section>`
     )
   );
 }
@@ -345,7 +376,7 @@ async function renderClassroomHome(request, env) {
   const cards = accessible
     .map(
       ({ slug, course }) =>
-        `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>계속 수강하기</p></a>`
+        `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>${getCourseLessons(course).length}개 강의 · 계속 수강하기</p></a>`
     )
     .join("");
 
@@ -373,7 +404,7 @@ async function renderClassroom(request, env, url) {
   }
 
   if (course.accessType === "public") {
-    return renderCoursePlayer(course, "FREE CLASS");
+    return renderCoursePlayer(course, "FREE CLASS", slug, url);
   }
 
   const result = await getCourseAccessResult(request, env, course.productNo);
@@ -390,7 +421,7 @@ async function renderClassroom(request, env, url) {
     );
   }
 
-  return renderCoursePlayer(course);
+  return renderCoursePlayer(course, "MY CLASSROOM", slug, url);
 }
 
 export default {
