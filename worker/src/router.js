@@ -21,7 +21,7 @@ const COURSE_CATALOG = {
   "free-lesson-1": {
     productNo: 12,
     title: "무료 1강",
-    vimeoId: null,
+    vimeoId: "1227267267",
     accessType: "public",
     visible: false
   }
