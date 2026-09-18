@@ -1,4 +1,9 @@
 import app from "./entry.js";
+import {
+  COURSE_CATALOG,
+  findPaidCourseByProductNo,
+  getVisiblePaidCourses
+} from "./courses.js";
 
 const CAFE24_ADMIN_DOMAIN = "https://neverjustsell.cafe24api.com";
 const SESSION_PREFIX = "cafe24:customer-session:";
@@ -10,26 +15,9 @@ const VALID_PAYMENT_STATUSES = new Set(["T", "A", "P"]);
 const REVOKED_STATUS_PREFIXES = new Set(["C", "R", "E"]);
 const ENTITLEMENT_START_DATE = "2026-01-01";
 const ORDER_WINDOW_DAYS = 89;
-
-const COURSE_CATALOG = {
-  "free-lesson-1": {
-    productNo: 12,
-    title: "무료 1강",
-    vimeoId: "1227267267",
-    accessType: "public",
-    visible: false
-  },
-  "paid-course": {
-    productNo: 13,
-    title: "유료 강의 테스트",
-    accessType: "paid",
-    visible: true,
-    lessons: [
-      { title: "테스트 영상 1", vimeoId: "1227604364" },
-      { title: "테스트 영상 2", vimeoId: "1227604365" }
-    ]
-  }
-};
+const ORDER_PAGE_LIMIT = 1000;
+const ORDER_MAX_OFFSET = 15000;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -70,7 +58,7 @@ function isoDate(date) {
 }
 
 function todayDate() {
-  return isoDate(new Date());
+  return isoDate(new Date(Date.now() + KST_OFFSET_MS));
 }
 
 function addUtcDays(dateString, days) {
@@ -222,6 +210,29 @@ async function cafe24AdminGet(path, env, params = {}) {
   return result.payload;
 }
 
+async function fetchAllOrders(env, params) {
+  const orders = [];
+  let offset = 0;
+
+  while (offset <= ORDER_MAX_OFFSET) {
+    const payload = await cafe24AdminGet("/orders", env, {
+      ...params,
+      limit: ORDER_PAGE_LIMIT,
+      offset
+    });
+    const page = Array.isArray(payload.orders) ? payload.orders : [];
+    orders.push(...page);
+
+    if (page.length < ORDER_PAGE_LIMIT) return orders;
+    if (offset === ORDER_MAX_OFFSET) {
+      throw new Error("Cafe24 order result exceeds supported pagination range");
+    }
+    offset += ORDER_PAGE_LIMIT;
+  }
+
+  return orders;
+}
+
 function isPaymentConfirmed(order, item) {
   if (item?.paid === "T" || item?.payment_status === "T") return true;
   if (order?.paid === "T" || order?.payment_confirmation === "T") return true;
@@ -244,6 +255,21 @@ function hasValidCourseItem(order, productNo) {
     const status = String(item?.order_status || order?.order_status || "");
     return !status || status.startsWith("N");
   });
+}
+
+function getValidPaidProductNos(orders, targetProductNos) {
+  const targets = new Set(targetProductNos.map(Number));
+  const valid = new Set();
+
+  for (const order of orders) {
+    for (const productNo of targets) {
+      if (!valid.has(productNo) && hasValidCourseItem(order, productNo)) {
+        valid.add(productNo);
+      }
+    }
+  }
+
+  return valid;
 }
 
 async function getCourseAccessResult(request, env, productNo) {
@@ -274,18 +300,16 @@ async function getCourseAccessResult(request, env, productNo) {
   let access = false;
 
   for (const window of windows) {
-    const payload = await cafe24AdminGet("/orders", env, {
+    const orders = await fetchAllOrders(env, {
       shop_no: 1,
       start_date: window.startDate,
       end_date: window.endDate,
       date_type: "order_date",
       member_id: session.member_id,
       product_no: productNo,
-      embed: "items",
-      limit: 100
+      embed: "items"
     });
 
-    const orders = Array.isArray(payload.orders) ? payload.orders : [];
     matchingOrderCount += orders.length;
     if (orders.some((order) => hasValidCourseItem(order, productNo))) {
       access = true;
@@ -303,19 +327,58 @@ async function getCourseAccessResult(request, env, productNo) {
       product_no: productNo,
       matching_order_count: matchingOrderCount,
       check_range: { start_date: ENTITLEMENT_START_DATE, end_date: endDate },
+      pagination: { limit: ORDER_PAGE_LIMIT, max_offset: ORDER_MAX_OFFSET },
       verified_at: new Date().toISOString()
     }
   };
+}
+
+async function getAccessiblePaidProductNos(request, env, productNos) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.member_id) {
+    return { authenticated: false, productNos: new Set() };
+  }
+
+  const targets = [...new Set(productNos.map(Number).filter(Number.isFinite))];
+  const accessible = new Set();
+  const endDate = todayDate();
+  const windows = buildOrderWindows(ENTITLEMENT_START_DATE, endDate);
+
+  for (const window of windows) {
+    const orders = await fetchAllOrders(env, {
+      shop_no: 1,
+      start_date: window.startDate,
+      end_date: window.endDate,
+      date_type: "order_date",
+      member_id: session.member_id,
+      embed: "items"
+    });
+
+    const validThisWindow = getValidPaidProductNos(orders, targets);
+    for (const productNo of validThisWindow) accessible.add(productNo);
+    if (accessible.size === targets.length) break;
+  }
+
+  return { authenticated: true, productNos: accessible };
 }
 
 async function checkCourseAccess(request, env, url) {
   const productNo = Number(url.searchParams.get("product_no"));
   if (!Number.isInteger(productNo) || productNo <= 0) {
     return json(
-      { ok: false, access: false, error: "invalid_product_no", example: "/course-access?product_no=123" },
+      { ok: false, access: false, error: "invalid_product_no" },
       { status: 400 }
     );
   }
+
+  const knownCourse = findPaidCourseByProductNo(productNo);
+  if (!knownCourse) {
+    return json(
+      { ok: false, access: false, error: "unknown_course_product" },
+      { status: 404 }
+    );
+  }
+
   const result = await getCourseAccessResult(request, env, productNo);
   return json(result.body, { status: result.status });
 }
@@ -325,10 +388,10 @@ function classroomShell(title, content) {
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${escapeHtml(title)} | NEVER JUST SELL</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;padding-top:56.25%;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}@media(max-width:560px){.card{padding:22px}.secondary{margin-left:0;display:table}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
 <body><main class="wrap"><div class="top"><a class="brand" href="https://www.neverjustsell.com/">NEVER JUST SELL</a><a class="home" href="https://www.neverjustsell.com/">홈으로</a></div>${content}</main></body>
@@ -355,20 +418,44 @@ function renderClassroomError(title = "내 강의실") {
   );
 }
 
+function renderLessonNotFound(course, slug) {
+  return html(
+    classroomShell(
+      course.title,
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">강의를 찾을 수 없습니다.</h1><p class="desc">차시 주소를 다시 확인해 주세요.</p><a class="action" href="/classroom?course=${encodeURIComponent(slug)}">첫 강의로 이동</a></section>`
+    ),
+    { status: 404 }
+  );
+}
+
 function getCourseLessons(course) {
   if (Array.isArray(course.lessons) && course.lessons.length > 0) return course.lessons;
-  if (course.vimeoId) return [{ title: course.title, vimeoId: course.vimeoId }];
+  if (course.vimeoId) return [{ id: "lesson-1", title: course.title, vimeoId: course.vimeoId }];
   return [];
 }
 
-function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = null) {
+function resolveLesson(course, url) {
   const lessons = getCourseLessons(course);
-  const requestedLesson = Number(url?.searchParams.get("lesson") || 1);
-  const lessonNumber = Number.isInteger(requestedLesson) && requestedLesson >= 1 && requestedLesson <= lessons.length
-    ? requestedLesson
-    : 1;
-  const selectedLesson = lessons[lessonNumber - 1] || null;
+  const raw = url?.searchParams.get("lesson");
+  if (raw === null || raw === "") {
+    return { lessons, lessonNumber: 1, selectedLesson: lessons[0] || null, invalid: false };
+  }
 
+  const lessonNumber = Number(raw);
+  const invalid = !Number.isInteger(lessonNumber) || lessonNumber < 1 || lessonNumber > lessons.length;
+  return {
+    lessons,
+    lessonNumber,
+    selectedLesson: invalid ? null : lessons[lessonNumber - 1] || null,
+    invalid
+  };
+}
+
+function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = null) {
+  const resolved = resolveLesson(course, url);
+  if (resolved.invalid) return renderLessonNotFound(course, slug);
+
+  const { lessons, lessonNumber, selectedLesson } = resolved;
   const player = selectedLesson?.vimeoId
     ? `<div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(selectedLesson.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(course.title)} ${escapeHtml(selectedLesson.title)}"></iframe></div>`
     : `<p class="note">영상 연결 준비 중입니다.</p>`;
@@ -393,15 +480,14 @@ async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.member_id) return renderLoginRequired("내 강의실");
 
-  const paidCourses = Object.entries(COURSE_CATALOG).filter(
-    ([, course]) => course.visible && course.accessType === "paid"
+  const paidCourses = getVisiblePaidCourses();
+  const access = await getAccessiblePaidProductNos(
+    request,
+    env,
+    paidCourses.map(([, course]) => course.productNo)
   );
-  const accessible = [];
 
-  for (const [slug, course] of paidCourses) {
-    const result = await getCourseAccessResult(request, env, course.productNo);
-    if (result.body.access) accessible.push({ slug, course });
-  }
+  const accessible = paidCourses.filter(([, course]) => access.productNos.has(Number(course.productNo)));
 
   if (accessible.length === 0) {
     return html(
@@ -414,7 +500,7 @@ async function renderClassroomHome(request, env) {
 
   const cards = accessible
     .map(
-      ({ slug, course }) =>
+      ([slug, course]) =>
         `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>${getCourseLessons(course).length}개 강의 · 계속 수강하기</p></a>`
     )
     .join("");
