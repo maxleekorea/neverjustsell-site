@@ -35,7 +35,8 @@ function validSiteReturn(value) {
       "https://neverjustsell.com"
     ]);
     if (url.protocol !== "https:" || !allowed.has(url.origin)) return null;
-    return `${url.origin}/`;
+    const pathname = url.pathname === "/auth/complete" ? "/auth/complete" : "/";
+    return `${url.origin}${pathname}`;
   } catch {
     return null;
   }
