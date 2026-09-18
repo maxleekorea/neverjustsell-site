@@ -3,7 +3,6 @@ import app from "./main.js";
 const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
 const CAFE24_REDIRECT_URI =
   "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
-const CUSTOMER_SCOPE = "mall.read_customer_identifier";
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const SESSION_PREFIX = "cafe24:customer-session:";
 const SESSION_COOKIE = "njs_session";
@@ -19,13 +18,6 @@ function json(data, init = {}) {
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
   return new Response(JSON.stringify(data), { ...init, headers });
-}
-
-function html(body, init = {}) {
-  const headers = new Headers(init.headers || {});
-  headers.set("Content-Type", "text/html; charset=utf-8");
-  headers.set("Cache-Control", "no-store");
-  return new Response(body, { ...init, headers });
 }
 
 function redirectWithCookie(location, cookie) {
@@ -152,40 +144,6 @@ async function verifySignedTicket(env, ticket) {
   };
 }
 
-async function handleCustomerStart(request, env) {
-  const url = new URL(request.url);
-  if (url.pathname !== "/oauth/cafe24/customer/start") return null;
-
-  if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
-    return json({ ok: false, error: "cafe24_not_configured" }, { status: 503 });
-  }
-
-  const returnTo = validCommunityReturnUrl(url.searchParams.get("return_to"), env);
-  const state = crypto.randomUUID();
-  await env.CAFE24_AUTH.put(
-    `${CUSTOMER_STATE_PREFIX}${state}`,
-    JSON.stringify({ return_to: returnTo }),
-    { expirationTtl: 600 }
-  );
-
-  const authUrl = new URL(`${CAFE24_CUSTOMER_DOMAIN}/api/v2/oauth/authorize`);
-  authUrl.searchParams.set("response_type", "code");
-  authUrl.searchParams.set("client_id", env.CAFE24_CLIENT_ID);
-  authUrl.searchParams.set("state", state);
-  authUrl.searchParams.set("redirect_uri", CAFE24_REDIRECT_URI);
-  authUrl.searchParams.set("scope", CUSTOMER_SCOPE);
-  authUrl.searchParams.set("shop_no", "1");
-
-  // Route through the storefront member-login page first. After an explicit
-  // community logout, this guarantees that the user sees the Cafe24 ID/password
-  // form before returning to the OAuth authorization endpoint. The OAuth
-  // redirect_uri itself remains unchanged and continues to match Developers.
-  const loginUrl = new URL(`${CAFE24_CUSTOMER_DOMAIN}/member/login.html`);
-  loginUrl.searchParams.set("returnUrl", `${authUrl.pathname}${authUrl.search}`);
-
-  return Response.redirect(loginUrl.toString(), 302);
-}
-
 async function exchangeCustomerCodeForToken(code, env) {
   const response = await fetch(`${CAFE24_CUSTOMER_DOMAIN}/api/v2/oauth/token`, {
     method: "POST",
@@ -278,31 +236,15 @@ async function handleCustomerCallback(request, env) {
     return redirectWithCookie(target.toString(), sessionCookie(sessionId));
   }
 
-  return html(
-    `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>회원 인증 완료</title></head><body style="font-family:Arial,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;line-height:1.6"><h1>카페24 회원 인증 완료</h1><p>회원별 보안 세션이 생성되었습니다.</p></body></html>`,
-    { headers: { "Set-Cookie": sessionCookie(sessionId) } }
+  return redirectWithCookie(
+    new URL("/classroom", request.url).toString(),
+    sessionCookie(sessionId)
   );
 }
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-
-    if (url.pathname === "/oauth/cafe24/customer/start") {
-      try {
-        const customerStartResponse = await handleCustomerStart(request, env);
-        if (customerStartResponse) return customerStartResponse;
-      } catch (error) {
-        return json(
-          {
-            ok: false,
-            error: "customer_auth_start_failed",
-            detail: String(error.message || error)
-          },
-          { status: 502 }
-        );
-      }
-    }
 
     if (url.pathname === "/community-auth/redeem" && request.method === "POST") {
       const payload = await request.clone().json().catch(() => ({}));
