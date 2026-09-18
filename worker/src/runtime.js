@@ -1,5 +1,13 @@
 import app from "./main.js";
 
+const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
+const CAFE24_REDIRECT_URI =
+  "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
+const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
+const SESSION_PREFIX = "cafe24:customer-session:";
+const SESSION_COOKIE = "njs_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const SIGNED_TICKET_PREFIX = "v1";
 const SIGNED_TICKET_TTL_SECONDS = 120;
 const encoder = new TextEncoder();
@@ -10,6 +18,48 @@ function json(data, init = {}) {
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
   return new Response(JSON.stringify(data), { ...init, headers });
+}
+
+function html(body, init = {}) {
+  const headers = new Headers(init.headers || {});
+  headers.set("Content-Type", "text/html; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
+  return new Response(body, { ...init, headers });
+}
+
+function redirectWithCookie(location, cookie) {
+  const headers = new Headers({ Location: location, "Cache-Control": "no-store" });
+  if (cookie) headers.set("Set-Cookie", cookie);
+  return new Response(null, { status: 302, headers });
+}
+
+function basicAuth(clientId, clientSecret) {
+  return btoa(`${clientId}:${clientSecret}`);
+}
+
+function allowedCommunityOrigins(env) {
+  const configured = String(env.COMMUNITY_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return new Set([DEFAULT_COMMUNITY_ORIGIN, ...configured]);
+}
+
+function validCommunityReturnUrl(value, env) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "https:" && url.hostname !== "localhost") return null;
+    if (!allowedCommunityOrigins(env).has(url.origin) && url.hostname !== "localhost") return null;
+    if (url.pathname !== "/auth/callback") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function sessionCookie(sessionId) {
+  return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 function base64UrlEncode(bytes) {
@@ -43,11 +93,11 @@ async function ticketKey(env) {
   );
 }
 
-async function createSignedTicket(env, identity) {
+async function createSignedTicket(env, memberId) {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     v: 1,
-    s: String(identity.member_id),
+    s: String(memberId),
     i: now,
     e: now + SIGNED_TICKET_TTL_SECONDS
   };
@@ -101,47 +151,102 @@ async function verifySignedTicket(env, ticket) {
   };
 }
 
-async function redeemOpaqueTicketLocally(ticket, request, env, ctx) {
-  const redeemUrl = new URL("/community-auth/redeem", request.url);
-  const redeemRequest = new Request(redeemUrl.toString(), {
+async function exchangeCustomerCodeForToken(code, env) {
+  const response = await fetch(`${CAFE24_CUSTOMER_DOMAIN}/api/v2/oauth/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ticket })
+    headers: {
+      Authorization: `Basic ${basicAuth(env.CAFE24_CLIENT_ID, env.CAFE24_CLIENT_SECRET)}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: CAFE24_REDIRECT_URI
+    }).toString()
   });
-  const response = await app.fetch(redeemRequest, env, ctx);
-  if (!response.ok) return null;
-  const identity = await response.json().catch(() => null);
-  return identity?.member_id ? identity : null;
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 customer token request failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
 }
 
-async function replaceCommunityRedirectTicket(response, request, env, ctx) {
-  if (response.status < 300 || response.status >= 400) return response;
-  const location = response.headers.get("Location");
-  if (!location) return response;
+async function getCustomerIdentifier(customerAccessToken) {
+  const response = await fetch(
+    `${CAFE24_CUSTOMER_DOMAIN}/api/v2/customers/identifier`,
+    {
+      headers: {
+        Authorization: `Basic ${customerAccessToken}`,
+        "Content-Type": "application/json"
+      }
+    }
+  );
 
-  let target;
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      `Cafe24 customer identifier failed (${response.status}): ${JSON.stringify(payload)}`
+    );
+  }
+  return payload;
+}
+
+async function handleCustomerCallback(request, env) {
+  const url = new URL(request.url);
+  const state = url.searchParams.get("state");
+  const code = url.searchParams.get("code");
+  if (!state || !env.CAFE24_AUTH) return null;
+
+  const stateKey = `${CUSTOMER_STATE_PREFIX}${state}`;
+  const rawState = await env.CAFE24_AUTH.get(stateKey);
+  if (!rawState) return null;
+  if (!code) return json({ ok: false, error: "missing_code" }, { status: 400 });
+
+  await env.CAFE24_AUTH.delete(stateKey);
+
+  let stateRecord = {};
   try {
-    target = new URL(location);
+    stateRecord = JSON.parse(rawState);
   } catch {
-    return response;
+    stateRecord = {};
   }
 
-  const ticket = target.searchParams.get("ticket");
-  if (!ticket || ticket.startsWith(`${SIGNED_TICKET_PREFIX}.`)) return response;
+  const tokenData = await exchangeCustomerCodeForToken(code, env);
+  const identifierData = await getCustomerIdentifier(tokenData.access_token);
+  const record = {
+    member_id: tokenData.user_id || null,
+    identifier: identifierData.identifier || null,
+    shop_no: identifierData.identifier?.shop_no || tokenData.shop_no || 1,
+    scopes: Array.isArray(tokenData.scopes) ? tokenData.scopes : [],
+    authenticated_at: new Date().toISOString()
+  };
 
-  const identity = await redeemOpaqueTicketLocally(ticket, request, env, ctx);
-  if (!identity) return response;
+  if (!record.member_id || !record.identifier?.user_identifier) {
+    throw new Error("Cafe24 customer identity is incomplete");
+  }
 
-  const signedTicket = await createSignedTicket(env, identity);
-  target.searchParams.set("ticket", signedTicket);
+  const sessionId = crypto.randomUUID();
+  await env.CAFE24_AUTH.put(
+    `${SESSION_PREFIX}${sessionId}`,
+    JSON.stringify(record),
+    { expirationTtl: SESSION_TTL_SECONDS }
+  );
 
-  const headers = new Headers(response.headers);
-  headers.set("Location", target.toString());
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers
-  });
+  const communityReturn = validCommunityReturnUrl(stateRecord.return_to, env);
+  if (communityReturn) {
+    const ticket = await createSignedTicket(env, record.member_id);
+    const target = new URL(communityReturn);
+    target.searchParams.set("ticket", ticket);
+    return redirectWithCookie(target.toString(), sessionCookie(sessionId));
+  }
+
+  return html(
+    `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>회원 인증 완료</title></head><body style="font-family:Arial,sans-serif;max-width:720px;margin:60px auto;padding:0 24px;line-height:1.6"><h1>카페24 회원 인증 완료</h1><p>회원별 보안 세션이 생성되었습니다.</p></body></html>`,
+    { headers: { "Set-Cookie": sessionCookie(sessionId) } }
+  );
 }
 
 export default {
@@ -160,17 +265,22 @@ export default {
       }
     }
 
-    const response = await app.fetch(request, env, ctx);
-
     if (url.pathname === "/oauth/cafe24/callback") {
       try {
-        return await replaceCommunityRedirectTicket(response, request, env, ctx);
+        const customerResponse = await handleCustomerCallback(request, env);
+        if (customerResponse) return customerResponse;
       } catch (error) {
-        console.error("community ticket bridge failed", error);
-        return response;
+        return json(
+          {
+            ok: false,
+            error: "customer_auth_failed",
+            detail: String(error.message || error)
+          },
+          { status: 502 }
+        );
       }
     }
 
-    return response;
+    return app.fetch(request, env, ctx);
   }
 };
