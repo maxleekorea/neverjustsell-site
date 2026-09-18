@@ -23,6 +23,6 @@
   ],
   "vars": {
     "SITE_ORIGIN": "https://community.neverjustsell.com",
-    "AUTH_BRIDGE_ORIGIN": "https://neverjustsell-course-access.max-lee-korea.workers.dev"
+    "AUTH_BRIDGE_ORIGIN": "https://classroom.neverjustsell.com"
   }
 }
