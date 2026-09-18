@@ -9,6 +9,7 @@
     }
   ],
   "vars": {
-    "COMMUNITY_ALLOWED_ORIGINS": "https://neverjustsell-community.max-lee-korea.workers.dev"
+    "COMMUNITY_ALLOWED_ORIGINS": "https://neverjustsell-community.max-lee-korea.workers.dev",
+    "SITE_ORIGIN": "https://neverjustsell-site.max-lee-korea.workers.dev"
   }
 }
