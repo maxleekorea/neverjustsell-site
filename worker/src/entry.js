@@ -10,6 +10,9 @@ const CUSTOMER_TEST_KEY = "cafe24:customer-test";
 const SESSION_PREFIX = "cafe24:customer-session:";
 const SESSION_COOKIE = "njs_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const COMMUNITY_TICKET_PREFIX = "cafe24:community-ticket:";
+const COMMUNITY_TICKET_TTL_SECONDS = 120;
+const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const ACCESS_TOKEN_LIFETIME_MS = 2 * 60 * 60 * 1000;
@@ -17,13 +20,21 @@ const ACCESS_TOKEN_LIFETIME_MS = 2 * 60 * 60 * 1000;
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "application/json; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
 function html(body, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "text/html; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
   return new Response(body, { ...init, headers });
+}
+
+function redirectWithCookie(location, cookie) {
+  const headers = new Headers({ Location: location, "Cache-Control": "no-store" });
+  if (cookie) headers.set("Set-Cookie", cookie);
+  return new Response(null, { status: 302, headers });
 }
 
 function basicAuth(clientId, clientSecret) {
@@ -36,6 +47,27 @@ function configReady(env) {
       env.CAFE24_CLIENT_SECRET &&
       env.CAFE24_AUTH
   );
+}
+
+function allowedCommunityOrigins(env) {
+  const configured = String(env.COMMUNITY_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return new Set([DEFAULT_COMMUNITY_ORIGIN, ...configured]);
+}
+
+function validCommunityReturnUrl(value, env) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "https:" && url.hostname !== "localhost") return null;
+    if (!allowedCommunityOrigins(env).has(url.origin) && url.hostname !== "localhost") return null;
+    if (url.pathname !== "/auth/callback") return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 function dateDaysAgo(daysAgo = 0) {
@@ -115,6 +147,41 @@ async function deleteCustomerSession(request, env) {
   if (sessionId && env.CAFE24_AUTH) {
     await env.CAFE24_AUTH.delete(`${SESSION_PREFIX}${sessionId}`);
   }
+}
+
+async function createCommunityTicket(env, record) {
+  const ticket = crypto.randomUUID();
+  await env.CAFE24_AUTH.put(
+    `${COMMUNITY_TICKET_PREFIX}${ticket}`,
+    JSON.stringify({
+      member_id: record.member_id,
+      authenticated_at: record.authenticated_at,
+      identifier_received: Boolean(record.identifier?.user_identifier)
+    }),
+    { expirationTtl: COMMUNITY_TICKET_TTL_SECONDS }
+  );
+  return ticket;
+}
+
+async function redeemCommunityTicket(request, env) {
+  if (request.method !== "POST") {
+    return json({ ok: false, error: "method_not_allowed" }, { status: 405 });
+  }
+  const payload = await request.json().catch(() => ({}));
+  const ticket = String(payload.ticket || "").trim();
+  if (!ticket) return json({ ok: false, error: "ticket_required" }, { status: 400 });
+  const key = `${COMMUNITY_TICKET_PREFIX}${ticket}`;
+  const raw = await env.CAFE24_AUTH.get(key);
+  if (!raw) return json({ ok: false, error: "ticket_invalid_or_expired" }, { status: 401 });
+  await env.CAFE24_AUTH.delete(key);
+  const record = JSON.parse(raw);
+  if (!record?.member_id) return json({ ok: false, error: "ticket_identity_missing" }, { status: 401 });
+  return json({
+    ok: true,
+    member_id: record.member_id,
+    authenticated_at: record.authenticated_at || null,
+    identifier_received: Boolean(record.identifier_received)
+  });
 }
 
 async function exchangeCustomerCodeForToken(code, env) {
@@ -313,10 +380,13 @@ export default {
         );
       }
 
+      const returnTo = validCommunityReturnUrl(url.searchParams.get("return_to"), env);
       const state = crypto.randomUUID();
-      await env.CAFE24_AUTH.put(`${CUSTOMER_STATE_PREFIX}${state}`, "1", {
-        expirationTtl: 600
-      });
+      await env.CAFE24_AUTH.put(
+        `${CUSTOMER_STATE_PREFIX}${state}`,
+        JSON.stringify({ return_to: returnTo }),
+        { expirationTtl: 600 }
+      );
 
       const authUrl = new URL(
         `${CAFE24_CUSTOMER_DOMAIN}/api/v2/oauth/authorize`
@@ -350,6 +420,12 @@ export default {
           await env.CAFE24_AUTH.delete(customerStateKey);
 
           try {
+            let stateRecord = {};
+            try {
+              stateRecord = JSON.parse(customerState);
+            } catch {
+              stateRecord = {};
+            }
             const tokenData = await exchangeCustomerCodeForToken(code, env);
             const identifierData = await getCustomerIdentifier(tokenData.access_token);
             const record = {
@@ -378,6 +454,14 @@ export default {
               { expirationTtl: 1800 }
             );
 
+            const communityReturn = validCommunityReturnUrl(stateRecord.return_to, env);
+            if (communityReturn) {
+              const ticket = await createCommunityTicket(env, record);
+              const target = new URL(communityReturn);
+              target.searchParams.set("ticket", ticket);
+              return redirectWithCookie(target.toString(), sessionCookie(sessionId));
+            }
+
             return html(
               `<!doctype html>
 <html lang="ko">
@@ -402,6 +486,13 @@ export default {
           }
         }
       }
+    }
+
+    if (url.pathname === "/community-auth/redeem") {
+      if (!configReady(env)) {
+        return json({ ok: false, error: "cafe24_not_configured" }, { status: 503 });
+      }
+      return redeemCommunityTicket(request, env);
     }
 
     if (url.pathname === "/session/status") {
