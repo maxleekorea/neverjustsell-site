@@ -47,11 +47,9 @@ async function createSignedTicket(env, identity) {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     v: 1,
-    sub: String(identity.member_id),
-    iat: now,
-    exp: now + SIGNED_TICKET_TTL_SECONDS,
-    identifier_received: Boolean(identity.identifier_received),
-    nonce: crypto.randomUUID()
+    s: String(identity.member_id),
+    i: now,
+    e: now + SIGNED_TICKET_TTL_SECONDS
   };
   const encodedPayload = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
   const signature = await crypto.subtle.sign(
@@ -91,15 +89,15 @@ async function verifySignedTicket(env, ticket) {
   }
 
   const now = Math.floor(Date.now() / 1000);
-  if (payload?.v !== 1 || !payload?.sub || !Number.isFinite(payload?.exp)) return null;
-  if (payload.exp < now || payload.iat > now + 30) return null;
+  if (payload?.v !== 1 || !payload?.s || !Number.isFinite(payload?.e)) return null;
+  if (payload.e < now || (Number.isFinite(payload.i) && payload.i > now + 30)) return null;
 
   return {
-    member_id: String(payload.sub),
-    authenticated_at: Number.isFinite(payload.iat)
-      ? new Date(payload.iat * 1000).toISOString()
+    member_id: String(payload.s),
+    authenticated_at: Number.isFinite(payload.i)
+      ? new Date(payload.i * 1000).toISOString()
       : null,
-    identifier_received: Boolean(payload.identifier_received)
+    identifier_received: true
   };
 }
 
