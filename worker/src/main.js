@@ -1,4 +1,5 @@
 import app from "./router.js";
+import { validateCourseCatalog } from "./courses.js";
 
 const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
@@ -113,6 +114,7 @@ function htmlHeaders() {
 async function renderSystemCheck(request, env, ctx, url) {
   const session = await getSessionStatus(request, env, ctx, url.origin);
   const sessionOk = Boolean(session?.authenticated);
+  const catalogErrors = validateCourseCatalog();
 
   const freeAnonResponse = await app.fetch(
     anonymousRequest(new URL("/classroom?course=free-lesson-1", url.origin)),
@@ -193,6 +195,7 @@ async function renderSystemCheck(request, env, ctx, url) {
 
   const checks = [
     { label: "Worker", ok: true, detail: "강의 시스템 Worker가 정상 응답했습니다." },
+    { label: "강의 데이터", ok: catalogErrors.length === 0, detail: catalogErrors.length === 0 ? "등록된 강의의 상품번호·차시·Vimeo ID 형식이 정상입니다." : catalogErrors.join(" / ") },
     { label: "무료 강의 공개", ok: freeOk, detail: `로그인 정보 없는 요청에서도 무료 1강 응답 코드 ${freeAnonResponse.status}` },
     { label: "회원 세션", ok: sessionOk ? true : null, detail: sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다." },
     { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=13 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증이 차단됩니다." },
@@ -223,7 +226,7 @@ async function renderSystemCheck(request, env, ctx, url) {
 <section style="background:#151515;border:1px solid #292929;border-radius:18px;padding:28px">
 <div style="font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:9px">SYSTEM CHECK</div>
 <h1 style="font-size:clamp(27px,4vw,40px);margin:0 0 10px">강의 시스템 일괄 점검</h1>
-<p style="margin:0;color:#999;line-height:1.7">현재 세션과 익명 요청을 동시에 만들어 인증·구매·차시·직접 접근·페이지네이션·모바일·보안 헤더를 한 번에 검사합니다.</p>
+<p style="margin:0;color:#999;line-height:1.7">현재 세션과 익명 요청을 동시에 만들어 인증·구매·차시·직접 접근·페이지네이션·모바일·강의 데이터·보안 헤더를 한 번에 검사합니다.</p>
 <p style="margin:12px 0 15px;color:#ddd;font-size:13px">PASS ${passCount} · CHECK ${checkCount} · INFO ${infoCount}</p>
 ${rows}
 </section>
