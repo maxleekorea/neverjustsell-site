@@ -2,6 +2,7 @@ import runtime from "./runtime.js";
 
 const CAFE24_CUSTOMER_LOGOUT_URL =
   "https://neverjustsell.cafe24.com/exec/front/Member/logout/";
+const DEFAULT_SITE_ORIGIN = "https://neverjustsell-site.max-lee-korea.workers.dev";
 const encoder = new TextEncoder();
 
 function json(data, init = {}) {
@@ -9,6 +10,14 @@ function json(data, init = {}) {
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
   return new Response(JSON.stringify(data), { ...init, headers });
+}
+
+function siteOrigin(env) {
+  try {
+    return new URL(String(env.SITE_ORIGIN || DEFAULT_SITE_ORIGIN)).origin;
+  } catch {
+    return DEFAULT_SITE_ORIGIN;
+  }
 }
 
 function base64UrlEncode(bytes) {
@@ -63,6 +72,29 @@ async function handleCafe24LogoutSync(request, env, ctx) {
   return new Response(null, { status: 302, headers });
 }
 
+async function decorateSiteNavigation(response, env) {
+  const contentType = response.headers.get("Content-Type") || "";
+  if (!contentType.includes("text/html")) return response;
+
+  let body = await response.text();
+  const origin = siteOrigin(env);
+  const authenticatedClassroom = body.includes('href="/session/logout-sync"');
+
+  if (authenticatedClassroom) {
+    const syncedHome = `${origin}/auth/complete`;
+    body = body
+      .replaceAll('href="https://www.neverjustsell.com/">홈으로</a>', `href="${syncedHome}">홈으로</a>`)
+      .replaceAll('href="https://www.neverjustsell.com/">NEVER JUST SELL</a>', `href="${syncedHome}">NEVER JUST SELL</a>`)
+      .replaceAll('href="/session/logout-sync"', `href="${origin}/logout"`);
+  }
+
+  return new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -103,6 +135,7 @@ export default {
       }
     }
 
-    return runtime.fetch(request, env, ctx);
+    const response = await runtime.fetch(request, env, ctx);
+    return decorateSiteNavigation(response, env);
   }
 };
