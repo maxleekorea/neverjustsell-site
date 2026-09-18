@@ -70,6 +70,67 @@ async function handleBridgeHealth(request, env) {
   }
 }
 
+async function handleDbHealth(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/auth/db-health") return null;
+
+  if (!env.DB) {
+    return json({ ok: false, db_present: false, error: "db_binding_missing" }, 503);
+  }
+
+  const suffix = crypto.randomUUID().replaceAll("-", "").slice(0, 12);
+  const memberId = `__auth_selftest_${suffix}`;
+  const publicId = `selftest${suffix}`;
+  const sessionId = crypto.randomUUID();
+  const csrf = crypto.randomUUID();
+  const expires = sqliteTime(new Date(Date.now() + 5 * 60 * 1000));
+
+  let memberInserted = false;
+  let sessionInserted = false;
+  let readBack = false;
+
+  try {
+    await env.DB.prepare(
+      `INSERT INTO members(member_id,public_id,display_name) VALUES(?,?,?)`
+    ).bind(memberId, publicId, "Auth Self Test").run();
+    memberInserted = true;
+
+    await env.DB.prepare(
+      `INSERT INTO sessions(session_id,member_id,csrf_token,expires_at) VALUES(?,?,?,?)`
+    ).bind(sessionId, memberId, csrf, expires).run();
+    sessionInserted = true;
+
+    const row = await env.DB.prepare(
+      `SELECT s.session_id,m.member_id FROM sessions s JOIN members m ON m.member_id=s.member_id WHERE s.session_id=?`
+    ).bind(sessionId).first();
+    readBack = Boolean(row?.session_id === sessionId && row?.member_id === memberId);
+
+    return json({
+      ok: memberInserted && sessionInserted && readBack,
+      db_present: true,
+      member_insert: memberInserted,
+      session_insert: sessionInserted,
+      read_back: readBack
+    }, memberInserted && sessionInserted && readBack ? 200 : 503);
+  } catch (error) {
+    return json({
+      ok: false,
+      db_present: true,
+      member_insert: memberInserted,
+      session_insert: sessionInserted,
+      read_back: readBack,
+      error: String(error?.message || error)
+    }, 503);
+  } finally {
+    try {
+      await env.DB.prepare(`DELETE FROM sessions WHERE session_id=?`).bind(sessionId).run();
+    } catch {}
+    try {
+      await env.DB.prepare(`DELETE FROM members WHERE member_id=?`).bind(memberId).run();
+    } catch {}
+  }
+}
+
 async function handleBoundAuthCallback(request, env) {
   if (!env.AUTH_BRIDGE || !env.DB) return null;
 
@@ -131,6 +192,9 @@ export default {
     try {
       const healthResponse = await handleBridgeHealth(request, env);
       if (healthResponse) return healthResponse;
+
+      const dbHealthResponse = await handleDbHealth(request, env);
+      if (dbHealthResponse) return dbHealthResponse;
 
       const authResponse = await handleBoundAuthCallback(request, env);
       if (authResponse) return authResponse;
