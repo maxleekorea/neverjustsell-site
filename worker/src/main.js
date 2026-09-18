@@ -2,6 +2,7 @@ import app from "./router.js";
 
 const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+const PUBLIC_DIAGNOSTIC_PRODUCT_NOS = new Set([13]);
 
 function redirectWithCookie(location, cookie) {
   const headers = new Headers({
@@ -16,6 +17,15 @@ function internalRequest(url, request) {
   return new Request(url, {
     method: "GET",
     headers: request.headers
+  });
+}
+
+function anonymousRequest(url) {
+  return new Request(url, {
+    method: "GET",
+    headers: {
+      Accept: "text/html,application/json"
+    }
   });
 }
 
@@ -51,6 +61,8 @@ async function expireStaleClassroomSession(request, env, ctx, url) {
 async function decorateClassroomResponse(response, request, env, ctx, url) {
   const headers = new Headers(response.headers);
   headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set("Cross-Origin-Opener-Policy", "same-origin");
 
   const contentType = headers.get("Content-Type") || "";
   if (!contentType.includes("text/html")) {
@@ -84,11 +96,29 @@ function checkBadge(label, ok, detail) {
   return `<div style="display:grid;grid-template-columns:88px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid #292929"><span style="display:inline-flex;align-items:center;justify-content:center;height:28px;border-radius:999px;background:${bg};color:${fg};font-size:11px;font-weight:800;letter-spacing:.08em">${state}</span><div><strong style="display:block;font-size:15px;margin:3px 0 5px">${label}</strong><span style="color:#999;font-size:13px;line-height:1.6">${detail}</span></div></div>`;
 }
 
+function htmlHeaders() {
+  return new Headers({
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+    "X-Content-Type-Options": "nosniff",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Cross-Origin-Opener-Policy": "same-origin"
+  });
+}
+
 async function renderSystemCheck(request, env, ctx, url) {
   const session = await getSessionStatus(request, env, ctx, url.origin);
+  const sessionOk = Boolean(session?.authenticated);
 
-  const freeResponse = await app.fetch(
-    internalRequest(new URL("/classroom?course=free-lesson-1", url.origin), request),
+  const freeAnonResponse = await app.fetch(
+    anonymousRequest(new URL("/classroom?course=free-lesson-1", url.origin)),
+    env,
+    ctx
+  );
+
+  const paidAnonResponse = await app.fetch(
+    anonymousRequest(new URL("/classroom?course=paid-course", url.origin)),
     env,
     ctx
   );
@@ -100,51 +130,96 @@ async function renderSystemCheck(request, env, ctx, url) {
   );
   const access = await readJson(accessResponse);
 
-  const paidResponse = await app.fetch(
+  const paidCurrentResponse = await app.fetch(
     internalRequest(new URL("/classroom?course=paid-course", url.origin), request),
     env,
     ctx
   );
 
-  const sessionOk = Boolean(session?.authenticated);
-  const freeOk = freeResponse.status === 200;
+  const invalidCourseResponse = await app.fetch(
+    anonymousRequest(new URL("/classroom?course=__not_a_course__", url.origin)),
+    env,
+    ctx
+  );
+
+  let canceledResponse = null;
+  let canceled = null;
+  if (sessionOk) {
+    canceledResponse = await app.fetch(
+      internalRequest(new URL("/course-access?product_no=11", url.origin), request),
+      env,
+      ctx
+    );
+    canceled = await readJson(canceledResponse);
+  }
+
+  const freeOk = freeAnonResponse.status === 200;
+  const anonPaidOk = paidAnonResponse.status === 401;
   const entitlementApiOk = sessionOk
     ? Boolean(access?.ok && access?.authenticated && accessResponse.status < 500)
     : accessResponse.status === 401;
   const paidExpected = sessionOk && access?.access ? 200 : sessionOk ? 403 : 401;
-  const paidOk = paidResponse.status === paidExpected;
+  const paidCurrentOk = paidCurrentResponse.status === paidExpected;
+  const canceledOk = sessionOk
+    ? Boolean(canceledResponse?.status === 200 && canceled?.authenticated && canceled?.access === false)
+    : null;
+  const invalidCourseOk = invalidCourseResponse.status === 404;
+  const securityHeadersOk = Boolean(
+    freeAnonResponse.headers.get("Content-Security-Policy") &&
+    freeAnonResponse.headers.get("X-Frame-Options") === "DENY" &&
+    freeAnonResponse.headers.get("X-Content-Type-Options") === "nosniff"
+  );
 
-  const rows = [
-    checkBadge("Worker", true, "강의 시스템 Worker가 정상 응답했습니다."),
-    checkBadge("무료 강의", freeOk, `무료 1강 응답 코드: ${freeResponse.status}`),
-    checkBadge("회원 세션", sessionOk ? true : null, sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다."),
-    checkBadge("구매 검증 API", entitlementApiOk, sessionOk ? `product_no=13 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증이 차단됩니다."),
-    checkBadge("유료 강의 보호", paidOk, `현재 상태에서 예상 코드 ${paidExpected}, 실제 코드 ${paidResponse.status}`),
-    checkBadge("로그아웃 동기화", true, "강의실 로그아웃 → 카페24 로그아웃 경로가 연결되어 있습니다."),
-    checkBadge("검색 차단", true, "Worker 강의실에는 noindex/noarchive 헤더를 적용합니다.")
-  ].join("");
+  const checks = [
+    { label: "Worker", ok: true, detail: "강의 시스템 Worker가 정상 응답했습니다." },
+    { label: "무료 강의 공개", ok: freeOk, detail: `로그인 정보 없는 요청에서도 무료 1강 응답 코드 ${freeAnonResponse.status}` },
+    { label: "회원 세션", ok: sessionOk ? true : null, detail: sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다." },
+    { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=13 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증이 차단됩니다." },
+    { label: "현재 유료 강의", ok: paidCurrentOk, detail: `현재 세션 기준 예상 코드 ${paidExpected}, 실제 코드 ${paidCurrentResponse.status}` },
+    { label: "익명 직접 접근 차단", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 직접 접근 응답 코드 ${paidAnonResponse.status}` },
+    { label: "취소 주문 차단", ok: canceledOk, detail: sessionOk ? `과거 취소 주문 product_no=11 접근권: ${canceled?.access ? "허용됨 — 확인 필요" : "차단됨"}` : "로그인 후 실제 취소 주문 차단 여부를 자동 확인합니다." },
+    { label: "잘못된 강의 주소", ok: invalidCourseOk, detail: `존재하지 않는 강의 응답 코드 ${invalidCourseResponse.status}` },
+    { label: "보안 헤더", ok: securityHeadersOk, detail: "CSP · X-Frame-Options · nosniff 헤더를 확인했습니다." },
+    { label: "로그아웃 동기화", ok: true, detail: "강의실 로그아웃 → 카페24 로그아웃 경로가 연결되어 있습니다." },
+    { label: "검색 차단", ok: true, detail: "강의실과 점검 화면은 noindex/noarchive, robots.txt는 전체 차단입니다." }
+  ];
 
-  const headers = new Headers({
-    "Content-Type": "text/html; charset=utf-8",
-    "Cache-Control": "no-store",
-    "X-Robots-Tag": "noindex, nofollow, noarchive",
-    "X-Content-Type-Options": "nosniff"
-  });
+  const rows = checks.map((item) => checkBadge(item.label, item.ok, item.detail)).join("");
+  const passCount = checks.filter((item) => item.ok === true).length;
+  const checkCount = checks.filter((item) => item.ok === false).length;
+  const infoCount = checks.filter((item) => item.ok === null).length;
 
   return new Response(`<!doctype html>
 <html lang="ko">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>강의 시스템 점검 | NEVER JUST SELL</title></head>
 <body style="margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,'Noto Sans KR',sans-serif">
-<main style="width:min(820px,calc(100% - 32px));margin:0 auto;padding:42px 0 70px">
+<main style="width:min(860px,calc(100% - 32px));margin:0 auto;padding:42px 0 70px">
 <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px"><a href="https://www.neverjustsell.com/" style="color:#fff;text-decoration:none;font-size:13px;font-weight:800;letter-spacing:.16em">NEVER JUST SELL</a><a href="/classroom" style="color:#aaa;font-size:13px">내 강의실</a></div>
 <section style="background:#151515;border:1px solid #292929;border-radius:18px;padding:28px">
 <div style="font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:9px">SYSTEM CHECK</div>
 <h1 style="font-size:clamp(27px,4vw,40px);margin:0 0 10px">강의 시스템 일괄 점검</h1>
-<p style="margin:0 0 15px;color:#999;line-height:1.7">한 화면에서 인증, 무료 강의, 구매 검증, 유료 강의 보호, 로그아웃 연결 상태를 함께 확인합니다.</p>
+<p style="margin:0;color:#999;line-height:1.7">현재 세션과 익명 요청을 동시에 만들어 인증·구매·취소·직접 접근·보안 헤더를 한 번에 검사합니다.</p>
+<p style="margin:12px 0 15px;color:#ddd;font-size:13px">PASS ${passCount} · CHECK ${checkCount} · INFO ${infoCount}</p>
 ${rows}
 </section>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="/classroom?course=free-lesson-1" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">무료 1강 열기</a><a href="/classroom?course=paid-course" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">유료 강의 열기</a><a href="/session/logout-sync" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">통합 로그아웃 테스트</a></div>
-</main></body></html>`, { headers });
+</main></body></html>`, { headers: htmlHeaders() });
+}
+
+function blockedDiagnosticResponse() {
+  return new Response(JSON.stringify({
+    ok: false,
+    access: false,
+    error: "unknown_course_product"
+  }), {
+    status: 404,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
 }
 
 export default {
@@ -182,12 +257,30 @@ export default {
       return renderSystemCheck(request, env, ctx, url);
     }
 
+    if (url.pathname === "/course-access") {
+      const productNo = Number(url.searchParams.get("product_no"));
+      if (!PUBLIC_DIAGNOSTIC_PRODUCT_NOS.has(productNo)) {
+        return blockedDiagnosticResponse();
+      }
+    }
+
     const staleSessionRedirect = await expireStaleClassroomSession(request, env, ctx, url);
     if (staleSessionRedirect) return staleSessionRedirect;
 
     const response = await app.fetch(request, env, ctx);
     if (url.pathname === "/classroom") {
       return decorateClassroomResponse(response, request, env, ctx, url);
+    }
+
+    if (url.pathname === "/course-access") {
+      const headers = new Headers(response.headers);
+      headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+      headers.set("X-Content-Type-Options", "nosniff");
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers
+      });
     }
 
     return response;
