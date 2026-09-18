@@ -1,12 +1,14 @@
 import app from "./main.js";
 
 const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
-const CAFE24_REDIRECT_URI =
+const DEFAULT_CAFE24_REDIRECT_URI =
   "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const SESSION_PREFIX = "cafe24:customer-session:";
 const SESSION_COOKIE = "njs_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
+const SITE_DISPLAY_COOKIE = "njs_site_authenticated";
+const SITE_DISPLAY_TTL_SECONDS = 60 * 60 * 24 * 30;
 const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const SIGNED_TICKET_PREFIX = "v1";
 const SIGNED_TICKET_TTL_SECONDS = 120;
@@ -20,14 +22,24 @@ function json(data, init = {}) {
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
-function redirectWithCookie(location, cookie) {
+function redirectWithCookies(location, cookies = []) {
   const headers = new Headers({ Location: location, "Cache-Control": "no-store" });
-  if (cookie) headers.set("Set-Cookie", cookie);
+  for (const cookie of cookies.filter(Boolean)) headers.append("Set-Cookie", cookie);
   return new Response(null, { status: 302, headers });
 }
 
 function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
+}
+
+function cafe24RedirectUri(env) {
+  try {
+    const url = new URL(String(env.CAFE24_REDIRECT_URI || DEFAULT_CAFE24_REDIRECT_URI));
+    if (url.protocol !== "https:") return DEFAULT_CAFE24_REDIRECT_URI;
+    return url.toString();
+  } catch {
+    return DEFAULT_CAFE24_REDIRECT_URI;
+  }
 }
 
 function allowedCommunityOrigins(env) {
@@ -53,6 +65,20 @@ function validCommunityReturnUrl(value, env) {
 
 function sessionCookie(sessionId) {
   return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function siteCookieDomain(env) {
+  const value = String(env.SITE_COOKIE_DOMAIN || "").trim().toLowerCase();
+  if (value === ".neverjustsell.com" || value === "neverjustsell.com") {
+    return ".neverjustsell.com";
+  }
+  return null;
+}
+
+function siteDisplayCookie(env) {
+  const domain = siteCookieDomain(env);
+  if (!domain) return null;
+  return `${SITE_DISPLAY_COOKIE}=1; Domain=${domain}; Path=/; Max-Age=${SITE_DISPLAY_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 function base64UrlEncode(bytes) {
@@ -154,7 +180,7 @@ async function exchangeCustomerCodeForToken(code, env) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: CAFE24_REDIRECT_URI
+      redirect_uri: cafe24RedirectUri(env)
     }).toString()
   });
 
@@ -228,17 +254,18 @@ async function handleCustomerCallback(request, env) {
     { expirationTtl: SESSION_TTL_SECONDS }
   );
 
+  const cookies = [sessionCookie(sessionId), siteDisplayCookie(env)];
   const communityReturn = validCommunityReturnUrl(stateRecord.return_to, env);
   if (communityReturn) {
     const ticket = await createSignedTicket(env, record.member_id);
     const target = new URL(communityReturn);
     target.searchParams.set("ticket", ticket);
-    return redirectWithCookie(target.toString(), sessionCookie(sessionId));
+    return redirectWithCookies(target.toString(), cookies);
   }
 
-  return redirectWithCookie(
+  return redirectWithCookies(
     new URL("/classroom", request.url).toString(),
-    sessionCookie(sessionId)
+    cookies
   );
 }
 
