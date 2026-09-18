@@ -13,17 +13,38 @@ function sqliteTime(date) {
   return date.toISOString().slice(0, 19).replace("T", " ");
 }
 
+function parseCookies(request) {
+  const header = request.headers.get("Cookie") || "";
+  const result = {};
+  for (const part of header.split(";")) {
+    const index = part.indexOf("=");
+    if (index < 1) continue;
+    const key = part.slice(0, index).trim();
+    const value = part.slice(index + 1).trim();
+    try {
+      result[key] = decodeURIComponent(value);
+    } catch {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 function sessionCookie(id) {
   return `${SESSION_COOKIE}=${encodeURIComponent(id)}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
 }
 
-function redirect(location, cookie) {
+function expiredSessionCookie() {
+  return `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
+}
+
+function redirect(location, cookie, status = 303) {
   const headers = new Headers({
     Location: location,
     "Cache-Control": "no-store"
   });
   if (cookie) headers.set("Set-Cookie", cookie);
-  return new Response(null, { status: 303, headers });
+  return new Response(null, { status, headers });
 }
 
 function json(data, status = 200) {
@@ -35,6 +56,25 @@ function json(data, status = 200) {
       "X-Robots-Tag": "noindex, nofollow, noarchive"
     }
   });
+}
+
+async function handleFullLogout(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/logout") return null;
+
+  const sessionId = parseCookies(request)[SESSION_COOKIE];
+  if (sessionId && env.DB) {
+    await env.DB.prepare(`DELETE FROM sessions WHERE session_id=?`).bind(sessionId).run();
+  }
+
+  const authOrigin = String(
+    env.AUTH_BRIDGE_ORIGIN ||
+      "https://neverjustsell-course-access.max-lee-korea.workers.dev"
+  ).replace(/\/$/, "");
+  const target = new URL(`${authOrigin}/session/logout/redirect`);
+  target.searchParams.set("return_to", `${url.origin}/`);
+
+  return redirect(target.toString(), expiredSessionCookie(), 302);
 }
 
 async function handleBridgeHealth(request, env) {
@@ -190,6 +230,9 @@ async function handleBoundAuthCallback(request, env) {
 export default {
   async fetch(request, env, ctx) {
     try {
+      const logoutResponse = await handleFullLogout(request, env);
+      if (logoutResponse) return logoutResponse;
+
       const healthResponse = await handleBridgeHealth(request, env);
       if (healthResponse) return healthResponse;
 
@@ -199,7 +242,7 @@ export default {
       const authResponse = await handleBoundAuthCallback(request, env);
       if (authResponse) return authResponse;
     } catch (error) {
-      console.error("community service-bound auth callback failed", error);
+      console.error("community auth wrapper failed", error);
       return new Response(
         "회원 인증 처리 중 오류가 발생했습니다. 커뮤니티 첫 화면에서 다시 로그인해 주세요.",
         {
