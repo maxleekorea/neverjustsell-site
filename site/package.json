@@ -2,6 +2,7 @@
   "name": "neverjustsell-site",
   "private": true,
   "scripts": {
+    "test": "node test.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
