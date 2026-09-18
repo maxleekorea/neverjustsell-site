@@ -2,7 +2,6 @@ import app from "./router.js";
 
 const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
-const PUBLIC_DIAGNOSTIC_PRODUCT_NOS = new Set([13]);
 
 function redirectWithCookie(location, cookie) {
   const headers = new Headers({
@@ -31,6 +30,10 @@ function anonymousRequest(url) {
 
 async function readJson(response) {
   return response.clone().json().catch(() => null);
+}
+
+async function readText(response) {
+  return response.clone().text().catch(() => "");
 }
 
 async function getSessionStatus(request, env, ctx, origin) {
@@ -116,6 +119,7 @@ async function renderSystemCheck(request, env, ctx, url) {
     env,
     ctx
   );
+  const freeBody = await readText(freeAnonResponse);
 
   const paidAnonResponse = await app.fetch(
     anonymousRequest(new URL("/classroom?course=paid-course", url.origin)),
@@ -136,22 +140,35 @@ async function renderSystemCheck(request, env, ctx, url) {
     ctx
   );
 
+  const paidLesson1Response = await app.fetch(
+    internalRequest(new URL("/classroom?course=paid-course&lesson=1", url.origin), request),
+    env,
+    ctx
+  );
+  const paidLesson2Response = await app.fetch(
+    internalRequest(new URL("/classroom?course=paid-course&lesson=2", url.origin), request),
+    env,
+    ctx
+  );
+
   const invalidCourseResponse = await app.fetch(
     anonymousRequest(new URL("/classroom?course=__not_a_course__", url.origin)),
     env,
     ctx
   );
 
-  let canceledResponse = null;
-  let canceled = null;
-  if (sessionOk) {
-    canceledResponse = await app.fetch(
-      internalRequest(new URL("/course-access?product_no=11", url.origin), request),
-      env,
-      ctx
-    );
-    canceled = await readJson(canceledResponse);
-  }
+  const invalidLessonResponse = await app.fetch(
+    anonymousRequest(new URL("/classroom?course=free-lesson-1&lesson=999", url.origin)),
+    env,
+    ctx
+  );
+
+  const unknownProductResponse = await app.fetch(
+    internalRequest(new URL("/course-access?product_no=999999", url.origin), request),
+    env,
+    ctx
+  );
+  const unknownProduct = await readJson(unknownProductResponse);
 
   const freeOk = freeAnonResponse.status === 200;
   const anonPaidOk = paidAnonResponse.status === 401;
@@ -160,10 +177,14 @@ async function renderSystemCheck(request, env, ctx, url) {
     : accessResponse.status === 401;
   const paidExpected = sessionOk && access?.access ? 200 : sessionOk ? 403 : 401;
   const paidCurrentOk = paidCurrentResponse.status === paidExpected;
-  const canceledOk = sessionOk
-    ? Boolean(canceledResponse?.status === 200 && canceled?.authenticated && canceled?.access === false)
-    : null;
+  const lessonRoutesOk = paidLesson1Response.status === paidExpected && paidLesson2Response.status === paidExpected;
   const invalidCourseOk = invalidCourseResponse.status === 404;
+  const invalidLessonOk = invalidLessonResponse.status === 404;
+  const unknownProductOk = unknownProductResponse.status === 404 && unknownProduct?.error === "unknown_course_product";
+  const paginationOk = sessionOk
+    ? access?.pagination?.limit === 1000 && access?.pagination?.max_offset === 15000
+    : null;
+  const mobileLayoutOk = freeBody.includes("viewport-fit=cover") && freeBody.includes("aspect-ratio:16/9");
   const securityHeadersOk = Boolean(
     freeAnonResponse.headers.get("Content-Security-Policy") &&
     freeAnonResponse.headers.get("X-Frame-Options") === "DENY" &&
@@ -176,9 +197,13 @@ async function renderSystemCheck(request, env, ctx, url) {
     { label: "회원 세션", ok: sessionOk ? true : null, detail: sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다." },
     { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=13 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증이 차단됩니다." },
     { label: "현재 유료 강의", ok: paidCurrentOk, detail: `현재 세션 기준 예상 코드 ${paidExpected}, 실제 코드 ${paidCurrentResponse.status}` },
+    { label: "1강·2강 라우팅", ok: lessonRoutesOk, detail: `1강 ${paidLesson1Response.status} · 2강 ${paidLesson2Response.status} · 예상 ${paidExpected}` },
     { label: "익명 직접 접근 차단", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 직접 접근 응답 코드 ${paidAnonResponse.status}` },
-    { label: "취소 주문 차단", ok: canceledOk, detail: sessionOk ? `과거 취소 주문 product_no=11 접근권: ${canceled?.access ? "허용됨 — 확인 필요" : "차단됨"}` : "로그인 후 실제 취소 주문 차단 여부를 자동 확인합니다." },
+    { label: "등록되지 않은 상품 차단", ok: unknownProductOk, detail: `임의 product_no 요청 응답 코드 ${unknownProductResponse.status}` },
     { label: "잘못된 강의 주소", ok: invalidCourseOk, detail: `존재하지 않는 강의 응답 코드 ${invalidCourseResponse.status}` },
+    { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` },
+    { label: "대량 주문 페이지네이션", ok: paginationOk, detail: sessionOk ? `주문 조회 limit ${access?.pagination?.limit}, max offset ${access?.pagination?.max_offset}` : "로그인 후 주문 페이지네이션 설정을 자동 확인합니다." },
+    { label: "모바일 플레이어 구조", ok: mobileLayoutOk, detail: "viewport-fit과 16:9 반응형 플레이어 구조를 확인했습니다." },
     { label: "보안 헤더", ok: securityHeadersOk, detail: "CSP · X-Frame-Options · nosniff 헤더를 확인했습니다." },
     { label: "로그아웃 동기화", ok: true, detail: "강의실 로그아웃 → 카페24 로그아웃 경로가 연결되어 있습니다." },
     { label: "검색 차단", ok: true, detail: "강의실과 점검 화면은 noindex/noarchive, robots.txt는 전체 차단입니다." }
@@ -198,28 +223,12 @@ async function renderSystemCheck(request, env, ctx, url) {
 <section style="background:#151515;border:1px solid #292929;border-radius:18px;padding:28px">
 <div style="font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:9px">SYSTEM CHECK</div>
 <h1 style="font-size:clamp(27px,4vw,40px);margin:0 0 10px">강의 시스템 일괄 점검</h1>
-<p style="margin:0;color:#999;line-height:1.7">현재 세션과 익명 요청을 동시에 만들어 인증·구매·취소·직접 접근·보안 헤더를 한 번에 검사합니다.</p>
+<p style="margin:0;color:#999;line-height:1.7">현재 세션과 익명 요청을 동시에 만들어 인증·구매·차시·직접 접근·페이지네이션·모바일·보안 헤더를 한 번에 검사합니다.</p>
 <p style="margin:12px 0 15px;color:#ddd;font-size:13px">PASS ${passCount} · CHECK ${checkCount} · INFO ${infoCount}</p>
 ${rows}
 </section>
 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="/classroom?course=free-lesson-1" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">무료 1강 열기</a><a href="/classroom?course=paid-course" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">유료 강의 열기</a><a href="/session/logout-sync" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">통합 로그아웃 테스트</a></div>
 </main></body></html>`, { headers: htmlHeaders() });
-}
-
-function blockedDiagnosticResponse() {
-  return new Response(JSON.stringify({
-    ok: false,
-    access: false,
-    error: "unknown_course_product"
-  }), {
-    status: 404,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Robots-Tag": "noindex, nofollow, noarchive",
-      "X-Content-Type-Options": "nosniff"
-    }
-  });
 }
 
 export default {
@@ -255,13 +264,6 @@ export default {
 
     if (url.pathname === "/system-check") {
       return renderSystemCheck(request, env, ctx, url);
-    }
-
-    if (url.pathname === "/course-access") {
-      const productNo = Number(url.searchParams.get("product_no"));
-      if (!PUBLIC_DIAGNOSTIC_PRODUCT_NOS.has(productNo)) {
-        return blockedDiagnosticResponse();
-      }
     }
 
     const staleSessionRedirect = await expireStaleClassroomSession(request, env, ctx, url);
