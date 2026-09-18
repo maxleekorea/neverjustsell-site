@@ -3,6 +3,7 @@ import app from "./index.js";
 const DEFAULT_AUTH_ORIGIN = "https://neverjustsell-course-access.max-lee-korea.workers.dev";
 const SITE_LOGIN_COOKIE = "njs_site_authenticated";
 const SITE_LOGIN_TTL_SECONDS = 60 * 60 * 24 * 30;
+const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
 
 function cleanOrigin(value, fallback) {
   try {
@@ -48,6 +49,13 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const authOrigin = cleanOrigin(env.AUTH_ORIGIN, DEFAULT_AUTH_ORIGIN);
+
+    // Production uses www as the single canonical public origin. The preview
+    // workers.dev hostname is intentionally left untouched during migration.
+    if (url.hostname === "neverjustsell.com") {
+      const target = new URL(`${url.pathname}${url.search}`, CANONICAL_SITE_ORIGIN);
+      return Response.redirect(target.toString(), 308);
+    }
 
     if (url.pathname === "/login") {
       const target = new URL("/site-login", authOrigin);
