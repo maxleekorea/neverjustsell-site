@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "neverjustsell-course-access",
-  "main": "src/router.js",
+  "main": "src/main.js",
   "compatibility_date": "2026-09-16",
   "kv_namespaces": [
     {
