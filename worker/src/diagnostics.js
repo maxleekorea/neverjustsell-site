@@ -1,5 +1,7 @@
 import runtime from "./runtime.js";
 
+const CAFE24_CUSTOMER_LOGOUT_URL =
+  "https://neverjustsell.cafe24.com/exec/front/Member/logout/";
 const encoder = new TextEncoder();
 
 function json(data, init = {}) {
@@ -41,17 +43,38 @@ async function makeSelfTestTicket(env) {
   return `v1.${encodedPayload}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
+async function handleCafe24LogoutSync(request, env, ctx) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/session/logout-sync") return null;
+
+  const localLogoutRequest = new Request(new URL("/session/logout", request.url), {
+    method: "GET",
+    headers: request.headers
+  });
+  const localLogoutResponse = await runtime.fetch(localLogoutRequest, env, ctx);
+
+  const headers = new Headers({
+    Location: CAFE24_CUSTOMER_LOGOUT_URL,
+    "Cache-Control": "no-store"
+  });
+  const authCookie = localLogoutResponse.headers.get("Set-Cookie");
+  if (authCookie) headers.append("Set-Cookie", authCookie);
+
+  return new Response(null, { status: 302, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Community logout used to add an external returnUrl directly to Cafe24's
-    // storefront logout endpoint. That path can interfere with the next OAuth
-    // authorization request. Reuse the already-tested logout-sync route instead:
-    // it clears the Worker session first and then performs Cafe24 storefront logout.
+    // Community logout arrives here first. Keep the existing internal hop, then
+    // terminate the Cafe24 browser session on the exact customer host used by OAuth.
     if (url.pathname === "/session/logout/redirect") {
       return Response.redirect(new URL("/session/logout-sync", request.url).toString(), 302);
     }
+
+    const logoutResponse = await handleCafe24LogoutSync(request, env, ctx);
+    if (logoutResponse) return logoutResponse;
 
     if (url.pathname === "/community-auth/health") {
       try {
