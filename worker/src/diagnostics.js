@@ -3,6 +3,7 @@ import runtime from "./runtime.js";
 const CAFE24_CUSTOMER_LOGOUT_URL =
   "https://neverjustsell.cafe24.com/exec/front/Member/logout/";
 const DEFAULT_SITE_ORIGIN = "https://neverjustsell-site.max-lee-korea.workers.dev";
+const SITE_DISPLAY_COOKIE = "njs_site_authenticated";
 const encoder = new TextEncoder();
 
 function json(data, init = {}) {
@@ -18,6 +19,20 @@ function siteOrigin(env) {
   } catch {
     return DEFAULT_SITE_ORIGIN;
   }
+}
+
+function siteCookieDomain(env) {
+  const value = String(env.SITE_COOKIE_DOMAIN || "").trim().toLowerCase();
+  if (value === ".neverjustsell.com" || value === "neverjustsell.com") {
+    return ".neverjustsell.com";
+  }
+  return null;
+}
+
+function expiredSiteDisplayCookie(env) {
+  const domain = siteCookieDomain(env);
+  if (!domain) return null;
+  return `${SITE_DISPLAY_COOKIE}=; Domain=${domain}; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
 function base64UrlEncode(bytes) {
@@ -68,6 +83,8 @@ async function handleCafe24LogoutSync(request, env, ctx) {
   });
   const authCookie = localLogoutResponse.headers.get("Set-Cookie");
   if (authCookie) headers.append("Set-Cookie", authCookie);
+  const displayCookie = expiredSiteDisplayCookie(env);
+  if (displayCookie) headers.append("Set-Cookie", displayCookie);
 
   return new Response(null, { status: 302, headers });
 }
@@ -99,8 +116,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Community logout arrives here first. Keep the existing internal hop, then
-    // terminate the Cafe24 browser session on the exact customer host used by OAuth.
     if (url.pathname === "/session/logout/redirect") {
       return Response.redirect(new URL("/session/logout-sync", request.url).toString(), 302);
     }
