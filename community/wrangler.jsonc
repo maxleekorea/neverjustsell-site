@@ -15,6 +15,12 @@
       "database_id": "c12fc8da-0de7-4ca0-92e9-1fd2cf358f15"
     }
   ],
+  "services": [
+    {
+      "binding": "AUTH_BRIDGE",
+      "service": "neverjustsell-course-access"
+    }
+  ],
   "vars": {
     "SITE_ORIGIN": "https://neverjustsell-community.max-lee-korea.workers.dev",
     "AUTH_BRIDGE_ORIGIN": "https://neverjustsell-course-access.max-lee-korea.workers.dev"
