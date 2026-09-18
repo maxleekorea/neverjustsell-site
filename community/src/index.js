@@ -26,6 +26,50 @@ function redirect(location, cookie) {
   return new Response(null, { status: 303, headers });
 }
 
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow, noarchive"
+    }
+  });
+}
+
+async function handleBridgeHealth(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/auth/bridge-health") return null;
+
+  if (!env.AUTH_BRIDGE) {
+    return json({ ok: false, binding_present: false, error: "auth_bridge_binding_missing" }, 503);
+  }
+
+  try {
+    const response = await env.AUTH_BRIDGE.fetch(
+      new Request(
+        "https://neverjustsell-course-access.max-lee-korea.workers.dev/community-auth/health",
+        { method: "GET" }
+      )
+    );
+    const payload = await response.json().catch(() => null);
+    return json({
+      ok: response.ok && payload?.ok === true,
+      binding_present: true,
+      upstream_status: response.status,
+      upstream_runtime: payload?.runtime || null,
+      upstream_ok: payload?.ok === true,
+      upstream_error: payload?.error || payload?.redeem_error || null
+    }, response.ok && payload?.ok === true ? 200 : 503);
+  } catch (error) {
+    return json({
+      ok: false,
+      binding_present: true,
+      error: String(error?.message || error)
+    }, 503);
+  }
+}
+
 async function handleBoundAuthCallback(request, env) {
   if (!env.AUTH_BRIDGE || !env.DB) return null;
 
@@ -85,6 +129,9 @@ async function handleBoundAuthCallback(request, env) {
 export default {
   async fetch(request, env, ctx) {
     try {
+      const healthResponse = await handleBridgeHealth(request, env);
+      if (healthResponse) return healthResponse;
+
       const authResponse = await handleBoundAuthCallback(request, env);
       if (authResponse) return authResponse;
     } catch (error) {
