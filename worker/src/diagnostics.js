@@ -1,5 +1,7 @@
 import runtime from "./runtime.js";
 
+const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
+const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const encoder = new TextEncoder();
 
 function json(data, init = {}) {
@@ -7,6 +9,26 @@ function json(data, init = {}) {
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
   return new Response(JSON.stringify(data), { ...init, headers });
+}
+
+function allowedCommunityOrigins(env) {
+  const configured = String(env.COMMUNITY_ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return new Set([DEFAULT_COMMUNITY_ORIGIN, ...configured]);
+}
+
+function validCommunityReturn(value, env) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "https:") return null;
+    if (!allowedCommunityOrigins(env).has(url.origin)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
 }
 
 function base64UrlEncode(bytes) {
@@ -41,9 +63,39 @@ async function makeSelfTestTicket(env) {
   return `v1.${encodedPayload}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
+async function handleFullLogout(request, env, ctx) {
+  const url = new URL(request.url);
+  if (url.pathname !== "/session/logout/redirect") return null;
+
+  const returnTo =
+    validCommunityReturn(url.searchParams.get("return_to"), env) ||
+    `${DEFAULT_COMMUNITY_ORIGIN}/`;
+
+  const localLogoutRequest = new Request(new URL("/session/logout", request.url), {
+    method: "GET",
+    headers: request.headers
+  });
+  const localLogoutResponse = await runtime.fetch(localLogoutRequest, env, ctx);
+
+  const cafe24Logout = new URL(`${CAFE24_CUSTOMER_DOMAIN}/exec/front/Member/logout/`);
+  cafe24Logout.searchParams.set("returnUrl", returnTo);
+
+  const headers = new Headers({
+    Location: cafe24Logout.toString(),
+    "Cache-Control": "no-store"
+  });
+  const authCookie = localLogoutResponse.headers.get("Set-Cookie");
+  if (authCookie) headers.append("Set-Cookie", authCookie);
+
+  return new Response(null, { status: 302, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    const logoutResponse = await handleFullLogout(request, env, ctx);
+    if (logoutResponse) return logoutResponse;
 
     if (url.pathname === "/community-auth/health") {
       try {
