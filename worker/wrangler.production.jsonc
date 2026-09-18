@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "neverjustsell-course-access",
+  "main": "src/unified.js",
+  "compatibility_date": "2026-09-16",
+  "routes": [
+    {
+      "pattern": "classroom.neverjustsell.com",
+      "custom_domain": true
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "CAFE24_AUTH"
+    }
+  ],
+  "vars": {
+    "SITE_ORIGIN": "https://www.neverjustsell.com",
+    "SITE_COOKIE_DOMAIN": ".neverjustsell.com",
+    "CAFE24_REDIRECT_URI": "https://classroom.neverjustsell.com/oauth/cafe24/callback",
+    "COMMUNITY_ALLOWED_ORIGINS": "https://community.neverjustsell.com,https://neverjustsell-community.max-lee-korea.workers.dev"
+  }
+}
