@@ -9,7 +9,7 @@
     "run_worker_first": true
   },
   "vars": {
-    "SITE_ORIGIN": "https://neverjustsell.com",
+    "SITE_ORIGIN": "https://www.neverjustsell.com",
     "AUTH_ORIGIN": "https://neverjustsell-course-access.max-lee-korea.workers.dev",
     "COMMUNITY_ORIGIN": "https://neverjustsell-community.max-lee-korea.workers.dev",
     "SHOP_ORIGIN": "https://neverjustsell.cafe24.com"
