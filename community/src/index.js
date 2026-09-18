@@ -1,3 +1,4 @@
+// Dedicated Cloudflare Worker entry for the NEVER JUST SELL community.
 import { onRequest } from "../functions/[[path]].js";
 
 export default {
