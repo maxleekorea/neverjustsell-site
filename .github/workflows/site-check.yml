@@ -1,0 +1,26 @@
+name: Unified site checks
+
+on:
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/workflows/site-check.yml"
+  push:
+    branches:
+      - site-unification
+    paths:
+      - "site/**"
+      - ".github/workflows/site-check.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
