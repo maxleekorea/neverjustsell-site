@@ -1,5 +1,7 @@
 import app from "./router.js";
 
+const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
+
 function redirectWithCookie(location, cookie) {
   const headers = new Headers({
     Location: location,
@@ -22,6 +24,16 @@ export default {
       }
 
       return response;
+    }
+
+    if (url.pathname === "/session/logout-sync") {
+      const logoutRequest = new Request(new URL("/session/logout", url.origin), {
+        method: "GET",
+        headers: request.headers
+      });
+      const response = await app.fetch(logoutRequest, env, ctx);
+      const setCookie = response.headers.get("Set-Cookie") || "";
+      return redirectWithCookie(CAFE24_LOGOUT_URL, setCookie);
     }
 
     return app.fetch(request, env, ctx);
