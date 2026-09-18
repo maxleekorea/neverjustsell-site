@@ -5,6 +5,17 @@
   const oauthReturnAtKey = 'njs:cafe24-customer-oauth-return-at';
   const pageParams = new URLSearchParams(location.search);
   const loginReturnUrl = pageParams.get('returnUrl');
+  const workerBaseUrl = 'https://neverjustsell-course-access.max-lee-korea.workers.dev';
+  const classroomUrl = `${workerBaseUrl}/classroom`;
+  const freeLessonUrl = `${classroomUrl}?course=free-lesson-1`;
+  const syncLogoutUrl = `${workerBaseUrl}/session/logout-sync`;
+
+  const syncCafe24LogoutLinks = () => {
+    document.querySelectorAll('a[href*="/exec/front/Member/logout/"]').forEach((link) => {
+      link.href = syncLogoutUrl;
+      link.removeAttribute('onclick');
+    });
+  };
 
   // Cafe24's stock member-login skin can send a successful login to /index.html
   // instead of preserving the OAuth returnUrl. Keep only our Cafe24 OAuth return
@@ -45,10 +56,14 @@
   }
 
   document.documentElement.classList.add('njs-ready');
-  if (!isHome) return;
-
-  const classroomUrl = 'https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom';
-  const freeLessonUrl = `${classroomUrl}?course=free-lesson-1`;
+  if (!isHome) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', syncCafe24LogoutLinks);
+    } else {
+      syncCafe24LogoutLinks();
+    }
+    return;
+  }
 
   const media = {
     profile: 'https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png',
@@ -102,6 +117,12 @@
     }
 
     if (document.querySelector('#njs-home')) return;
+
+    const cafe24LoggedIn = Boolean(
+      document.querySelector('a[href*="/exec/front/Member/logout/"]')
+    );
+    syncCafe24LogoutLinks();
+
     [...mount.children].forEach((el) => el.classList.add('njs-original-home'));
 
     const root = document.createElement('div');
@@ -124,7 +145,9 @@
             <a href="/board/index.html">커뮤니티</a>
           </nav>
           <div class="njs-utility">
-            <a href="/member/login.html">로그인</a>
+            ${cafe24LoggedIn
+              ? `<a href="${syncLogoutUrl}">로그아웃</a>`
+              : `<a href="/member/login.html">로그인</a>`}
             <a href="${classroomUrl}">내 강의실</a>
             <a href="/order/basket.html">장바구니</a>
           </div>
