@@ -1,0 +1,9 @@
+{
+  "zone": "neverjustsell.com",
+  "domains": {
+    "neverjustsell.com": "neverjustsell-site",
+    "www.neverjustsell.com": "neverjustsell-site",
+    "classroom.neverjustsell.com": "neverjustsell-course-access",
+    "community.neverjustsell.com": "neverjustsell-community"
+  }
+}
