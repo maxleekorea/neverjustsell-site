@@ -128,7 +128,7 @@ function nav(session) {
   const auth = session
     ? `<span class="member-name">${esc(session.display_name)}</span><a href="/write">글쓰기</a><a href="/settings/profile">프로필</a><a href="/logout">로그아웃</a>`
     : `<a href="/login">로그인</a>`;
-  return `<header class="site-header"><div class="shell header-inner"><a class="brand" href="/">NEVER JUST SELL <span>COMMUNITY</span></a><nav><a href="/">전체 글</a><a href="/c/online-selling">온라인 판매</a><a href="/c/case-study">경험·사례</a><a href="/c/reading-action">읽고 실행</a>${auth}</nav></div></header>`;
+  return `<header class="site-header"><div class="shell header-inner"><a class="brand" href="/">NEVER JUST SELL <span>COMMUNITY</span></a><nav><a href="https://www.neverjustsell.com/">홈</a><a href="https://classroom.neverjustsell.com/classroom">내 강의실</a><a href="/">전체 글</a><a href="/c/online-selling">온라인 판매</a><a href="/c/case-study">경험·사례</a><a href="/c/reading-action">읽고 실행</a>${auth}</nav></div></header>`;
 }
 
 function styles() {
