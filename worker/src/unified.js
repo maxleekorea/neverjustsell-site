@@ -188,6 +188,25 @@ async function finishAuthorization(request, env) {
   const url = new URL(request.url);
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
+  const oauthError = url.searchParams.get("error");
+  const oauthErrorDescription =
+    url.searchParams.get("error_description") ||
+    url.searchParams.get("error_message") ||
+    url.searchParams.get("message");
+
+  if (oauthError) {
+    return json(
+      {
+        ok: false,
+        error: "cafe24_authorization_denied",
+        oauth_error: oauthError,
+        detail: oauthErrorDescription || null,
+        state_received: Boolean(state)
+      },
+      { status: 400 }
+    );
+  }
+
   if (!state || !code || !env.CAFE24_AUTH) return null;
 
   const [customerRaw, adminRaw] = await Promise.all([
