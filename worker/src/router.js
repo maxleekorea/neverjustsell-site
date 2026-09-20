@@ -1,4 +1,4 @@
-import app from "./entry.js";
+import app from "./session-orders.js";
 import {
   COURSE_CATALOG,
   findPaidCourseByProductNo,
