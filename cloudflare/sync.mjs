@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 
 const API_BASE = "https://api.cloudflare.com/client/v4";
 const token = process.env.CLOUDFLARE_API_TOKEN;
-const configuredAccountId = process.env.CLOUDFLARE_ACCOUNT_ID || "";
 const mode = (process.argv[2] || "plan").toLowerCase();
 const apply = mode === "apply";
 
@@ -41,17 +40,12 @@ const zoneLookup = await cf(`/zones?name=${encodeURIComponent(desired.zone)}&sta
 const zone = zoneLookup.result?.find((item) => item.name === desired.zone);
 if (!zone) throw new Error(`Active Cloudflare zone not found: ${desired.zone}`);
 
-const accountId = zone.account?.id || configuredAccountId;
+const accountId = zone.account?.id;
 if (!accountId) {
-  throw new Error("Could not derive Cloudflare account ID from the zone and CLOUDFLARE_ACCOUNT_ID is not set");
-}
-
-if (configuredAccountId && configuredAccountId !== accountId) {
-  console.warn("Configured CLOUDFLARE_ACCOUNT_ID does not match the zone owner; using the zone account ID instead.");
+  throw new Error("Could not derive Cloudflare account ID from the active zone");
 }
 
 console.log(`Zone: ${zone.name} (${zone.id})`);
-console.log(`Account: ${accountId}`);
 console.log(`Mode: ${apply ? "apply" : "plan"}`);
 
 async function listWorkerDomains() {
