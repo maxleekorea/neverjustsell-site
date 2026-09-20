@@ -1,4 +1,4 @@
-const DEFAULT_SITE_ORIGIN = "https://neverjustsell.com";
+const DEFAULT_SITE_ORIGIN = "https://www.neverjustsell.com";
 const DEFAULT_AUTH_ORIGIN = "https://classroom.neverjustsell.com";
 const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const DEFAULT_SHOP_ORIGIN = "https://neverjustsell.cafe24.com";
