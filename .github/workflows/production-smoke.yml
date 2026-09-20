@@ -11,6 +11,17 @@ on:
       - "docs/ARCHITECTURE_STABILIZATION.md"
       - "docs/USER_ACCESS_MODEL.md"
       - ".github/workflows/production-smoke.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "site/**"
+      - "worker/**"
+      - "community/**"
+      - "tests/**"
+      - "docs/ARCHITECTURE_STABILIZATION.md"
+      - "docs/USER_ACCESS_MODEL.md"
+      - ".github/workflows/production-smoke.yml"
 
 jobs:
   smoke:
