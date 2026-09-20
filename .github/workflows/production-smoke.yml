@@ -44,3 +44,5 @@ jobs:
           npx wrangler deploy --dry-run --config wrangler.production.jsonc
       - name: Verify current production routes
         run: node tests/live-smoke.mjs
+      - name: Crawl launch public site
+        run: node tests/public-site-crawl.mjs
