@@ -310,7 +310,7 @@ async function finishAuthorization(request, env) {
     return redirectWithCookies(target.toString(), cookies);
   }
 
-  return redirectWithCookies(new URL("/classroom", request.url).toString(), cookies);
+  return redirectWithCookies("https://classroom.neverjustsell.com/classroom", cookies);
 }
 
 async function hardenedAdminStatus(request, env, ctx) {
