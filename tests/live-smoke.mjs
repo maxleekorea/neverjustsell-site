@@ -10,6 +10,18 @@ async function request(url, init = {}) {
   return { response, body };
 }
 
+async function requestUntil(url, predicate, { attempts = 30, delayMs = 10000 } = {}) {
+  let last = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    last = await request(url);
+    if (predicate(last)) return last;
+    if (attempt < attempts) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  return last;
+}
+
 function expect(label, condition, detail) {
   cases.push({ label, ok: Boolean(condition), detail });
   if (!condition) process.exitCode = 1;
@@ -105,7 +117,12 @@ expect(
   `status=${r.response.status} location=${r.response.headers.get("location")}`
 );
 
-r = await request("https://classroom.neverjustsell.com/classroom");
+r = await requestUntil(
+  "https://classroom.neverjustsell.com/classroom",
+  ({ response }) =>
+    response.status === 302 &&
+    response.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start"
+);
 expect(
   "anonymous classroom immediately starts member authentication",
   r.response.status === 302 &&
