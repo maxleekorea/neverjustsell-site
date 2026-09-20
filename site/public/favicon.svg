@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Never Just Sell">
+  <rect width="64" height="64" rx="14" fill="#241714"/>
+  <path d="M14 39c0-12 8-22 18-22s18 10 18 22c0 6-4 10-10 10H24c-6 0-10-4-10-10Z" fill="#4c2600"/>
+  <ellipse cx="32" cy="27" rx="10" ry="5" fill="#fff"/>
+</svg>
