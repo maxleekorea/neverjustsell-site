@@ -1,38 +1,16 @@
 import runtime from "./runtime.js";
+import { COMMERCE_ORIGIN } from "./config.js";
 
 const CAFE24_CUSTOMER_LOGOUT_URL =
-  "https://neverjustsell.cafe24.com/exec/front/Member/logout/";
-const DEFAULT_SITE_ORIGIN = "https://neverjustsell-site.max-lee-korea.workers.dev";
-const SITE_DISPLAY_COOKIE = "njs_site_authenticated";
+  `${COMMERCE_ORIGIN}/exec/front/Member/logout/`;
 const encoder = new TextEncoder();
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store");
+  headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   return new Response(JSON.stringify(data), { ...init, headers });
-}
-
-function siteOrigin(env) {
-  try {
-    return new URL(String(env.SITE_ORIGIN || DEFAULT_SITE_ORIGIN)).origin;
-  } catch {
-    return DEFAULT_SITE_ORIGIN;
-  }
-}
-
-function siteCookieDomain(env) {
-  const value = String(env.SITE_COOKIE_DOMAIN || "").trim().toLowerCase();
-  if (value === ".neverjustsell.com" || value === "neverjustsell.com") {
-    return ".neverjustsell.com";
-  }
-  return null;
-}
-
-function expiredSiteDisplayCookie(env) {
-  const domain = siteCookieDomain(env);
-  if (!domain) return null;
-  return `${SITE_DISPLAY_COOKIE}=; Domain=${domain}; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
 function base64UrlEncode(bytes) {
@@ -68,9 +46,6 @@ async function makeSelfTestTicket(env) {
 }
 
 async function handleCafe24LogoutSync(request, env, ctx) {
-  const url = new URL(request.url);
-  if (url.pathname !== "/session/logout-sync") return null;
-
   const localLogoutRequest = new Request(new URL("/session/logout", request.url), {
     method: "GET",
     headers: request.headers
@@ -83,33 +58,8 @@ async function handleCafe24LogoutSync(request, env, ctx) {
   });
   const authCookie = localLogoutResponse.headers.get("Set-Cookie");
   if (authCookie) headers.append("Set-Cookie", authCookie);
-  const displayCookie = expiredSiteDisplayCookie(env);
-  if (displayCookie) headers.append("Set-Cookie", displayCookie);
 
   return new Response(null, { status: 302, headers });
-}
-
-async function decorateSiteNavigation(response, env) {
-  const contentType = response.headers.get("Content-Type") || "";
-  if (!contentType.includes("text/html")) return response;
-
-  let body = await response.text();
-  const origin = siteOrigin(env);
-  const authenticatedClassroom = body.includes('href="/session/logout-sync"');
-
-  if (authenticatedClassroom) {
-    const syncedHome = `${origin}/auth/complete`;
-    body = body
-      .replaceAll('href="https://www.neverjustsell.com/">홈으로</a>', `href="${syncedHome}">홈으로</a>`)
-      .replaceAll('href="https://www.neverjustsell.com/">NEVER JUST SELL</a>', `href="${syncedHome}">NEVER JUST SELL</a>`)
-      .replaceAll('href="/session/logout-sync"', `href="${origin}/logout"`);
-  }
-
-  return new Response(body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: response.headers
-  });
 }
 
 export default {
@@ -120,8 +70,9 @@ export default {
       return Response.redirect(new URL("/session/logout-sync", request.url).toString(), 302);
     }
 
-    const logoutResponse = await handleCafe24LogoutSync(request, env, ctx);
-    if (logoutResponse) return logoutResponse;
+    if (url.pathname === "/session/logout-sync") {
+      return handleCafe24LogoutSync(request, env, ctx);
+    }
 
     if (url.pathname === "/community-auth/health") {
       try {
@@ -135,7 +86,7 @@ export default {
         const body = await redeemResponse.clone().json().catch(() => null);
         return json({
           ok: redeemResponse.ok && body?.ok === true && body?.member_id === "self-test",
-          runtime: "community-auth-direct-ticket-v2",
+          runtime: "community-auth-signed-ticket-v3",
           secret_present: Boolean(env.CAFE24_CLIENT_SECRET),
           redeem_status: redeemResponse.status,
           redeem_error: body?.error || null
@@ -143,14 +94,13 @@ export default {
       } catch (error) {
         return json({
           ok: false,
-          runtime: "community-auth-direct-ticket-v2",
+          runtime: "community-auth-signed-ticket-v3",
           secret_present: Boolean(env.CAFE24_CLIENT_SECRET),
           error: String(error?.message || error)
         }, { status: 503 });
       }
     }
 
-    const response = await runtime.fetch(request, env, ctx);
-    return decorateSiteNavigation(response, env);
+    return json({ ok: false, error: "diagnostic_route_not_found" }, { status: 404 });
   }
 };
