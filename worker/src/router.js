@@ -79,14 +79,8 @@ function classroomShell(title, content) {
 </html>`;
 }
 
-function renderLoginRequired(title) {
-  return html(
-    classroomShell(
-      title,
-      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start">회원 인증하기</a></section>`
-    ),
-    { status: 401 }
-  );
+function redirectToCustomerAuth() {
+  return Response.redirect(`${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start`, 302);
 }
 
 function renderClassroomError(title = "내 강의실") {
@@ -159,7 +153,7 @@ function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = nul
 
 async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return renderLoginRequired("내 강의실");
+  if (!session?.record?.member_id) return redirectToCustomerAuth();
 
   const paidCourses = getVisiblePaidCourses();
   const access = await getAccessiblePaidProductNos(
@@ -215,7 +209,7 @@ async function renderClassroom(request, env, url) {
 
   const result = await getCourseAccessDecision(request, env, course.productNo);
   if (result.status >= 500) return renderClassroomError(course.title);
-  if (!result.body.authenticated) return renderLoginRequired(course.title);
+  if (!result.body.authenticated) return redirectToCustomerAuth();
 
   if (!result.body.access) {
     return html(

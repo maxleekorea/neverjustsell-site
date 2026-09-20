@@ -56,10 +56,11 @@ body = await r.json();
 assert(r.status === 401 && body.error === "invalid_or_expired_state", "OAuth callback must have one state owner");
 
 r = await get("https://classroom.neverjustsell.com/classroom");
-const classroom = await r.text();
-assert(r.status === 401, "anonymous classroom must require authentication");
-assert(classroom.includes("https://classroom.neverjustsell.com/oauth/cafe24/customer/start"), "classroom auth link must be canonical");
-assert(!classroom.includes("invalid_community_return_to"), "classroom must not use community validation");
+assert(r.status === 302, "anonymous classroom must immediately start authentication");
+assert(
+  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
+  "anonymous classroom must not add a redundant verification screen"
+);
 
 r = await get("https://classroom.neverjustsell.com/session/status");
 body = await r.json();
