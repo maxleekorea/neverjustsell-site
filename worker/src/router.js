@@ -159,7 +159,7 @@ function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = nul
 
 async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.member_id) return renderLoginRequired("내 강의실");
+  if (!session?.record?.member_id) return renderLoginRequired("내 강의실");
 
   const paidCourses = getVisiblePaidCourses();
   const access = await getAccessiblePaidProductNos(
