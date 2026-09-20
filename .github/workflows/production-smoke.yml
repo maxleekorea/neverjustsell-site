@@ -1,0 +1,22 @@
+name: Production cross-domain smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "site/**"
+      - "worker/**"
+      - "community/**"
+      - "tests/live-smoke.mjs"
+      - "docs/ARCHITECTURE_STABILIZATION.md"
+      - ".github/workflows/production-smoke.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tests/live-smoke.mjs
