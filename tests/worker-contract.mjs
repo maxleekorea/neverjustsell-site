@@ -56,6 +56,11 @@ r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start")
 assert(r.status === 302, "generic classroom auth must start without community return_to");
 assert((r.headers.get("location") || "").startsWith("https://neverjustsell.cafe24.com/api/v2/oauth/authorize"), "generic auth must go to Cafe24");
 
+r = await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?error=access_denied&error_description=scope%20not%20approved&state=test");
+body = await r.json();
+assert(r.status === 400 && body.error === "cafe24_authorization_denied", "Cafe24 authorization errors must not be mislabeled as expired state");
+assert(body.oauth_error === "access_denied" && body.detail === "scope not approved", "Cafe24 OAuth error detail must be preserved");
+
 r = await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?state=unknown&code=test");
 body = await r.json();
 assert(r.status === 401 && body.error === "invalid_or_expired_state", "OAuth callback must have one state owner");
