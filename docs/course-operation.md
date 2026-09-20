@@ -36,15 +36,13 @@ Cafe24 product_no: 20
 
 ## 3. Vimeo 원칙
 
-모든 유료 영상은 Vimeo 임베드 허용 도메인에 다음 도메인을 포함한다.
+모든 유료 영상은 Vimeo 임베드 허용 도메인에 실제 플레이어가 렌더링되는 다음 도메인을 포함한다.
 
 ```text
-neverjustsell-course-access.max-lee-korea.workers.dev
-neverjustsell.com
-www.neverjustsell.com
+classroom.neverjustsell.com
 ```
 
-현재 강의실이 Worker 도메인에서 제공되므로 Worker 도메인은 제거하지 않는다.
+운영 UI에서 `*.workers.dev` 주소는 사용하지 않는다. 기존 Worker 주소는 호환용 리디렉션만 담당한다. 공개 사이트에 영상을 직접 임베드하는 기능을 추가할 때만 `www.neverjustsell.com`을 Vimeo 허용 도메인에 추가한다.
 
 영상 다운로드는 비활성화한다.
 
@@ -89,7 +87,7 @@ www.neverjustsell.com
 강의 등록 또는 수정 후 아래 주소 하나만 확인한다.
 
 ```text
-https://neverjustsell-course-access.max-lee-korea.workers.dev/system-check
+https://classroom.neverjustsell.com/system-check
 ```
 
 `CHECK 0`이면 기본 인증·구매 검증·직접 접근 차단·보안 설정은 정상으로 본다.
@@ -103,3 +101,35 @@ https://neverjustsell-course-access.max-lee-korea.workers.dev/system-check
 - 강의 추가 시 Worker 인증 로직을 수정하지 않는다. `courses.js`의 데이터만 추가하는 것을 기본으로 한다.
 - 상품번호나 Vimeo ID가 잘못되면 시스템 점검에서 잡히도록 유지한다.
 - 수강권 로직 변경은 실제 주문 상태 테스트를 함께 수행한다.
+
+
+## 8. 현재 운영 상태 — 2026-09-20
+
+인증·구매권한·강의실·Vimeo 재생의 기본 E2E 검증은 완료됐다.
+
+검증된 사용자 흐름:
+
+```text
+www.neverjustsell.com
+→ 내 강의실
+→ 세션이 없으면 Cafe24 로그인/동의
+→ 로그인 성공
+→ 강의실 세션 생성
+→ 중간 인증 화면 없이 내 강의실
+→ 구매 강의만 표시
+→ 권한이 있는 차시만 Vimeo 재생
+```
+
+현재 `product_no=13`의 **유료 강의 테스트**는 권한 검증용 fixture다. 실제 강의를 출시할 때는 새 상품을 실제 강의로 등록하고 전체 차시를 연결한 뒤 판매를 활성화한다. 인증 로직을 다시 설계하지 않는다.
+
+실제 강의 전환 순서는 다음과 같다.
+
+1. Cafe24에 실제 강의 상품 생성
+2. 배송이 필요 없는 상품으로 설정
+3. 실제 `product_no` 확정
+4. Vimeo 전체 차시 업로드 및 `classroom.neverjustsell.com` 임베드 허용
+5. `courses.js`에 실제 강의명·소개·차시명·Vimeo ID 등록
+6. `salesEnabled: true`와 실제 판매 URL 연결
+7. 테스트 구매 → 내 강의실 표시 → 첫 차시/마지막 차시 재생 확인
+8. 취소·환불 후 접근 차단 확인
+9. 검증 완료 후 테스트 강의 fixture를 운영 화면에서 제거
