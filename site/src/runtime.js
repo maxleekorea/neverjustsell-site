@@ -1,6 +1,6 @@
 import app from "./index.js";
 
-const DEFAULT_AUTH_ORIGIN = "https://neverjustsell-course-access.max-lee-korea.workers.dev";
+const DEFAULT_AUTH_ORIGIN = "https://classroom.neverjustsell.com";
 const SITE_LOGIN_COOKIE = "njs_site_authenticated";
 const SITE_LOGIN_TTL_SECONDS = 60 * 60 * 24 * 30;
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
