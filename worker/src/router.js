@@ -4,6 +4,7 @@ import {
   findPaidCourseByProductNo,
   getVisiblePaidCourses
 } from "./courses.js";
+import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN } from "./config.js";
 
 const CAFE24_ADMIN_DOMAIN = "https://neverjustsell.cafe24api.com";
 const SESSION_PREFIX = "cafe24:customer-session:";
@@ -394,7 +395,7 @@ function classroomShell(title, content) {
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
-<body><main class="wrap"><div class="top"><a class="brand" href="https://www.neverjustsell.com/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈</a><a class="home" href="https://community.neverjustsell.com/">커뮤니티</a></span></div>${content}</main></body>
+<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a></span></div>${content}</main></body>
 </html>`;
 }
 
@@ -402,7 +403,7 @@ function renderLoginRequired(title) {
   return html(
     classroomShell(
       title,
-      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="https://classroom.neverjustsell.com/oauth/cafe24/customer/start">회원 인증하기</a></section>`
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start">회원 인증하기</a></section>`
     ),
     { status: 401 }
   );
@@ -471,7 +472,7 @@ function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = nul
   return html(
     classroomShell(
       course.title,
-      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${lessonTitle}${lessonNavigation}${player}<a class="action secondary" href="${course.accessType === "paid" ? "/classroom" : "https://www.neverjustsell.com/"}">${course.accessType === "paid" ? "내 강의실로" : "홈으로"}</a></section>`
+      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${lessonTitle}${lessonNavigation}${player}<a class="action secondary" href="${course.accessType === "paid" ? "/classroom" : "${SITE_ORIGIN}/"}">${course.accessType === "paid" ? "내 강의실로" : "홈으로"}</a></section>`
     )
   );
 }
@@ -493,7 +494,7 @@ async function renderClassroomHome(request, env) {
     return html(
       classroomShell(
         "내 강의실",
-        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">현재 수강 가능한 강의가 없습니다. 결제가 완료된 강의는 이곳에 자동으로 표시됩니다.</p><a class="action" href="https://www.neverjustsell.com/">강의 둘러보기</a></section>`
+        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">현재 수강 가능한 강의가 없습니다. 결제가 완료된 강의는 이곳에 자동으로 표시됩니다.</p><a class="action" href="${SITE_ORIGIN}/">강의 둘러보기</a></section>`
       )
     );
   }
@@ -540,7 +541,7 @@ async function renderClassroom(request, env, url) {
     return html(
       classroomShell(
         course.title,
-        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a><a class="action secondary" href="https://www.neverjustsell.com/">강의 둘러보기</a></section>`
+        `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a><a class="action secondary" href="${SITE_ORIGIN}/">강의 둘러보기</a></section>`
       ),
       { status: 403 }
     );
