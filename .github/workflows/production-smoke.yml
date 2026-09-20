@@ -7,8 +7,9 @@ on:
       - "site/**"
       - "worker/**"
       - "community/**"
-      - "tests/live-smoke.mjs"
+      - "tests/**"
       - "docs/ARCHITECTURE_STABILIZATION.md"
+      - "docs/USER_ACCESS_MODEL.md"
       - ".github/workflows/production-smoke.yml"
 
 jobs:
@@ -19,4 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node tests/live-smoke.mjs
+      - name: Verify local architecture contracts
+        run: node tests/site-contract.mjs
+      - name: Verify current production routes
+        run: node tests/live-smoke.mjs
