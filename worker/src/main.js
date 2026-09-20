@@ -1,7 +1,6 @@
 import app from "./router.js";
 import { validateCourseCatalog } from "./courses.js";
 
-const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 function redirectWithCookie(location, cookie) {
@@ -245,24 +244,6 @@ export default {
           "Cache-Control": "public, max-age=3600"
         }
       });
-    }
-
-    if (url.pathname === "/oauth/cafe24/callback") {
-      const response = await app.fetch(request, env, ctx);
-      const setCookie = response.headers.get("Set-Cookie") || "";
-
-      if (response.ok && setCookie.includes("njs_session=")) {
-        return redirectWithCookie(new URL("/classroom", url.origin).toString(), setCookie);
-      }
-
-      return response;
-    }
-
-    if (url.pathname === "/session/logout-sync") {
-      const logoutRequest = internalRequest(new URL("/session/logout", url.origin), request);
-      const response = await app.fetch(logoutRequest, env, ctx);
-      const setCookie = response.headers.get("Set-Cookie") || "";
-      return redirectWithCookie(CAFE24_LOGOUT_URL, setCookie);
     }
 
     if (url.pathname === "/system-check") {
