@@ -2,7 +2,7 @@ import authApp from "./unified.js";
 import diagnosticsApp from "./diagnostics.js";
 import ticketApp from "./runtime.js";
 import classroomApp from "./main.js";
-import sessionOrdersApp from "./entry.js";
+import sessionOrdersApp from "./session-orders.js";
 import baseApp from "./index.js";
 import {
   CLASSROOM_ORIGIN,
