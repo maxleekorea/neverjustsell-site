@@ -472,7 +472,7 @@ function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = nul
   return html(
     classroomShell(
       course.title,
-      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${lessonTitle}${lessonNavigation}${player}<a class="action secondary" href="${course.accessType === "paid" ? "/classroom" : "${SITE_ORIGIN}/"}">${course.accessType === "paid" ? "내 강의실로" : "홈으로"}</a></section>`
+      `<section class="card"><div class="eyebrow">${escapeHtml(label)}</div><h1 class="title">${escapeHtml(course.title)}</h1>${lessonTitle}${lessonNavigation}${player}<a class="action secondary" href="${course.accessType === "paid" ? "/classroom" : `${SITE_ORIGIN}/`}">${course.accessType === "paid" ? "내 강의실로" : "홈으로"}</a></section>`
     )
   );
 }
