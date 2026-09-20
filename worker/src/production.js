@@ -10,6 +10,8 @@ const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const ADMIN_STATE_PREFIX = "cafe24:admin-oauth-state:";
 const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
+const CLASSROOM_ORIGIN = "https://classroom.neverjustsell.com";
+const LEGACY_WORKER_HOST = "neverjustsell-course-access.max-lee-korea.workers.dev";
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -153,7 +155,16 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (
+      url.hostname === LEGACY_WORKER_HOST &&
+      ["/classroom", "/course-access", "/site-login", "/oauth/cafe24/customer/start"].includes(url.pathname)
+    ) {
+      return Response.redirect(`${CLASSROOM_ORIGIN}${url.pathname}${url.search}`, 302);
+    }
+
     if (url.pathname === "/oauth/cafe24/customer/start") {
+      const rawReturnTo = url.searchParams.get("return_to");
+      if (!rawReturnTo) return app.fetch(request, env, ctx);
       return startCommunityLogin(request, env);
     }
 
