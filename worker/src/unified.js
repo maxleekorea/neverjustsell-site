@@ -1,4 +1,4 @@
-import app from "./diagnostics.js";
+import app from "./index.js";
 import {
   CLASSROOM_ORIGIN,
   COMMERCE_ORIGIN as CAFE24_CUSTOMER_DOMAIN,
