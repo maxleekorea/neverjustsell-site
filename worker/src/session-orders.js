@@ -76,7 +76,7 @@ function expiredSessionCookie() {
   return `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`;
 }
 
-async function getCustomerSession(request, env) {
+export async function getCustomerSession(request, env) {
   if (!env.CAFE24_AUTH) return null;
   const sessionId = parseCookies(request)[SESSION_COOKIE];
   if (!sessionId) return null;
@@ -148,7 +148,7 @@ async function fetchAdminGet(apiUrl, accessToken) {
   return { response, payload };
 }
 
-async function cafe24AdminGet(path, env, params = {}) {
+export async function cafe24AdminGet(path, env, params = {}) {
   let token = await getAdminToken(env);
   const apiUrl = new URL(`${CAFE24_ADMIN_ORIGIN}/api/v2/admin${path}`);
 
@@ -182,7 +182,7 @@ async function cafe24AdminGet(path, env, params = {}) {
   return result.payload;
 }
 
-async function getOrderSummaryForMember(memberId, env) {
+export async function getOrderSummaryForMember(memberId, env) {
   const startDate = dateDaysAgo(89);
   const endDate = dateDaysAgo(0);
   const payload = await cafe24AdminGet("/orders", env, {
