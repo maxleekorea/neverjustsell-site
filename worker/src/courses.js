@@ -20,6 +20,7 @@ export const COURSE_CATALOG = {
     visible: true,
     sortOrder: 10,
     salesEnabled: false,
+    systemCheck: true,
     salesUrl: "https://www.neverjustsell.com/product/detail.html?product_no=13",
     lessons: [
       { id: "lesson-1", title: "테스트 영상 1", vimeoId: "1227604364" },
@@ -54,9 +55,14 @@ export function findPaidCourseByProductNo(productNo) {
   return getPaidCourses().find(([, course]) => Number(course.productNo) === Number(productNo)) || null;
 }
 
+export function getSystemCheckPaidCourse() {
+  return getPaidCourses().find(([, course]) => course.systemCheck === true) || null;
+}
+
 export function validateCourseCatalog() {
   const errors = [];
   const paidProductNos = new Set();
+  let systemCheckPaidCourses = 0;
 
   for (const [slug, course] of Object.entries(COURSE_CATALOG)) {
     if (!slug || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
@@ -73,6 +79,15 @@ export function validateCourseCatalog() {
 
     if (course?.accessType === "paid") {
       const productNo = Number(course.productNo);
+      if (course.systemCheck === true) {
+        systemCheckPaidCourses += 1;
+        if (course.salesEnabled === true) {
+          errors.push(`${slug}: system-check course must not be salesEnabled`);
+        }
+      }
+      if (course.salesEnabled === true && !course.salesUrl) {
+        errors.push(`${slug}: salesEnabled course requires salesUrl`);
+      }
       if (!Number.isInteger(productNo) || productNo <= 0) {
         errors.push(`${slug}: paid course requires a valid productNo`);
       } else if (paidProductNos.has(productNo)) {
@@ -107,6 +122,10 @@ export function validateCourseCatalog() {
         errors.push(`${label}: Vimeo ID must be numeric`);
       }
     });
+  }
+
+  if (systemCheckPaidCourses !== 1) {
+    errors.push(`catalog: exactly one paid system-check course is required (found ${systemCheckPaidCourses})`);
   }
 
   return errors;
