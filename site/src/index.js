@@ -1,6 +1,6 @@
 const DEFAULT_SITE_ORIGIN = "https://neverjustsell.com";
-const DEFAULT_AUTH_ORIGIN = "https://neverjustsell-course-access.max-lee-korea.workers.dev";
-const DEFAULT_COMMUNITY_ORIGIN = "https://neverjustsell-community.max-lee-korea.workers.dev";
+const DEFAULT_AUTH_ORIGIN = "https://classroom.neverjustsell.com";
+const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 const DEFAULT_SHOP_ORIGIN = "https://neverjustsell.cafe24.com";
 
 const media = {
