@@ -31,5 +31,9 @@ for(const url of [
   "https://neverjustsell.com/",
   "https://neverjustsell.com/auth/complete",
   "https://classroom.neverjustsell.com/classroom",
-  "https://community.neverjustsell.com/"
+  "https://classroom.neverjustsell.com/migration-health",
+  "https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete",
+  "https://community.neverjustsell.com/",
+  "https://community.neverjustsell.com/auth/bridge-health",
+  "https://www.neverjustsell.com/login"
 ]) await probe(url);
