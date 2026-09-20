@@ -16,8 +16,7 @@
   ],
   "vars": {
     "SITE_ORIGIN": "https://www.neverjustsell.com",
-    "SITE_COOKIE_DOMAIN": ".neverjustsell.com",
     "CAFE24_REDIRECT_URI": "https://classroom.neverjustsell.com/oauth/cafe24/callback",
-    "COMMUNITY_ALLOWED_ORIGINS": "https://community.neverjustsell.com,https://neverjustsell-community.max-lee-korea.workers.dev"
+    "COMMUNITY_ALLOWED_ORIGINS": "https://community.neverjustsell.com"
   }
 }
