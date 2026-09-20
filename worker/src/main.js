@@ -1,5 +1,6 @@
 import app from "./router.js";
 import { validateCourseCatalog } from "./courses.js";
+import { SITE_ORIGIN, COMMUNITY_ORIGIN } from "./config.js";
 
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
@@ -80,8 +81,8 @@ async function decorateClassroomResponse(response, request, env, ctx, url) {
   const status = await getSessionStatus(request, env, ctx, url.origin);
 
   if (status?.authenticated) {
-    const currentTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈</a><a class="home" href="https://community.neverjustsell.com/">커뮤니티</a></span></div>';
-    const enhancedTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈</a><a class="home" href="https://community.neverjustsell.com/">커뮤니티</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>';
+    const currentTop = `<span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a></span></div>`;
+    const enhancedTop = `<span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>`;
     body = body.replace(currentTop, enhancedTop);
   }
 
