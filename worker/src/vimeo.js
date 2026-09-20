@@ -103,8 +103,18 @@ export default {
     const url = new URL(request.url);
 
     if (!tokenReady(env)) {
+      const vimeoBindings = Object.keys(env || {})
+        .filter((key) => String(key).toUpperCase().includes("VIMEO"))
+        .sort();
+
       return json(
-        { ok: false, connected: false, error: "vimeo_token_missing" },
+        {
+          ok: false,
+          connected: false,
+          error: "vimeo_token_missing",
+          expected_binding: "VIMEO_ACCESS_TOKEN",
+          detected_vimeo_bindings: vimeoBindings
+        },
         { status: 503 }
       );
     }
