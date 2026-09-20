@@ -73,4 +73,52 @@ r = await get("https://classroom.neverjustsell.com/community-auth/redeem", {
 body = await r.json();
 assert(r.status === 401 && body.error === "ticket_invalid_or_expired", "community ticket verifier must reject malformed ticket");
 
+// Regression: getCustomerSession() returns { sessionId, record }.
+// The classroom home must read member_id from session.record rather than
+// treating the wrapper object itself as the customer record.
+await env.CAFE24_AUTH.put(
+  "cafe24:customer-session:test-session",
+  JSON.stringify({
+    member_id: "member-1",
+    identifier: { user_identifier: "identifier-1", shop_no: 1 },
+    shop_no: 1,
+    scopes: ["mall.read_customer_identifier"],
+    authenticated_at: new Date().toISOString()
+  })
+);
+await env.CAFE24_AUTH.put(
+  "cafe24:admin-token",
+  JSON.stringify({
+    access_token: "admin-access-token",
+    refresh_token: "admin-refresh-token",
+    expires_at: "2099-01-01T00:00:00+09:00",
+    scopes: ["mall.read_product", "mall.read_order"]
+  })
+);
+
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async () =>
+  new Response(JSON.stringify({ orders: [] }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  });
+
+try {
+  r = await get("https://classroom.neverjustsell.com/session/status", {
+    headers: { Cookie: "njs_session=test-session" }
+  });
+  body = await r.json();
+  assert(r.status === 200 && body.authenticated === true, "stored classroom session must be recognized");
+
+  r = await get("https://classroom.neverjustsell.com/classroom", {
+    headers: { Cookie: "njs_session=test-session" }
+  });
+  const authenticatedClassroom = await r.text();
+  assert(r.status === 200, "authenticated classroom home must not return login-required 401");
+  assert(!authenticatedClassroom.includes("회원 인증이 필요합니다."), "authenticated classroom home must not loop back to member verification");
+  assert(authenticatedClassroom.includes("현재 수강 가능한 강의가 없습니다."), "authenticated no-purchase member must reach classroom home state");
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
 console.log("PASS: worker route ownership and auth boundary contract");
