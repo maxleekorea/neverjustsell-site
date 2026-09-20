@@ -4,6 +4,7 @@ import ticketApp from "./runtime.js";
 import classroomApp from "./main.js";
 import sessionOrdersApp from "./session-orders.js";
 import baseApp from "./index.js";
+import vimeoApp from "./vimeo.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -51,6 +52,11 @@ const SESSION_ORDER_ROUTES = new Set([
   "/cafe24/member-orders-test"
 ]);
 
+const VIMEO_ROUTES = new Set([
+  "/vimeo/status",
+  "/vimeo/course-candidates"
+]);
+
 const BASE_ROUTES = new Set([
   "/",
   "/health",
@@ -90,6 +96,10 @@ export default {
 
     if (SESSION_ORDER_ROUTES.has(url.pathname)) {
       return sessionOrdersApp.fetch(request, env, ctx);
+    }
+
+    if (VIMEO_ROUTES.has(url.pathname)) {
+      return vimeoApp.fetch(request, env, ctx);
     }
 
     if (url.pathname === "/migration-health") {

@@ -32,7 +32,12 @@ r = await get("https://classroom.neverjustsell.com/migration-health");
 let body = await r.json();
 assert(r.status === 200 && body.route_owner === "production-dispatch-v2", "production dispatcher health missing");
 assert(body.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/callback", "callback must be canonical");
+assert(body.admin_scopes.includes("mall.write_product"), "Cafe24 product write scope must be requested");
 
+
+r = await get("https://classroom.neverjustsell.com/vimeo/status");
+body = await r.json();
+assert(r.status === 503 && body.error === "vimeo_token_missing", "Vimeo route must fail closed without a token");
 
 r = await get("https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete");
 body = await r.json();

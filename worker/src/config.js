@@ -7,7 +7,7 @@ export const CAFE24_ADMIN_ORIGIN = "https://neverjustsell.cafe24api.com";
 export const LEGACY_CLASSROOM_HOST = "neverjustsell-course-access.max-lee-korea.workers.dev";
 
 export const CAFE24_CUSTOMER_SCOPE = "mall.read_customer_identifier";
-export const CAFE24_ADMIN_SCOPES = ["mall.read_product", "mall.read_order"];
+export const CAFE24_ADMIN_SCOPES = ["mall.read_product", "mall.write_product", "mall.read_order"];
 
 export function cafe24RedirectUri(env) {
   const fallback = `${CLASSROOM_ORIGIN}/oauth/cafe24/callback`;
