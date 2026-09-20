@@ -39,6 +39,8 @@ assert(body.admin_scopes.includes("mall.write_order"), "Cafe24 order write scope
 r = await get("https://classroom.neverjustsell.com/vimeo/status");
 body = await r.json();
 assert(r.status === 503 && body.error === "vimeo_token_missing", "Vimeo route must fail closed without a token");
+assert(body.expected_binding === "VIMEO_ACCESS_TOKEN", "Vimeo diagnostic must report the expected binding name");
+assert(Array.isArray(body.detected_vimeo_bindings), "Vimeo diagnostic must report detected Vimeo binding names");
 
 r = await get("https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete");
 body = await r.json();
