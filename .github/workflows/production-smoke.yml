@@ -43,6 +43,8 @@ jobs:
           npm install --no-audit --no-fund
           npx wrangler deploy --dry-run --config wrangler.production.jsonc
       - name: Verify current production routes
+        if: github.event_name != 'pull_request'
         run: node tests/live-smoke.mjs
       - name: Crawl launch public site
+        if: github.event_name != 'pull_request'
         run: node tests/public-site-crawl.mjs
