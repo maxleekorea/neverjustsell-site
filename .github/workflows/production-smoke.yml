@@ -24,5 +24,7 @@ jobs:
         run: node tests/site-contract.mjs
       - name: Verify auth and route ownership contract
         run: node tests/worker-contract.mjs
+      - name: Verify purchase and entitlement contract
+        run: node tests/access-contract.mjs
       - name: Verify current production routes
         run: node tests/live-smoke.mjs
