@@ -33,6 +33,12 @@ let body = await r.json();
 assert(r.status === 200 && body.route_owner === "production-dispatch-v2", "production dispatcher health missing");
 assert(body.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/callback", "callback must be canonical");
 
+
+r = await get("https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete");
+body = await r.json();
+assert(r.status === 404 && body.error === "not_found", "auth worker must not own public-site login state");
+
+
 r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to=https%3A%2F%2Fevil.example%2Fauth%2Fcallback");
 body = await r.json();
 assert(r.status === 400 && body.error === "invalid_community_return_to", "invalid community return_to must be rejected");
