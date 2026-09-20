@@ -79,3 +79,19 @@ The course/auth Worker currently has multiple wrapper layers (`production.js`, `
 - tests cover every cross-domain transition.
 
 Until that consolidation is complete, any authentication change must update tests before production deployment.
+
+
+## User and access model
+
+The stabilization user/access contract is defined in `docs/USER_ACCESS_MODEL.md`.
+
+Key invariants:
+- P30 is modular by business capability.
+- public site does not own customer authentication state.
+- a person is not assigned one mutually-exclusive “user type”.
+- purchase history, digital entitlements, community membership, and administrative/creator roles are separate facts.
+- Cafe24 member identity is an external identity for P30, not a permanent P90 platform user ID.
+- physical-goods purchases do not need digital entitlements.
+- future creator/tenant functionality remains P90 scope until a second real creator is onboarded.
+
+Before changing these boundaries, benchmark an existing comparable implementation and update the contract tests first.
