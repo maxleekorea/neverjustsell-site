@@ -22,16 +22,33 @@ expect(
   `status=${r.response.status}`
 );
 
-r = await request("https://www.neverjustsell.com/health");
-let launchHealth = JSON.parse(r.body || "{}");
+let launchHealth = null;
+let launchHealthStatus = null;
+for (let attempt = 1; attempt <= 30; attempt += 1) {
+  r = await request("https://www.neverjustsell.com/health");
+  launchHealthStatus = r.response.status;
+  if (r.response.status === 200) {
+    try {
+      const candidate = JSON.parse(r.body || "{}");
+      if (
+        candidate.ok === true &&
+        candidate.canonical_origin === "https://www.neverjustsell.com" &&
+        candidate.classroom_origin === "https://classroom.neverjustsell.com" &&
+        candidate.community_origin === "https://community.neverjustsell.com"
+      ) {
+        launchHealth = candidate;
+        break;
+      }
+    } catch {
+      // Cloudflare may still be serving the prior deployment during cutover.
+    }
+  }
+  if (attempt < 30) await new Promise((resolve) => setTimeout(resolve, 10000));
+}
 expect(
   "public-site health reports canonical launch services",
-  r.response.status === 200 &&
-    launchHealth.ok === true &&
-    launchHealth.canonical_origin === "https://www.neverjustsell.com" &&
-    launchHealth.classroom_origin === "https://classroom.neverjustsell.com" &&
-    launchHealth.community_origin === "https://community.neverjustsell.com",
-  `status=${r.response.status} canonical=${launchHealth.canonical_origin}`
+  Boolean(launchHealth),
+  `status=${launchHealthStatus} canonical=${launchHealth?.canonical_origin || "not-ready"}`
 );
 
 r = await request("https://www.neverjustsell.com/book");
