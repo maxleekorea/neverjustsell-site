@@ -81,8 +81,8 @@ async function decorateClassroomResponse(response, request, env, ctx, url) {
   const status = await getSessionStatus(request, env, ctx, url.origin);
 
   if (status?.authenticated) {
-    const currentTop = '<a class="home" href="https://www.neverjustsell.com/">홈으로</a></div>';
-    const enhancedTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈으로</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>';
+    const currentTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈</a><a class="home" href="https://community.neverjustsell.com/">커뮤니티</a></span></div>';
+    const enhancedTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈</a><a class="home" href="https://community.neverjustsell.com/">커뮤니티</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>';
     body = body.replace(currentTop, enhancedTop);
   }
 
