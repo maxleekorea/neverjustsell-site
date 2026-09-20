@@ -66,6 +66,12 @@ r = await get("https://classroom.neverjustsell.com/session/status");
 body = await r.json();
 assert(r.status === 200 && body.authenticated === false, "anonymous session status must be explicit");
 
+r = await get("https://classroom.neverjustsell.com/system-check");
+const anonymousSystemCheck = await r.text();
+assert(r.status === 200, "system check must render");
+assert(!anonymousSystemCheck.includes("CHECK 1"), "anonymous system check must match redirect-based classroom auth UX");
+assert(anonymousSystemCheck.includes("익명 유료 접근 인증 전환"), "system check must verify auth redirect instead of legacy 401 behavior");
+
 r = await get("https://classroom.neverjustsell.com/community-auth/redeem", {
   method: "POST",
   headers: { "Content-Type": "application/json" },

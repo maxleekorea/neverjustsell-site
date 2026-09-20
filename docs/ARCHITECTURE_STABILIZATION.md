@@ -29,10 +29,11 @@ Production UI must not send users to `*.workers.dev`.
 ### Classroom member authentication
 
 1. `classroom /classroom`
-2. If no classroom session, show **회원 인증하기**
-3. Button must target `classroom /oauth/cafe24/customer/start` with no community `return_to`
-4. Cafe24 OAuth callback creates the classroom session
-5. Redirect to `classroom /classroom`
+2. If a valid classroom session exists, open the classroom immediately.
+3. If no valid classroom session exists, redirect immediately to `classroom /oauth/cafe24/customer/start`.
+4. Cafe24 OAuth authenticates the member and returns only to `classroom /oauth/cafe24/callback`.
+5. The callback creates the server-side classroom session, sets the `njs_session` cookie, and redirects directly to `classroom /classroom`.
+6. There is no separate **회원 인증하기** step in the production UX.
 
 ### Community authentication
 
@@ -95,3 +96,18 @@ Key invariants:
 - future creator/tenant functionality remains P90 scope until a second real creator is onboarded.
 
 Before changing these boundaries, benchmark an existing comparable implementation and update the contract tests first.
+
+
+## Validated production state — 2026-09-20
+
+The classroom authentication and purchase-access flow has been validated end to end in the production browser flow:
+
+- anonymous classroom entry starts Cafe24 authentication automatically,
+- successful Cafe24 authentication returns directly to the classroom,
+- a valid browser session reopens the classroom without another authentication screen,
+- paid-course visibility is decided from the authenticated member's Cafe24 order facts,
+- direct paid lesson access is denied when entitlement is absent,
+- Vimeo playback works for the entitled test course,
+- production cross-domain smoke and public-site crawl checks pass.
+
+The next P30 course task is content/product launch configuration, not another authentication redesign.

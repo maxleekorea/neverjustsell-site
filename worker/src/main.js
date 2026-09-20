@@ -1,5 +1,5 @@
 import app from "./router.js";
-import { validateCourseCatalog } from "./courses.js";
+import { getSystemCheckPaidCourse, validateCourseCatalog } from "./courses.js";
 import { SITE_ORIGIN, COMMUNITY_ORIGIN } from "./config.js";
 
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
@@ -115,6 +115,13 @@ async function renderSystemCheck(request, env, ctx, url) {
   const session = await getSessionStatus(request, env, ctx, url.origin);
   const sessionOk = Boolean(session?.authenticated);
   const catalogErrors = validateCourseCatalog();
+  const systemCheckEntry = getSystemCheckPaidCourse();
+  const systemCheckSlug = systemCheckEntry?.[0] || "";
+  const systemCheckCourse = systemCheckEntry?.[1] || null;
+  const systemCheckProductNo = Number(systemCheckCourse?.productNo || 0);
+  const systemCheckLessons = Array.isArray(systemCheckCourse?.lessons) ? systemCheckCourse.lessons : [];
+  const firstLessonNumber = systemCheckLessons.length > 0 ? 1 : null;
+  const lastLessonNumber = systemCheckLessons.length > 0 ? systemCheckLessons.length : null;
 
   const freeAnonResponse = await app.fetch(
     anonymousRequest(new URL("/classroom?course=free-lesson-1", url.origin)),
@@ -123,35 +130,48 @@ async function renderSystemCheck(request, env, ctx, url) {
   );
   const freeBody = await readText(freeAnonResponse);
 
-  const paidAnonResponse = await app.fetch(
-    anonymousRequest(new URL("/classroom?course=paid-course", url.origin)),
-    env,
-    ctx
-  );
+  const paidAnonResponse = systemCheckSlug
+    ? await app.fetch(
+        anonymousRequest(new URL(`/classroom?course=${encodeURIComponent(systemCheckSlug)}`, url.origin)),
+        env,
+        ctx
+      )
+    : new Response(null, { status: 500 });
 
-  const accessResponse = await app.fetch(
-    internalRequest(new URL("/course-access?product_no=13", url.origin), request),
-    env,
-    ctx
-  );
+  const accessResponse = systemCheckProductNo
+    ? await app.fetch(
+        internalRequest(new URL(`/course-access?product_no=${systemCheckProductNo}`, url.origin), request),
+        env,
+        ctx
+      )
+    : new Response(JSON.stringify({ ok: false, error: "system_check_course_missing" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
   const access = await readJson(accessResponse);
 
-  const paidCurrentResponse = await app.fetch(
-    internalRequest(new URL("/classroom?course=paid-course", url.origin), request),
-    env,
-    ctx
-  );
+  const paidCurrentResponse = systemCheckSlug
+    ? await app.fetch(
+        internalRequest(new URL(`/classroom?course=${encodeURIComponent(systemCheckSlug)}`, url.origin), request),
+        env,
+        ctx
+      )
+    : new Response(null, { status: 500 });
 
-  const paidLesson1Response = await app.fetch(
-    internalRequest(new URL("/classroom?course=paid-course&lesson=1", url.origin), request),
-    env,
-    ctx
-  );
-  const paidLesson2Response = await app.fetch(
-    internalRequest(new URL("/classroom?course=paid-course&lesson=2", url.origin), request),
-    env,
-    ctx
-  );
+  const paidFirstLessonResponse = systemCheckSlug && firstLessonNumber
+    ? await app.fetch(
+        internalRequest(new URL(`/classroom?course=${encodeURIComponent(systemCheckSlug)}&lesson=${firstLessonNumber}`, url.origin), request),
+        env,
+        ctx
+      )
+    : new Response(null, { status: 500 });
+  const paidLastLessonResponse = systemCheckSlug && lastLessonNumber
+    ? await app.fetch(
+        internalRequest(new URL(`/classroom?course=${encodeURIComponent(systemCheckSlug)}&lesson=${lastLessonNumber}`, url.origin), request),
+        env,
+        ctx
+      )
+    : new Response(null, { status: 500 });
 
   const invalidCourseResponse = await app.fetch(
     anonymousRequest(new URL("/classroom?course=__not_a_course__", url.origin)),
@@ -173,13 +193,17 @@ async function renderSystemCheck(request, env, ctx, url) {
   const unknownProduct = await readJson(unknownProductResponse);
 
   const freeOk = freeAnonResponse.status === 200;
-  const anonPaidOk = paidAnonResponse.status === 401;
+  const anonPaidOk =
+    paidAnonResponse.status === 302 &&
+    paidAnonResponse.headers.get("location") === `${url.origin}/oauth/cafe24/customer/start`;
   const entitlementApiOk = sessionOk
     ? Boolean(access?.ok && access?.authenticated && accessResponse.status < 500)
     : accessResponse.status === 401;
-  const paidExpected = sessionOk && access?.access ? 200 : sessionOk ? 403 : 401;
+  const paidExpected = sessionOk && access?.access ? 200 : sessionOk ? 403 : 302;
   const paidCurrentOk = paidCurrentResponse.status === paidExpected;
-  const lessonRoutesOk = paidLesson1Response.status === paidExpected && paidLesson2Response.status === paidExpected;
+  const lessonRoutesOk =
+    paidFirstLessonResponse.status === paidExpected &&
+    paidLastLessonResponse.status === paidExpected;
   const invalidCourseOk = invalidCourseResponse.status === 404;
   const invalidLessonOk = invalidLessonResponse.status === 404;
   const unknownProductOk = unknownProductResponse.status === 404 && unknownProduct?.error === "unknown_course_product";
@@ -198,10 +222,10 @@ async function renderSystemCheck(request, env, ctx, url) {
     { label: "강의 데이터", ok: catalogErrors.length === 0, detail: catalogErrors.length === 0 ? "등록된 강의의 상품번호·차시·Vimeo ID 형식이 정상입니다." : catalogErrors.join(" / ") },
     { label: "무료 강의 공개", ok: freeOk, detail: `로그인 정보 없는 요청에서도 무료 1강 응답 코드 ${freeAnonResponse.status}` },
     { label: "회원 세션", ok: sessionOk ? true : null, detail: sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다." },
-    { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=13 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증이 차단됩니다." },
-    { label: "현재 유료 강의", ok: paidCurrentOk, detail: `현재 세션 기준 예상 코드 ${paidExpected}, 실제 코드 ${paidCurrentResponse.status}` },
-    { label: "1강·2강 라우팅", ok: lessonRoutesOk, detail: `1강 ${paidLesson1Response.status} · 2강 ${paidLesson2Response.status} · 예상 ${paidExpected}` },
-    { label: "익명 직접 접근 차단", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 직접 접근 응답 코드 ${paidAnonResponse.status}` },
+    { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=${systemCheckProductNo} 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증 API가 차단됩니다." },
+    { label: "현재 유료 강의", ok: paidCurrentOk, detail: `${systemCheckSlug || "fixture 없음"} · 현재 세션 기준 예상 코드 ${paidExpected}, 실제 코드 ${paidCurrentResponse.status}` },
+    { label: "첫·마지막 차시 라우팅", ok: lessonRoutesOk, detail: `첫 차시 ${paidFirstLessonResponse.status} · 마지막 차시 ${paidLastLessonResponse.status} · 예상 ${paidExpected}` },
+    { label: "익명 유료 접근 인증 전환", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 접근 응답 코드 ${paidAnonResponse.status} · Cafe24 인증 시작 경로로 전환` },
     { label: "등록되지 않은 상품 차단", ok: unknownProductOk, detail: `임의 product_no 요청 응답 코드 ${unknownProductResponse.status}` },
     { label: "잘못된 강의 주소", ok: invalidCourseOk, detail: `존재하지 않는 강의 응답 코드 ${invalidCourseResponse.status}` },
     { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` },
@@ -230,7 +254,7 @@ async function renderSystemCheck(request, env, ctx, url) {
 <p style="margin:12px 0 15px;color:#ddd;font-size:13px">PASS ${passCount} · CHECK ${checkCount} · INFO ${infoCount}</p>
 ${rows}
 </section>
-<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="/classroom?course=free-lesson-1" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">무료 1강 열기</a><a href="/classroom?course=paid-course" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">유료 강의 열기</a><a href="/session/logout-sync" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">통합 로그아웃 테스트</a></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px"><a href="/classroom?course=free-lesson-1" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">무료 1강 열기</a>${systemCheckSlug ? `<a href="/classroom?course=${encodeURIComponent(systemCheckSlug)}" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">점검용 유료 강의 열기</a>` : ""}<a href="/session/logout-sync" style="padding:11px 15px;border:1px solid #333;border-radius:999px;color:#ddd;text-decoration:none;font-size:13px">통합 로그아웃 테스트</a></div>
 </main></body></html>`, { headers: htmlHeaders() });
 }
 
