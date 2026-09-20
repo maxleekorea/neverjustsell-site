@@ -21,7 +21,6 @@ function json(data, init = {}) {
 }
 
 const AUTH_ROUTES = new Set([
-  "/site-login",
   "/oauth/cafe24/start",
   "/oauth/cafe24/customer/start",
   "/oauth/cafe24/callback",
