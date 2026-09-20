@@ -402,7 +402,7 @@ function renderLoginRequired(title) {
   return html(
     classroomShell(
       title,
-      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="/oauth/cafe24/customer/start">회원 인증하기</a></section>`
+      `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">회원 인증이 필요합니다.</h1><p class="desc">구매한 강의를 확인하려면 카페24 회원 인증을 완료해 주세요.</p><a class="action" href="https://classroom.neverjustsell.com/oauth/cafe24/customer/start">회원 인증하기</a></section>`
     ),
     { status: 401 }
   );
