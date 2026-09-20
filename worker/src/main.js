@@ -1,7 +1,7 @@
 import app from "./router.js";
 import { validateCourseCatalog } from "./courses.js";
+import { SITE_ORIGIN, COMMUNITY_ORIGIN } from "./config.js";
 
-const CAFE24_LOGOUT_URL = "https://www.neverjustsell.com/exec/front/Member/logout/";
 const CLASSROOM_SESSION_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 function redirectWithCookie(location, cookie) {
@@ -81,8 +81,8 @@ async function decorateClassroomResponse(response, request, env, ctx, url) {
   const status = await getSessionStatus(request, env, ctx, url.origin);
 
   if (status?.authenticated) {
-    const currentTop = '<a class="home" href="https://www.neverjustsell.com/">홈으로</a></div>';
-    const enhancedTop = '<span style="display:flex;gap:16px;align-items:center"><a class="home" href="https://www.neverjustsell.com/">홈으로</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>';
+    const currentTop = `<span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a></span></div>`;
+    const enhancedTop = `<span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="/session/logout-sync">로그아웃</a></span></div>`;
     body = body.replace(currentTop, enhancedTop);
   }
 
@@ -245,24 +245,6 @@ export default {
           "Cache-Control": "public, max-age=3600"
         }
       });
-    }
-
-    if (url.pathname === "/oauth/cafe24/callback") {
-      const response = await app.fetch(request, env, ctx);
-      const setCookie = response.headers.get("Set-Cookie") || "";
-
-      if (response.ok && setCookie.includes("njs_session=")) {
-        return redirectWithCookie(new URL("/classroom", url.origin).toString(), setCookie);
-      }
-
-      return response;
-    }
-
-    if (url.pathname === "/session/logout-sync") {
-      const logoutRequest = internalRequest(new URL("/session/logout", url.origin), request);
-      const response = await app.fetch(logoutRequest, env, ctx);
-      const setCookie = response.headers.get("Set-Cookie") || "";
-      return redirectWithCookie(CAFE24_LOGOUT_URL, setCookie);
     }
 
     if (url.pathname === "/system-check") {

@@ -1,21 +1,22 @@
 import app from "./diagnostics.js";
+import {
+  CLASSROOM_ORIGIN,
+  COMMERCE_ORIGIN as CAFE24_CUSTOMER_DOMAIN,
+  CAFE24_ADMIN_ORIGIN as CAFE24_ADMIN_DOMAIN,
+  CAFE24_CUSTOMER_SCOPE as CUSTOMER_SCOPE,
+  CAFE24_ADMIN_SCOPES as ADMIN_SCOPES,
+  cafe24RedirectUri,
+  allowedCommunityOrigins,
+  validCommunityReturn
+} from "./config.js";
 
-const CAFE24_CUSTOMER_DOMAIN = "https://neverjustsell.cafe24.com";
-const CAFE24_ADMIN_DOMAIN = "https://neverjustsell.cafe24api.com";
-const DEFAULT_CAFE24_REDIRECT_URI =
-  "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
-const CUSTOMER_SCOPE = "mall.read_customer_identifier";
-const ADMIN_SCOPES = ["mall.read_product", "mall.read_order"];
-const REQUIRED_ADMIN_SCOPES = ["mall.read_product", "mall.read_order"];
-const SITE_STATE_PREFIX = "cafe24:site-oauth-state:";
+const REQUIRED_ADMIN_SCOPES = [...ADMIN_SCOPES];
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
 const ADMIN_STATE_PREFIX = "cafe24:admin-oauth-state:";
 const SESSION_PREFIX = "cafe24:customer-session:";
 const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const SESSION_COOKIE = "njs_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
-const SITE_DISPLAY_COOKIE = "njs_site_authenticated";
-const SITE_DISPLAY_TTL_SECONDS = 60 * 60 * 24 * 30;
 const SIGNED_TICKET_PREFIX = "v1";
 const SIGNED_TICKET_TTL_SECONDS = 120;
 const encoder = new TextEncoder();
@@ -38,15 +39,6 @@ function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
 
-function cafe24RedirectUri(env) {
-  try {
-    const url = new URL(String(env.CAFE24_REDIRECT_URI || DEFAULT_CAFE24_REDIRECT_URI));
-    return url.protocol === "https:" ? url.toString() : DEFAULT_CAFE24_REDIRECT_URI;
-  } catch {
-    return DEFAULT_CAFE24_REDIRECT_URI;
-  }
-}
-
 function parseCookies(request) {
   const header = request.headers.get("Cookie") || "";
   const cookies = {};
@@ -64,70 +56,10 @@ function sessionCookie(sessionId) {
   return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${SESSION_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
 }
 
-function siteCookieDomain(env) {
-  const value = String(env.SITE_COOKIE_DOMAIN || "").trim().toLowerCase();
-  if (value === ".neverjustsell.com" || value === "neverjustsell.com") {
-    return ".neverjustsell.com";
-  }
-  return null;
-}
-
-function siteDisplayCookie(env) {
-  const domain = siteCookieDomain(env);
-  if (!domain) return null;
-  return `${SITE_DISPLAY_COOKIE}=1; Domain=${domain}; Path=/; Max-Age=${SITE_DISPLAY_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
-}
-
 function redirectWithCookies(location, cookies = []) {
   const headers = new Headers({ Location: location, "Cache-Control": "no-store" });
   for (const cookie of cookies.filter(Boolean)) headers.append("Set-Cookie", cookie);
   return new Response(null, { status: 302, headers });
-}
-
-function validSiteReturn(value) {
-  if (!value) return null;
-  try {
-    const url = new URL(String(value));
-    const allowed = new Set([
-      "https://neverjustsell-site.max-lee-korea.workers.dev",
-      "https://www.neverjustsell.com",
-      "https://neverjustsell.com"
-    ]);
-    if (url.protocol !== "https:" || !allowed.has(url.origin)) return null;
-    const pathname = url.pathname === "/auth/complete" ? "/auth/complete" : "/";
-    return `${url.origin}${pathname}`;
-  } catch {
-    return null;
-  }
-}
-
-function allowedCommunityOrigins(env) {
-  return new Set(
-    String(env.COMMUNITY_ALLOWED_ORIGINS || "https://community.neverjustsell.com")
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean)
-  );
-}
-
-function validCommunityReturn(value, env) {
-  if (!value) return null;
-  try {
-    const url = new URL(String(value));
-    if (url.protocol !== "https:") return null;
-    if (!allowedCommunityOrigins(env).has(url.origin)) return null;
-    if (url.pathname !== "/auth/callback") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-async function hasCustomerSession(request, env) {
-  if (!env.CAFE24_AUTH) return false;
-  const sessionId = parseCookies(request)[SESSION_COOKIE];
-  if (!sessionId) return false;
-  return Boolean(await env.CAFE24_AUTH.get(`${SESSION_PREFIX}${sessionId}`));
 }
 
 async function exchangeCode(code, env, admin = false) {
@@ -229,18 +161,12 @@ async function startAuthorization(request, env, mode) {
     await env.CAFE24_AUTH.put(`${ADMIN_STATE_PREFIX}${state}`, "1", { expirationTtl: 600 });
     authUrl = new URL(`${CAFE24_ADMIN_DOMAIN}/api/v2/oauth/authorize`);
     authUrl.searchParams.set("scope", ADMIN_SCOPES.join(" "));
-  } else if (mode === "site") {
-    const returnTo = validSiteReturn(requestUrl.searchParams.get("return_to"));
-    if (!returnTo) return json({ ok: false, error: "invalid_return_to" }, { status: 400 });
-    if (await hasCustomerSession(request, env)) return Response.redirect(returnTo, 302);
-    await env.CAFE24_AUTH.put(`${SITE_STATE_PREFIX}${state}`, JSON.stringify({ return_to: returnTo }), {
-      expirationTtl: 600
-    });
-    authUrl = new URL(`${CAFE24_CUSTOMER_DOMAIN}/api/v2/oauth/authorize`);
-    authUrl.searchParams.set("scope", CUSTOMER_SCOPE);
-    authUrl.searchParams.set("shop_no", "1");
   } else {
-    const returnTo = validCommunityReturn(requestUrl.searchParams.get("return_to"), env);
+    const rawReturnTo = requestUrl.searchParams.get("return_to");
+    const returnTo = validCommunityReturn(rawReturnTo, env);
+    if (rawReturnTo && !returnTo) {
+      return json({ ok: false, error: "invalid_community_return_to" }, { status: 400 });
+    }
     await env.CAFE24_AUTH.put(
       `${CUSTOMER_STATE_PREFIX}${state}`,
       JSON.stringify({ return_to: returnTo }),
@@ -264,16 +190,14 @@ async function finishAuthorization(request, env) {
   const code = url.searchParams.get("code");
   if (!state || !code || !env.CAFE24_AUTH) return null;
 
-  const [siteRaw, customerRaw, adminRaw] = await Promise.all([
-    env.CAFE24_AUTH.get(`${SITE_STATE_PREFIX}${state}`),
+  const [customerRaw, adminRaw] = await Promise.all([
     env.CAFE24_AUTH.get(`${CUSTOMER_STATE_PREFIX}${state}`),
     env.CAFE24_AUTH.get(`${ADMIN_STATE_PREFIX}${state}`)
   ]);
 
-  if (!siteRaw && !customerRaw && !adminRaw) return null;
+  if (!customerRaw && !adminRaw) return null;
 
   await Promise.all([
-    siteRaw ? env.CAFE24_AUTH.delete(`${SITE_STATE_PREFIX}${state}`) : Promise.resolve(),
     customerRaw ? env.CAFE24_AUTH.delete(`${CUSTOMER_STATE_PREFIX}${state}`) : Promise.resolve(),
     adminRaw ? env.CAFE24_AUTH.delete(`${ADMIN_STATE_PREFIX}${state}`) : Promise.resolve()
   ]);
@@ -289,14 +213,6 @@ async function finishAuthorization(request, env) {
   const { sessionId, record } = await createCustomerSession(token, identifier, env);
   const cookies = [sessionCookie(sessionId)];
 
-  if (siteRaw) {
-    const stateRecord = JSON.parse(siteRaw);
-    const returnTo = validSiteReturn(stateRecord.return_to);
-    if (!returnTo) return json({ ok: false, error: "invalid_return_to" }, { status: 400 });
-    cookies.push(siteDisplayCookie(env));
-    return redirectWithCookies(returnTo, cookies);
-  }
-
   let stateRecord = {};
   try {
     stateRecord = JSON.parse(customerRaw || "{}");
@@ -310,7 +226,7 @@ async function finishAuthorization(request, env) {
     return redirectWithCookies(target.toString(), cookies);
   }
 
-  return redirectWithCookies("https://classroom.neverjustsell.com/classroom", cookies);
+  return redirectWithCookies(`${CLASSROOM_ORIGIN}/classroom`, cookies);
 }
 
 async function hardenedAdminStatus(request, env, ctx) {
@@ -336,10 +252,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/site-login") {
-      return startAuthorization(request, env, "site");
-    }
-
     if (url.pathname === "/oauth/cafe24/start") {
       return startAuthorization(request, env, "admin");
     }
@@ -352,6 +264,7 @@ export default {
       try {
         const response = await finishAuthorization(request, env);
         if (response) return response;
+        return json({ ok: false, error: "invalid_or_expired_state" }, { status: 401 });
       } catch (error) {
         return json({
           ok: false,

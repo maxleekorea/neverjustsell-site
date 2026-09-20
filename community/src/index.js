@@ -69,7 +69,7 @@ async function handleFullLogout(request, env) {
 
   const authOrigin = String(
     env.AUTH_BRIDGE_ORIGIN ||
-      "https://neverjustsell-course-access.max-lee-korea.workers.dev"
+      "https://classroom.neverjustsell.com"
   ).replace(/\/$/, "");
   const target = new URL(`${authOrigin}/session/logout/redirect`);
   target.searchParams.set("return_to", `${url.origin}/`);
@@ -88,7 +88,7 @@ async function handleBridgeHealth(request, env) {
   try {
     const response = await env.AUTH_BRIDGE.fetch(
       new Request(
-        "https://neverjustsell-course-access.max-lee-korea.workers.dev/community-auth/health",
+        "https://classroom.neverjustsell.com/community-auth/health",
         { method: "GET" }
       )
     );
@@ -181,7 +181,7 @@ async function handleBoundAuthCallback(request, env) {
   if (!ticket) return null;
 
   const redeemRequest = new Request(
-    "https://neverjustsell-course-access.max-lee-korea.workers.dev/community-auth/redeem",
+    "https://classroom.neverjustsell.com/community-auth/redeem",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -1,0 +1,35 @@
+name: Production cross-domain smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "site/**"
+      - "worker/**"
+      - "community/**"
+      - "tests/**"
+      - "docs/ARCHITECTURE_STABILIZATION.md"
+      - "docs/USER_ACCESS_MODEL.md"
+      - ".github/workflows/production-smoke.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify public-site boundary contract
+        run: node tests/site-contract.mjs
+      - name: Verify auth and route ownership contract
+        run: node tests/worker-contract.mjs
+      - name: Verify purchase and entitlement contract
+        run: node tests/access-contract.mjs
+      - name: Verify Worker production bundle
+        working-directory: worker
+        run: |
+          npm install --no-audit --no-fund
+          npx wrangler deploy --dry-run --config wrangler.production.jsonc
+      - name: Verify current production routes
+        run: node tests/live-smoke.mjs

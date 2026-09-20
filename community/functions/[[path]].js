@@ -1,5 +1,5 @@
 const DEFAULT_SITE_ORIGIN = "https://community.neverjustsell.com";
-const DEFAULT_AUTH_BRIDGE_ORIGIN = "https://neverjustsell-course-access.max-lee-korea.workers.dev";
+const DEFAULT_AUTH_BRIDGE_ORIGIN = "https://classroom.neverjustsell.com";
 const SESSION_COOKIE = "njs_community_session";
 const SESSION_TTL_SECONDS = 2 * 60 * 60;
 const POSTS_PER_PAGE = 24;
@@ -128,7 +128,7 @@ function nav(session) {
   const auth = session
     ? `<span class="member-name">${esc(session.display_name)}</span><a href="/write">글쓰기</a><a href="/settings/profile">프로필</a><a href="/logout">로그아웃</a>`
     : `<a href="/login">로그인</a>`;
-  return `<header class="site-header"><div class="shell header-inner"><a class="brand" href="/">NEVER JUST SELL <span>COMMUNITY</span></a><nav><a href="/">전체 글</a><a href="/c/online-selling">온라인 판매</a><a href="/c/case-study">경험·사례</a><a href="/c/reading-action">읽고 실행</a>${auth}</nav></div></header>`;
+  return `<header class="site-header"><div class="shell header-inner"><a class="brand" href="/">NEVER JUST SELL <span>COMMUNITY</span></a><nav><a href="https://www.neverjustsell.com/">홈</a><a href="https://classroom.neverjustsell.com/classroom">내 강의실</a><a href="/">전체 글</a><a href="/c/online-selling">온라인 판매</a><a href="/c/case-study">경험·사례</a><a href="/c/reading-action">읽고 실행</a>${auth}</nav></div></header>`;
 }
 
 function styles() {
@@ -420,11 +420,17 @@ async function authCallback(request, env) {
   const ticket = cleanText(url.searchParams.get("ticket"), 200);
   const returnTo = validReturnPath(url.searchParams.get("return_to"));
   if (!ticket) return renderError(env, null, 400, "회원 인증 정보가 없습니다.");
-  const redeem = await fetch(`${authBridgeOrigin(env)}/community-auth/redeem`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ticket })
-  });
+  const redeemRequest = new Request(
+    `${authBridgeOrigin(env)}/community-auth/redeem`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket })
+    }
+  );
+  const redeem = env.AUTH_BRIDGE
+    ? await env.AUTH_BRIDGE.fetch(redeemRequest)
+    : await fetch(redeemRequest);
   const identity = await redeem.json().catch(() => null);
   if (!redeem.ok || !identity?.member_id) return renderError(env, null, 401, "회원 인증이 만료되었거나 사용할 수 없습니다.");
   const publicId = crypto.randomUUID().replaceAll("-", "").slice(0, 18);
