@@ -107,13 +107,10 @@ expect(
 
 r = await request("https://classroom.neverjustsell.com/classroom");
 expect(
-  "anonymous classroom shows member auth and cross-product navigation",
-  r.response.status === 401 &&
-    /회원 인증/i.test(r.body) &&
-    /https:\/\/classroom\.neverjustsell\.com\/oauth\/cafe24\/customer\/start/.test(r.body) &&
-    /https:\/\/community\.neverjustsell\.com\//.test(r.body) &&
-    !/invalid_community_return_to/.test(r.body),
-  `status=${r.response.status}`
+  "anonymous classroom immediately starts member authentication",
+  r.response.status === 302 &&
+    r.response.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
 );
 
 r = await request("https://classroom.neverjustsell.com/migration-health");
