@@ -22,6 +22,30 @@ expect(
   `status=${r.response.status}`
 );
 
+r = await request("https://www.neverjustsell.com/health");
+let launchHealth = JSON.parse(r.body || "{}");
+expect(
+  "public-site health reports canonical launch services",
+  r.response.status === 200 &&
+    launchHealth.ok === true &&
+    launchHealth.canonical_origin === "https://www.neverjustsell.com" &&
+    launchHealth.classroom_origin === "https://classroom.neverjustsell.com" &&
+    launchHealth.community_origin === "https://community.neverjustsell.com",
+  `status=${r.response.status} canonical=${launchHealth.canonical_origin}`
+);
+
+r = await request("https://www.neverjustsell.com/book");
+expect(
+  "book launch page has purchase CTA and SEO metadata",
+  r.response.status === 200 &&
+    /9791124121061/.test(r.body) &&
+    /9791124121122/.test(r.body) &&
+    /product\/detail\.html\?product_no=11/.test(r.body) &&
+    /property="og:image"/.test(r.body) &&
+    /href="\/favicon\.svg"/.test(r.body),
+  `status=${r.response.status}`
+);
+
 r = await request("https://www.neverjustsell.com/auth/complete");
 expect(
   "legacy auth complete only returns home",
