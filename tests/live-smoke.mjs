@@ -103,6 +103,24 @@ expect(
   `status=${r.response.status} location=${authLocation}`
 );
 
+r = await request("https://classroom.neverjustsell.com/oauth/cafe24/status");
+payload = JSON.parse(r.body || "{}");
+expect(
+  "Cafe24 Admin connection status remains reachable",
+  r.response.status === 200 && payload.ok === true && payload.connected === true,
+  `status=${r.response.status} connected=${payload.connected} error=${payload.error || ""}`
+);
+
+r = await request("https://community.neverjustsell.com/login?return_to=%2F");
+const communityLoginLocation = r.response.headers.get("location") || "";
+expect(
+  "community login delegates to classroom OAuth with community callback",
+  r.response.status === 302 &&
+    communityLoginLocation.startsWith("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?") &&
+    communityLoginLocation.includes(encodeURIComponent("https://community.neverjustsell.com/auth/callback?return_to=%2F")),
+  `status=${r.response.status} location=${communityLoginLocation}`
+);
+
 r = await request("https://community.neverjustsell.com/");
 expect(
   "community custom domain is live with cross-product navigation",
