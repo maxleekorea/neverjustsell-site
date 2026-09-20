@@ -59,37 +59,53 @@ function text(body, contentType = "text/plain; charset=utf-8", init = {}) {
   return new Response(body, { ...init, headers });
 }
 
+function json(data, init = {}) {
+  return text(JSON.stringify(data), "application/json; charset=utf-8", {
+    ...init,
+    headers: {
+      "Cache-Control": "no-store",
+      ...(init.headers || {})
+    }
+  });
+}
+
 function pageData(pathname) {
   const pages = {
     "/": {
       title: "그냥 팔지 말라 | NEVER JUST SELL",
       description: "온라인 판매를 사업의 관점에서 설명합니다. 맥작가의 책, 강의, 콘텐츠, 강연과 커뮤니티.",
-      body: "home"
+      body: "home",
+      image: media.profile
     },
     "/about": {
       title: "맥작가 | NEVER JUST SELL",
       description: "온라인 커머스 작가·사업가 맥작가의 경력과 관점을 소개합니다.",
-      body: "about"
+      body: "about",
+      image: media.profile
     },
     "/book": {
-      title: "책 | NEVER JUST SELL",
-      description: "『그냥 팔지 말라 스마트스토어』와 온라인 판매를 사업의 관점에서 보는 핵심 내용을 소개합니다.",
-      body: "book"
+      title: "그냥 팔지 말라 스마트스토어 | 맥작가",
+      description: "『그냥 팔지 말라 스마트스토어』. 검색, 광고, 상품, 유통, 고객 경험, 브랜드와 AI를 하나의 사업 구조로 연결합니다.",
+      body: "book",
+      image: media.book
     },
     "/class": {
       title: "온라인 강의 | NEVER JUST SELL",
-      description: "유통, 검색, 키워드, 마케팅, 브랜드와 AI를 사업의 관점에서 연결하는 온라인 강의.",
-      body: "class"
+      description: "유통, 검색, 키워드, 마케팅, 브랜드와 AI를 사업의 관점에서 연결하는 맥작가의 온라인 강의.",
+      body: "class",
+      image: media.profile
     },
     "/content": {
       title: "콘텐츠 | NEVER JUST SELL",
       description: "온라인 판매, 유통, 마케팅과 브랜드에 관한 맥작가의 콘텐츠를 정리합니다.",
-      body: "content"
+      body: "content",
+      image: media.profile
     },
     "/lecture": {
       title: "강연 | NEVER JUST SELL",
       description: "온라인 커머스, 판로, 마케팅, 브랜드와 AI를 주제로 한 맥작가의 강연 안내.",
-      body: "lecture"
+      body: "lecture",
+      image: media.lecture
     }
   };
   return pages[pathname] || null;
@@ -113,6 +129,11 @@ function nav(env) {
           <a href="/store">스토어</a>
           <a href="/lecture">강연</a>
           <a href="/community">커뮤니티</a>
+          <span class="njs-mobile-services" aria-label="회원 메뉴">
+            <a href="/login">로그인</a>
+            <a href="${escapeHtml(classroom)}">내 강의실</a>
+            <a href="/cart">장바구니</a>
+          </span>
         </nav>
         <div class="njs-utility">
           <a href="/login">로그인</a>
@@ -137,6 +158,7 @@ function footer(env) {
         <div class="njs-footer-links">
           <a href="${escapeHtml(shopOrigin(env))}/member/agreement.html">회원가입</a>
           <a href="${escapeHtml(shopOrigin(env))}/member/privacy.html">개인정보처리방침</a>
+          <a href="/sitemap.xml">사이트맵</a>
         </div>
       </div>
     </footer>`;
@@ -146,7 +168,7 @@ function homeBody(env) {
   const classroom = `${authOrigin(env)}/classroom`;
   const freeLesson = `${classroom}?course=free-lesson-1`;
   return `
-    <main>
+    <main id="main-content">
       <section class="njs-hero">
         <div class="njs-shell njs-hero-grid">
           <div class="njs-hero-copy">
@@ -160,7 +182,7 @@ function homeBody(env) {
             </div>
           </div>
           <div class="njs-hero-visual" aria-label="맥작가 프로필">
-            <img src="${media.profile}" alt="맥작가 프로필" loading="eager">
+            <img src="${media.profile}" alt="맥작가 프로필" loading="eager" fetchpriority="high">
           </div>
         </div>
       </section>
@@ -176,7 +198,7 @@ function homeBody(env) {
 
       <section class="njs-book njs-section-dark">
         <div class="njs-shell njs-book-grid">
-          <div class="njs-book-art"><img src="${media.book}" alt="그냥 팔지 말라 스마트스토어 책" loading="lazy"></div>
+          <div class="njs-book-art"><img src="${media.book}" alt="그냥 팔지 말라 스마트스토어 책 표지" loading="lazy"></div>
           <div class="njs-book-copy">
             <p class="njs-eyebrow njs-eyebrow-light">BOOK</p>
             <h2>판매 기술이 아니라<br>사업 전체를 보는 책.</h2>
@@ -239,6 +261,7 @@ function homeBody(env) {
 }
 
 function detailBody(type, env) {
+  const bookPurchaseUrl = `${shopOrigin(env)}/product/detail.html?product_no=11`;
   const data = {
     about: {
       eyebrow: "ABOUT",
@@ -247,7 +270,7 @@ function detailBody(type, env) {
       blocks: [
         ["AUTHOR", "『그냥 팔지 말라 스마트스토어』 저자"],
         ["MERCHANDISING", "The North Face에서 Sales와 MD 경험"],
-        ["GLOBAL BUSINESS", "adidas·Puma·H&M·Timberland 등 OEM·ODM 해외영업"],
+        ["GLOBAL BUSINESS", "글로벌 브랜드 OEM·ODM 해외영업"],
         ["ENTREPRENEUR", "제조업 창업과 온라인 커머스 운영 경험"]
       ]
     },
@@ -256,11 +279,17 @@ function detailBody(type, env) {
       title: "그냥 팔지 말라 스마트스토어",
       intro: "검색과 광고의 사용법만이 아니라 온라인 판매가 사업으로 작동하는 구조를 다룹니다.",
       image: media.book,
+      facts: [
+        ["종이책", "2026.01.19 · 546쪽"],
+        ["ISBN", "9791124121061"],
+        ["전자책", "EPUB · ISBN 9791124121122"]
+      ],
       blocks: [
         ["STRUCTURE", "상품 기획, 유통, 검색, 광고, 상세페이지, 고객 경험을 하나의 흐름으로 봅니다."],
         ["BRAND", "단기 판매 기술과 장기 브랜드 자산을 따로 떼어 보지 않습니다."],
         ["AI", "AI를 도구가 아니라 조사, 판단, 협업과 운영 체계의 일부로 연결합니다."]
-      ]
+      ],
+      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(bookPurchaseUrl)}">종이책 구매</a><a class="njs-btn njs-btn-line" href="/class">관련 강의 보기</a>`
     },
     class: {
       eyebrow: "CLASS",
@@ -282,7 +311,7 @@ function detailBody(type, env) {
         ["WRITING", "마케팅과 비즈니스 이론을 온라인 판매자의 언어로 풀어냅니다."],
         ["COMMUNITY", "질문과 실행 경험이 축적되는 검색 가능한 지식 공간을 만듭니다."]
       ],
-      action: `<a class="njs-btn njs-btn-dark" href="/community">커뮤니티 보기</a>`
+      action: `<a class="njs-btn njs-btn-dark" href="/community">커뮤니티 보기</a><a class="njs-btn njs-btn-line" href="/book">책 보기</a>`
     },
     lecture: {
       eyebrow: "LECTURE",
@@ -298,12 +327,15 @@ function detailBody(type, env) {
   }[type];
 
   const image = data.image ? `<div class="njs-detail-image"><img src="${data.image}" alt="" loading="lazy"></div>` : "";
+  const facts = Array.isArray(data.facts)
+    ? `<dl class="njs-facts">${data.facts.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>`
+    : "";
   const blocks = data.blocks.map(([label, copy]) => `<article><span>${escapeHtml(label)}</span><p>${escapeHtml(copy)}</p></article>`).join("");
   return `
-    <main>
+    <main id="main-content">
       <section class="njs-detail-hero">
         <div class="njs-shell njs-detail-grid">
-          <div><p class="njs-eyebrow">${escapeHtml(data.eyebrow)}</p><h1>${escapeHtml(data.title)}</h1><p class="njs-detail-intro">${escapeHtml(data.intro)}</p><div class="njs-actions">${data.action || ""}</div></div>
+          <div><p class="njs-eyebrow">${escapeHtml(data.eyebrow)}</p><h1>${escapeHtml(data.title)}</h1><p class="njs-detail-intro">${escapeHtml(data.intro)}</p>${facts}<div class="njs-actions">${data.action || ""}</div></div>
           ${image}
         </div>
       </section>
@@ -312,33 +344,58 @@ function detailBody(type, env) {
     </main>`;
 }
 
-function structuredData(origin) {
-  return JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "@id": `${origin}/#website`,
-        url: `${origin}/`,
-        name: "NEVER JUST SELL",
-        inLanguage: "ko-KR"
-      },
-      {
-        "@type": "Person",
-        "@id": `${origin}/about#person`,
-        name: "맥작가",
-        url: `${origin}/about`,
-        jobTitle: "온라인 커머스 작가·사업가"
-      },
-      {
-        "@type": "Book",
-        name: "그냥 팔지 말라 스마트스토어",
-        author: { "@id": `${origin}/about#person` },
-        isbn: "9791124121061",
-        inLanguage: "ko-KR"
-      }
-    ]
-  });
+function structuredData(origin, pathname, data) {
+  const personId = `${origin}/about#person`;
+  const graph = [
+    {
+      "@type": "WebSite",
+      "@id": `${origin}/#website`,
+      url: `${origin}/`,
+      name: "NEVER JUST SELL",
+      inLanguage: "ko-KR"
+    },
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: "맥작가",
+      url: `${origin}/about`,
+      jobTitle: "온라인 커머스 작가·사업가"
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${origin}${pathname === "/" ? "/" : pathname}#webpage`,
+      url: `${origin}${pathname === "/" ? "/" : pathname}`,
+      name: data.title,
+      description: data.description,
+      inLanguage: "ko-KR",
+      isPartOf: { "@id": `${origin}/#website` }
+    }
+  ];
+
+  if (pathname === "/book") {
+    graph.push({
+      "@type": "Book",
+      name: "그냥 팔지 말라 스마트스토어",
+      author: { "@id": personId },
+      publisher: { "@type": "Organization", name: "애플씨드" },
+      datePublished: "2026-01-19",
+      isbn: "9791124121061",
+      numberOfPages: 546,
+      inLanguage: "ko-KR"
+    });
+  }
+
+  if (pathname === "/class") {
+    graph.push({
+      "@type": "Course",
+      name: "온라인 판매를 사업의 언어로 배우는 강의",
+      description: data.description,
+      provider: { "@id": personId },
+      inLanguage: "ko-KR"
+    });
+  }
+
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": graph });
 }
 
 function renderPage(request, env, data) {
@@ -346,6 +403,8 @@ function renderPage(request, env, data) {
   const url = new URL(request.url);
   const canonical = `${origin}${url.pathname === "/" ? "/" : url.pathname}`;
   const body = data.body === "home" ? homeBody(env) : detailBody(data.body, env);
+  const image = data.image || media.profile;
+
   return text(`<!doctype html>
 <html lang="ko">
 <head>
@@ -353,17 +412,25 @@ function renderPage(request, env, data) {
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${escapeHtml(data.title)}</title>
 <meta name="description" content="${escapeHtml(data.description)}">
+<meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="canonical" href="${escapeHtml(canonical)}">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:title" content="${escapeHtml(data.title)}">
 <meta property="og:description" content="${escapeHtml(data.description)}">
 <meta property="og:url" content="${escapeHtml(canonical)}">
+<meta property="og:image" content="${escapeHtml(image)}">
 <meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="NEVER JUST SELL">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${escapeHtml(data.title)}">
+<meta name="twitter:description" content="${escapeHtml(data.description)}">
+<meta name="twitter:image" content="${escapeHtml(image)}">
 <link rel="stylesheet" href="/styles.css">
-<script type="application/ld+json">${structuredData(origin)}</script>
+<script type="application/ld+json">${structuredData(origin, url.pathname, data)}</script>
 </head>
 <body>
+<a class="njs-skip" href="#main-content">본문 바로가기</a>
 ${nav(env)}
 ${body}
 ${footer(env)}
@@ -373,7 +440,8 @@ ${footer(env)}
     headers: {
       "Cache-Control": "public, max-age=120, s-maxage=600",
       "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
     }
   });
 }
@@ -388,12 +456,27 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === "/health") {
+      return json({
+        ok: true,
+        service: "neverjustsell-site",
+        canonical_origin: siteOrigin(env),
+        classroom_origin: authOrigin(env),
+        community_origin: communityOrigin(env),
+        shop_origin: shopOrigin(env)
+      });
+    }
+
     if (url.pathname === "/robots.txt") {
       return text(`User-agent: *\nAllow: /\nSitemap: ${siteOrigin(env)}/sitemap.xml\n`);
     }
+
     if (url.pathname === "/sitemap.xml") {
-      return text(sitemap(env), "application/xml; charset=utf-8", { headers: { "Cache-Control": "public, max-age=3600" } });
+      return text(sitemap(env), "application/xml; charset=utf-8", {
+        headers: { "Cache-Control": "public, max-age=3600" }
+      });
     }
+
     if (url.pathname === "/llms.txt") {
       return text(`NEVER JUST SELL\n\n온라인 판매를 사업의 관점에서 설명하는 맥작가의 공식 사이트입니다.\n\nMain: ${siteOrigin(env)}/\nAbout: ${siteOrigin(env)}/about\nBook: ${siteOrigin(env)}/book\nClass: ${siteOrigin(env)}/class\nContent: ${siteOrigin(env)}/content\nLecture: ${siteOrigin(env)}/lecture\nCommunity: ${communityOrigin(env)}/\n`);
     }
@@ -412,6 +495,6 @@ export default {
       if (asset.status !== 404) return asset;
     }
 
-    return text(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>페이지를 찾을 수 없습니다 | NEVER JUST SELL</title><link rel="stylesheet" href="/styles.css"></head><body><main class="njs-not-found"><p class="njs-eyebrow">404</p><h1>페이지를 찾을 수 없습니다.</h1><a class="njs-btn njs-btn-dark" href="/">홈으로</a></main></body></html>`, "text/html; charset=utf-8", { status: 404 });
+    return text(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>페이지를 찾을 수 없습니다 | NEVER JUST SELL</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css"></head><body><main id="main-content" class="njs-not-found"><p class="njs-eyebrow">404</p><h1>페이지를 찾을 수 없습니다.</h1><a class="njs-btn njs-btn-dark" href="/">홈으로</a></main></body></html>`, "text/html; charset=utf-8", { status: 404 });
   }
 };
