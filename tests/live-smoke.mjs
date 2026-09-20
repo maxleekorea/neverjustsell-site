@@ -1,9 +1,10 @@
 const cases = [];
 
-async function request(url) {
+async function request(url, init = {}) {
   const response = await fetch(url, {
     redirect: "manual",
-    headers: { "user-agent": "neverjustsell-live-smoke/1.0" }
+    headers: { "user-agent": "neverjustsell-live-smoke/2.0", ...(init.headers || {}) },
+    ...init
   });
   const body = await response.text();
   return { response, body };
@@ -15,40 +16,131 @@ function expect(label, condition, detail) {
 }
 
 let r = await request("https://www.neverjustsell.com/");
-expect("www home is site Worker", r.response.status === 200 && /NEVER JUST SELL/i.test(r.body) && !/board\/index\.html/i.test(r.body), `status=${r.response.status}`);
+expect(
+  "www home is site Worker",
+  r.response.status === 200 && /NEVER JUST SELL/i.test(r.body) && !/board\/index\.html/i.test(r.body),
+  `status=${r.response.status}`
+);
 
 r = await request("https://www.neverjustsell.com/auth/complete");
-expect("www auth complete returns home", r.response.status === 302 && r.response.headers.get("location") === "/", `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "legacy auth complete only returns home",
+  r.response.status === 302 && r.response.headers.get("location") === "/" && !r.response.headers.get("set-cookie"),
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://neverjustsell.com/");
-expect("apex canonicalizes to www", r.response.status === 308 && r.response.headers.get("location") === "https://www.neverjustsell.com/", `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "apex canonicalizes to www",
+  r.response.status === 308 && r.response.headers.get("location") === "https://www.neverjustsell.com/",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://neverjustsell.com/auth/complete");
-expect("apex preserves auth path while canonicalizing", r.response.status === 308 && r.response.headers.get("location") === "https://www.neverjustsell.com/auth/complete", `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "apex preserves path while canonicalizing",
+  r.response.status === 308 && r.response.headers.get("location") === "https://www.neverjustsell.com/auth/complete",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://www.neverjustsell.com/login");
-const loginLocation = r.response.headers.get("location") || "";
-expect("site login uses classroom custom domain", r.response.status === 302 && loginLocation.startsWith("https://classroom.neverjustsell.com/site-login?") && loginLocation.includes(encodeURIComponent("https://www.neverjustsell.com/auth/complete")), `status=${r.response.status} location=${loginLocation}`);
+expect(
+  "public site does not own customer auth session",
+  r.response.status === 302 && r.response.headers.get("location") === "https://neverjustsell.cafe24.com/member/login.html",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://www.neverjustsell.com/community");
-expect("site community bridge uses custom domain", r.response.status === 302 && r.response.headers.get("location") === "https://community.neverjustsell.com/", `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "site community bridge uses canonical custom domain",
+  r.response.status === 302 && r.response.headers.get("location") === "https://community.neverjustsell.com/",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://www.neverjustsell.com/classroom");
-expect("site classroom bridge uses custom domain", r.response.status === 302 && (r.response.headers.get("location") || "").startsWith("https://classroom.neverjustsell.com/classroom"), `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "site classroom bridge uses canonical custom domain",
+  r.response.status === 302 && r.response.headers.get("location") === "https://classroom.neverjustsell.com/classroom",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 r = await request("https://classroom.neverjustsell.com/classroom");
-expect("anonymous classroom shows member auth, not community error", [200,401].includes(r.response.status) && /회원 인증/i.test(r.body) && /https:\/\/classroom\.neverjustsell\.com\/oauth\/cafe24\/customer\/start/.test(r.body) && !/invalid_community_return_to/.test(r.body), `status=${r.response.status}`);
+expect(
+  "anonymous classroom shows member auth and cross-product navigation",
+  r.response.status === 401 &&
+    /회원 인증/i.test(r.body) &&
+    /https:\/\/classroom\.neverjustsell\.com\/oauth\/cafe24\/customer\/start/.test(r.body) &&
+    /https:\/\/community\.neverjustsell\.com\//.test(r.body) &&
+    !/invalid_community_return_to/.test(r.body),
+  `status=${r.response.status}`
+);
+
+r = await request("https://classroom.neverjustsell.com/migration-health");
+let payload = JSON.parse(r.body || "{}");
+expect(
+  "classroom dispatcher and callback are canonical",
+  r.response.status === 200 &&
+    payload.route_owner === "production-dispatch-v2" &&
+    payload.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/callback",
+  `status=${r.response.status} route_owner=${payload.route_owner} redirect_uri=${payload.redirect_uri}`
+);
+
+r = await request("https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete");
+payload = JSON.parse(r.body || "{}");
+expect(
+  "obsolete site-login route is removed",
+  r.response.status === 404 && payload.error === "not_found",
+  `status=${r.response.status} error=${payload.error}`
+);
+
+r = await request("https://classroom.neverjustsell.com/oauth/cafe24/customer/start");
+const authLocation = r.response.headers.get("location") || "";
+expect(
+  "classroom member auth starts at Cafe24 with canonical callback",
+  r.response.status === 302 &&
+    authLocation.startsWith("https://neverjustsell.cafe24.com/api/v2/oauth/authorize") &&
+    authLocation.includes(encodeURIComponent("https://classroom.neverjustsell.com/oauth/cafe24/callback")),
+  `status=${r.response.status} location=${authLocation}`
+);
 
 r = await request("https://community.neverjustsell.com/");
-expect("community custom domain is live", r.response.status === 200 && /NEVER JUST SELL COMMUNITY/i.test(r.body), `status=${r.response.status}`);
+expect(
+  "community custom domain is live with cross-product navigation",
+  r.response.status === 200 &&
+    /NEVER JUST SELL COMMUNITY/i.test(r.body) &&
+    /https:\/\/www\.neverjustsell\.com\//.test(r.body) &&
+    /https:\/\/classroom\.neverjustsell\.com\/classroom/.test(r.body),
+  `status=${r.response.status}`
+);
+
+r = await request("https://community.neverjustsell.com/auth/bridge-health");
+payload = JSON.parse(r.body || "{}");
+expect(
+  "community service binding reaches auth worker",
+  r.response.status === 200 &&
+    payload.ok === true &&
+    payload.binding_present === true &&
+    payload.upstream_ok === true,
+  `status=${r.response.status} binding=${payload.binding_present} upstream=${payload.upstream_status}`
+);
 
 r = await request("https://www.neverjustsell.com/board/index.html");
-expect("legacy Cafe24 board path is not public-site content", r.response.status === 404 && !/게시판 메인/.test(r.body), `status=${r.response.status}`);
+expect(
+  "legacy Cafe24 board path is not public-site content",
+  r.response.status === 404 && !/게시판 메인/.test(r.body),
+  `status=${r.response.status}`
+);
 
 r = await request("https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom");
-expect("legacy classroom hostname canonicalizes", r.response.status === 302 && (r.response.headers.get("location") || "").startsWith("https://classroom.neverjustsell.com/classroom"), `status=${r.response.status} location=${r.response.headers.get("location")}`);
+expect(
+  "legacy classroom hostname canonicalizes",
+  r.response.status === 302 &&
+    r.response.headers.get("location") === "https://classroom.neverjustsell.com/classroom",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
 
 for (const item of cases) {
   console.log(`${item.ok ? "PASS" : "FAIL"}: ${item.label} — ${item.detail}`);
 }
+
 if (process.exitCode) throw new Error("Live smoke test failed");
