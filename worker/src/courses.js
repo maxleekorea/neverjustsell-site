@@ -1,15 +1,15 @@
 export const COURSE_CATALOG = {
   "free-lesson-1": {
     productNo: 12,
-    title: "무료 1강",
-    summary: "무료 공개 강의",
+    title: "스마트스토어 개요",
+    summary: "온라인 유통업의 본질을 이해하는 무료 입문 강의",
     accessType: "public",
     visible: false,
     sortOrder: 0,
     ctaUrl: "https://www.neverjustsell.com/#class",
     ctaLabel: "전체 강의 보기",
     lessons: [
-      { id: "lesson-1", title: "무료 1강", vimeoId: "1227267267" }
+      { id: "lesson-1", title: "온라인 유통 사업의 본질", vimeoId: "1227267267" }
     ]
   },
   "paid-course": {
