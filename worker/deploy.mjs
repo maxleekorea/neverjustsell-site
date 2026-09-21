@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Build secrets are forwarded into the Worker runtime.
 const required = ["CAFE24_CLIENT_ID", "CAFE24_CLIENT_SECRET", "VIMEO_ACCESS_TOKEN"];
 const present = Object.fromEntries(required.map((key) => [key, Boolean(process.env[key])]));
 console.log("Cloudflare build secrets detected:", present);
