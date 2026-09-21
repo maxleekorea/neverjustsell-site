@@ -196,7 +196,7 @@ function renderD1CoursePlayer(course, progress, slug, url) {
 
   const grouped = new Map();
   for (const lesson of lessons) {
-    const group = lesson.moduleTitle || "강의 내용";
+    const group = lesson.moduleTitle || "전체 차시";
     if (!grouped.has(group)) grouped.set(group, []);
     grouped.get(group).push(lesson);
   }
@@ -218,7 +218,7 @@ function renderD1CoursePlayer(course, progress, slug, url) {
 
   return html(classroomShell(
     playerCourse.title,
-    `<section class="card"><div class="eyebrow">${playerCourse.accessType === "paid" ? "MY CLASSROOM" : "FREE COURSE · LOGIN REQUIRED"}</div><h1 class="title">${escapeHtml(playerCourse.title)}</h1><p class="desc">${escapeHtml(selectedLesson?.title || "")}</p><div class="progress"><span style="width:${Number(progress?.percent || 0)}%"></span></div><div class="progress-label">${Number(progress?.completed || 0)} / ${Number(progress?.total || lessons.length)} 완료 · ${Number(progress?.percent || 0)}%</div><div class="curriculum">${curriculum}</div>${player}${nav}<a class="action secondary" href="/classroom">내 강의실로</a></section>`
+    `<section class="card"><div class="eyebrow">${playerCourse.accessType === "paid" ? "MY CLASSROOM" : "FREE COURSE · LOGIN REQUIRED"}</div><h1 class="title">${escapeHtml(playerCourse.title)}</h1><p class="desc">${escapeHtml(selectedLesson?.title || "")}</p>${selectedLesson?.description ? `<p class="note">${escapeHtml(selectedLesson.description)}</p>` : ""}<div class="progress"><span style="width:${Number(progress?.percent || 0)}%"></span></div><div class="progress-label">${Number(progress?.completed || 0)} / ${Number(progress?.total || lessons.length)} 완료 · ${Number(progress?.percent || 0)}%</div><div class="curriculum">${curriculum}</div>${player}${nav}<a class="action secondary" href="/classroom">내 강의실로</a></section>`
   ));
 }
 
