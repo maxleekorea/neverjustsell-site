@@ -18,5 +18,12 @@
     "SITE_ORIGIN": "https://www.neverjustsell.com",
     "CAFE24_REDIRECT_URI": "https://classroom.neverjustsell.com/oauth/cafe24/callback",
     "COMMUNITY_ALLOWED_ORIGINS": "https://community.neverjustsell.com"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "COURSE_DB",
+      "database_name": "neverjustsell-courses",
+      "database_id": "be6afae6-e115-4229-9cdb-b4f91cc28036"
+    }
+  ]
 }

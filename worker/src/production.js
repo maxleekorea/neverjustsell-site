@@ -5,6 +5,7 @@ import classroomApp from "./main.js";
 import sessionOrdersApp from "./session-orders.js";
 import baseApp from "./index.js";
 import vimeoApp from "./vimeo.js";
+import courseAdminApp from "./course-admin.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -58,6 +59,10 @@ const VIMEO_ROUTES = new Set([
   "/vimeo/videos"
 ]);
 
+const COURSE_ADMIN_ROUTES = new Set([
+  "/course-admin/health"
+]);
+
 const BASE_ROUTES = new Set([
   "/",
   "/health",
@@ -101,6 +106,10 @@ export default {
 
     if (VIMEO_ROUTES.has(url.pathname)) {
       return vimeoApp.fetch(request, env, ctx);
+    }
+
+    if (COURSE_ADMIN_ROUTES.has(url.pathname)) {
+      return courseAdminApp.fetch(request, env, ctx);
     }
 
     if (url.pathname === "/migration-health") {
