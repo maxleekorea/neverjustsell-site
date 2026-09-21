@@ -455,7 +455,7 @@ function adminClientScript() {
     "    actions.innerHTML='<button class=\"libraryimport\" type=\"button\">선택 영상 차시로 연결</button>';",
     "  }catch(error){list.textContent='';status.textContent=error.message;status.classList.add('error');}",
     "}",
-    "function escapeHtmlClient(value){return String(value==null?'':value).replace(/[&<>\"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch];});}",
+    "function escapeHtmlClient(value){return String(value==null?'':value).replace(/[&<>\"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch];});}",
     "async function importLibrary(box){",
     "  const selected=Array.from(box.querySelectorAll('.librarylist input[type=checkbox]:checked')).map(function(input){return input.value;});",
     "  const status=box.querySelector('.uploadstatus');",
