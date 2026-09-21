@@ -1,3 +1,6 @@
+const ADMIN_COOKIE = "njs_course_admin";
+const ADMIN_TTL_SECONDS = 60 * 60 * 12;
+
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "application/json; charset=utf-8");
@@ -7,50 +10,367 @@ function json(data, init = {}) {
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
+function html(body, init = {}) {
+  const headers = new Headers(init.headers || {});
+  headers.set("Content-Type", "text/html; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
+  headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  headers.set("X-Frame-Options", "DENY");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+  );
+  return new Response(body, { ...init, headers });
+}
+
+function parseCookies(request) {
+  const result = {};
+  const header = request.headers.get("Cookie") || "";
+  for (const part of header.split(";")) {
+    const index = part.indexOf("=");
+    if (index <= 0) continue;
+    const key = part.slice(0, index).trim();
+    const value = part.slice(index + 1).trim();
+    if (!key) continue;
+    try {
+      result[key] = decodeURIComponent(value);
+    } catch {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function b64urlEncode(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
+}
+
+function b64urlDecode(text) {
+  const normalized = text.replaceAll("-", "+").replaceAll("_", "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, function (ch) { return ch.charCodeAt(0); });
+}
+
+async function hmacKey(secret) {
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+}
+
+async function makeAdminToken(secret) {
+  const payloadObject = {
+    v: 1,
+    exp: Math.floor(Date.now() / 1000) + ADMIN_TTL_SECONDS
+  };
+  const encoded = b64urlEncode(new TextEncoder().encode(JSON.stringify(payloadObject)));
+  const signature = new Uint8Array(
+    await crypto.subtle.sign("HMAC", await hmacKey(secret), new TextEncoder().encode(encoded))
+  );
+  return encoded + "." + b64urlEncode(signature);
+}
+
+async function verifyAdminToken(token, secret) {
+  if (!token || !secret) return false;
+  const parts = String(token).split(".");
+  if (parts.length !== 2) return false;
+  try {
+    const ok = await crypto.subtle.verify(
+      "HMAC",
+      await hmacKey(secret),
+      b64urlDecode(parts[1]),
+      new TextEncoder().encode(parts[0])
+    );
+    if (!ok) return false;
+    const decoded = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[0])));
+    return decoded && decoded.v === 1 && Number(decoded.exp) > Math.floor(Date.now() / 1000);
+  } catch {
+    return false;
+  }
+}
+
+async function passwordMatches(provided, expected) {
+  if (!expected) return false;
+  const encoder = new TextEncoder();
+  const digests = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(String(provided || ""))),
+    crypto.subtle.digest("SHA-256", encoder.encode(String(expected)))
+  ]);
+  const a = new Uint8Array(digests[0]);
+  const b = new Uint8Array(digests[1]);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
+function adminCookie(value) {
+  return ADMIN_COOKIE + "=" + encodeURIComponent(value) +
+    "; Path=/course-admin; Max-Age=" + ADMIN_TTL_SECONDS +
+    "; HttpOnly; Secure; SameSite=Strict";
+}
+
+function expiredAdminCookie() {
+  return ADMIN_COOKIE + "=; Path=/course-admin; Max-Age=0; HttpOnly; Secure; SameSite=Strict";
+}
+
+async function isAdmin(request, env) {
+  return verifyAdminToken(parseCookies(request)[ADMIN_COOKIE], env.COURSE_ADMIN_PASSWORD);
+}
+
+function redirect(location, cookie) {
+  const headers = new Headers({ Location: location, "Cache-Control": "no-store" });
+  if (cookie) headers.append("Set-Cookie", cookie);
+  return new Response(null, { status: 303, headers });
+}
+
+function sameOrigin(request) {
+  const origin = request.headers.get("Origin");
+  return !origin || origin === new URL(request.url).origin;
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+function shell(title, body) {
+  return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\">" +
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+    "<title>" + escapeHtml(title) + " | NEVER JUST SELL</title>" +
+    "<style>" +
+    "*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:#f5f5f5;font-family:Arial,'Noto Sans KR',sans-serif}" +
+    "a{color:inherit}.wrap{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:36px 0 70px}" +
+    ".top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}" +
+    ".brand{font-size:12px;font-weight:800;letter-spacing:.16em}.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}" +
+    ".card{background:#151515;border:1px solid #292929;border-radius:16px;padding:20px;margin-bottom:14px}" +
+    "h1{font-size:30px;margin:0 0 8px}h2{font-size:18px;margin:0 0 14px}h3{margin:0 0 8px}" +
+    "p{line-height:1.6}.muted{color:#999}.pill{display:inline-block;border:1px solid #333;border-radius:999px;padding:4px 8px;font-size:11px;color:#aaa;margin-right:5px}" +
+    "label{display:block;font-size:12px;color:#aaa;margin:11px 0 6px}input,textarea,select,button{font:inherit;border-radius:9px}" +
+    "input,textarea,select{width:100%;padding:11px 12px;background:#0d0d0d;border:1px solid #333;color:#fff}" +
+    "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
+    "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
+    ".error{color:#ff9696}.ok{color:#a8e6a8}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
+    "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
+}
+
+function loginPage(message) {
+  const note = message ? "<p class=\"error\">" + escapeHtml(message) + "</p>" : "";
+  return shell(
+    "강의 관리자",
+    "<div style=\"width:min(440px,100%);margin:7vh auto 0\" class=\"card\">" +
+      "<div class=\"brand\">NEVER JUST SELL</div><h1>강의 관리자</h1>" +
+      "<p class=\"muted\">관리자 비밀번호로 로그인하세요.</p>" + note +
+      "<form method=\"post\" action=\"/course-admin/login\">" +
+      "<label>관리자 비밀번호</label><input type=\"password\" name=\"password\" autocomplete=\"current-password\" required autofocus>" +
+      "<button type=\"submit\" style=\"width:100%;margin-top:12px\">로그인</button></form></div>"
+  );
+}
+
+async function listCourses(env) {
+  const courseRows = await env.COURSE_DB.prepare(
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+  ).all();
+  const lessonRows = await env.COURSE_DB.prepare(
+    "SELECT id,course_id,title,vimeo_id,duration_seconds,sort_order,status,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
+  ).all();
+  const courses = Array.isArray(courseRows.results) ? courseRows.results : [];
+  const lessons = Array.isArray(lessonRows.results) ? lessonRows.results : [];
+  const grouped = new Map();
+  for (const lesson of lessons) {
+    if (!grouped.has(lesson.course_id)) grouped.set(lesson.course_id, []);
+    grouped.get(lesson.course_id).push(lesson);
+  }
+  return courses.map(function (course) {
+    return { ...course, lessons: grouped.get(course.id) || [] };
+  });
+}
+
+function courseCard(course) {
+  const access = course.access_type === "paid" ? "유료" : "무료";
+  const price = Number(course.price_krw || 0);
+  const lessonHtml = (course.lessons || []).map(function (lesson) {
+    const vimeo = lesson.vimeo_id ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
+    return "<div class=\"lesson\"><strong>" + escapeHtml(lesson.title) + "</strong>" +
+      "<div class=\"muted\" style=\"font-size:12px;margin-top:4px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div></div>";
+  }).join("");
+  return "<section class=\"card\">" +
+    "<h3>" + escapeHtml(course.title) + "</h3>" +
+    "<div><span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
+    (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") + "</div>" +
+    "<p class=\"muted\">" + escapeHtml(course.summary || "") + "</p>" +
+    lessonHtml +
+    "<form method=\"post\" action=\"/course-admin/lessons\">" +
+    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+    "<label>차시 추가</label><div class=\"row\"><input name=\"title\" required placeholder=\"차시명\">" +
+    "<button type=\"submit\">차시 추가</button></div></form></section>";
+}
+
+async function dashboardPage(env, message) {
+  const courses = await listCourses(env);
+  const cards = courses.length
+    ? courses.map(courseCard).join("")
+    : "<div class=\"card\"><p class=\"muted\">아직 등록된 강의가 없습니다.</p></div>";
+  const note = message ? "<p class=\"ok\">" + escapeHtml(message) + "</p>" : "";
+  return shell(
+    "강의 관리자",
+    "<div class=\"top\"><div><div class=\"brand\">NEVER JUST SELL · COURSE ADMIN</div><h1>강의 관리</h1></div>" +
+      "<form method=\"post\" action=\"/course-admin/logout\"><button class=\"secondary\" type=\"submit\">로그아웃</button></form></div>" +
+      note +
+      "<div class=\"grid\"><section class=\"card\"><h2>새 강의</h2>" +
+      "<form method=\"post\" action=\"/course-admin/courses\">" +
+      "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
+      "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
+      "<label>설명</label><textarea name=\"summary\"></textarea>" +
+      "<div class=\"row\"><div><label>유형</label><select name=\"access_type\"><option value=\"public\">무료</option><option value=\"paid\">유료</option></select></div>" +
+      "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
+      "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
+      "<section><h2>등록 강의</h2>" + cards + "</section></div>"
+  );
+}
+
+async function health(env) {
+  if (!env.COURSE_DB) {
+    return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
+  }
+  try {
+    const expected = ["courses", "lessons", "video_uploads"];
+    const result = await env.COURSE_DB.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('courses','lessons','video_uploads') ORDER BY name"
+    ).all();
+    const tables = Array.isArray(result.results)
+      ? result.results.map(function (row) { return row.name; }).filter(Boolean)
+      : [];
+    const missing = expected.filter(function (name) { return !tables.includes(name); });
+    return json({
+      ok: missing.length === 0,
+      connected: true,
+      database: "neverjustsell-courses",
+      tables: tables,
+      missing_tables: missing,
+      admin_secret_configured: Boolean(env.COURSE_ADMIN_PASSWORD),
+      vimeo_configured: Boolean(env.VIMEO_ACCESS_TOKEN)
+    }, { status: missing.length === 0 ? 200 : 503 });
+  } catch (error) {
+    return json({
+      ok: false,
+      connected: true,
+      error: "course_db_check_failed",
+      detail: String(error && error.message ? error.message : error)
+    }, { status: 502 });
+  }
+}
+
+async function createCourse(form, env) {
+  const title = String(form.get("title") || "").trim();
+  const slug = slugify(form.get("slug"));
+  const summary = String(form.get("summary") || "").trim();
+  const accessType = form.get("access_type") === "paid" ? "paid" : "public";
+  const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
+  if (!title) throw new Error("강의명이 필요합니다.");
+  if (!slug || !/^[a-z0-9가-힣][a-z0-9가-힣-]*$/.test(slug)) throw new Error("URL 슬러그가 올바르지 않습니다.");
+  if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
+  const id = crypto.randomUUID();
+  await env.COURSE_DB.prepare(
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?, 'draft',0,0,'not_linked')"
+  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw)).run();
+}
+
+async function createLesson(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const title = String(form.get("title") || "").trim();
+  if (!courseId || !title) throw new Error("강의와 차시명이 필요합니다.");
+  const course = await env.COURSE_DB.prepare("SELECT id FROM courses WHERE id=?").bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  const orderRow = await env.COURSE_DB.prepare(
+    "SELECT COALESCE(MAX(sort_order),-1)+1 AS next_order FROM lessons WHERE course_id=?"
+  ).bind(courseId).first();
+  const sortOrder = Number(orderRow && orderRow.next_order != null ? orderRow.next_order : 0);
+  await env.COURSE_DB.prepare(
+    "INSERT INTO lessons (id,course_id,title,sort_order,status) VALUES (?,?,?,?, 'draft')"
+  ).bind(crypto.randomUUID(), courseId, title, sortOrder).run();
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname !== "/course-admin/health") {
-      return json({ ok: false, error: "not_found" }, { status: 404 });
+    if (url.pathname === "/course-admin/health") return health(env);
+
+    if (!env.COURSE_ADMIN_PASSWORD) {
+      return json({ ok: false, error: "course_admin_secret_missing" }, { status: 503 });
+    }
+
+    if (url.pathname === "/course-admin/login" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData().catch(function () { return null; });
+      const password = form ? form.get("password") : "";
+      if (!await passwordMatches(password, env.COURSE_ADMIN_PASSWORD)) {
+        return html(loginPage("비밀번호가 올바르지 않습니다."), { status: 401 });
+      }
+      return redirect("/course-admin", adminCookie(await makeAdminToken(env.COURSE_ADMIN_PASSWORD)));
+    }
+
+    if (url.pathname === "/course-admin/logout" && request.method === "POST") {
+      return redirect("/course-admin", expiredAdminCookie());
+    }
+
+    const authenticated = await isAdmin(request, env);
+
+    if (url.pathname === "/course-admin" && request.method === "GET") {
+      if (!authenticated) return html(loginPage(""));
+      if (!env.COURSE_DB) return json({ ok: false, error: "course_db_missing" }, { status: 503 });
+      return html(await dashboardPage(env, url.searchParams.get("message") || ""));
+    }
+
+    if (!authenticated) {
+      return json({ ok: false, error: "admin_auth_required" }, { status: 401 });
     }
 
     if (!env.COURSE_DB) {
-      return json(
-        { ok: false, connected: false, error: "course_db_missing" },
-        { status: 503 }
-      );
+      return json({ ok: false, error: "course_db_missing" }, { status: 503 });
     }
 
-    try {
-      const expected = ["courses", "lessons", "video_uploads"];
-      const result = await env.COURSE_DB
-        .prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('courses','lessons','video_uploads') ORDER BY name"
-        )
-        .all();
-      const tables = Array.isArray(result?.results)
-        ? result.results.map((row) => row.name).filter(Boolean)
-        : [];
-      const missing = expected.filter((name) => !tables.includes(name));
-
-      return json({
-        ok: missing.length === 0,
-        connected: true,
-        database: "neverjustsell-courses",
-        tables,
-        missing_tables: missing
-      }, { status: missing.length === 0 ? 200 : 503 });
-    } catch (error) {
-      return json(
-        {
-          ok: false,
-          connected: true,
-          error: "course_db_check_failed",
-          detail: String(error?.message || error)
-        },
-        { status: 502 }
-      );
+    if (url.pathname === "/course-admin/courses" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await createCourse(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("강의를 만들었습니다."));
+      } catch (error) {
+        return html(loginPage(String(error && error.message ? error.message : error)), { status: 400 });
+      }
     }
+
+    if (url.pathname === "/course-admin/lessons" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await createLesson(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("차시를 추가했습니다."));
+      } catch (error) {
+        return json({ ok: false, error: "course_admin_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    return json({ ok: false, error: "not_found" }, { status: 404 });
   }
 };
