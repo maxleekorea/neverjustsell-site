@@ -1,5 +1,7 @@
 const ADMIN_COOKIE = "njs_course_admin";
 const ADMIN_TTL_SECONDS = 60 * 60 * 12;
+const VIMEO_API_ORIGIN = "https://api.vimeo.com";
+const TUS_VERSION = "1.0.0";
 
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -19,7 +21,7 @@ function html(body, init = {}) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   );
   return new Response(body, { ...init, headers });
 }
@@ -170,7 +172,7 @@ function shell(title, body) {
     "input,textarea,select{width:100%;padding:11px 12px;background:#0d0d0d;border:1px solid #333;color:#fff}" +
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
-    ".error{color:#ff9696}.ok{color:#a8e6a8}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
+    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -211,8 +213,13 @@ function courseCard(course) {
   const price = Number(course.price_krw || 0);
   const lessonHtml = (course.lessons || []).map(function (lesson) {
     const vimeo = lesson.vimeo_id ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
+    const upload = lesson.vimeo_id ? "" :
+      "<div class=\"upload\" data-vimeo-upload data-course-id=\"" + escapeHtml(course.id) + "\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\" data-lesson-title=\"" + escapeHtml(lesson.title) + "\">" +
+      "<label>영상 파일</label><input class=\"uploadfile\" type=\"file\" accept=\"video/*\">" +
+      "<button class=\"uploadbutton\" type=\"button\">Vimeo 업로드</button>" +
+      "<div class=\"uploadbar\"><span></span></div><div class=\"uploadstatus\">영상 파일을 선택하세요.</div></div>";
     return "<div class=\"lesson\"><strong>" + escapeHtml(lesson.title) + "</strong>" +
-      "<div class=\"muted\" style=\"font-size:12px;margin-top:4px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div></div>";
+      "<div class=\"muted\" style=\"font-size:12px;margin-top:4px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div>" + upload + "</div>";
   }).join("");
   return "<section class=\"card\">" +
     "<h3>" + escapeHtml(course.title) + "</h3>" +
@@ -245,7 +252,8 @@ async function dashboardPage(env, message) {
       "<div class=\"row\"><div><label>유형</label><select name=\"access_type\"><option value=\"public\">무료</option><option value=\"paid\">유료</option></select></div>" +
       "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
       "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
-      "<section><h2>등록 강의</h2>" + cards + "</section></div>"
+      "<section><h2>등록 강의</h2>" + cards + "</section></div>" +
+      "<script src=\"/course-admin/app.js\" defer></script>"
   );
 }
 
@@ -311,6 +319,210 @@ async function createLesson(form, env) {
   ).bind(crypto.randomUUID(), courseId, title, sortOrder).run();
 }
 
+
+function javascript(body, init = {}) {
+  const headers = new Headers(init.headers || {});
+  headers.set("Content-Type", "application/javascript; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
+  headers.set("X-Content-Type-Options", "nosniff");
+  return new Response(body, { ...init, headers });
+}
+
+function adminClientScript() {
+  return [
+    "(function(){",
+    "\"use strict\";",
+    "const TUS_VERSION='1.0.0';",
+    "const CHUNK_SIZE=8*1024*1024;",
+    "async function api(path,options){",
+    "  const response=await fetch(path,Object.assign({},options||{}, {headers:Object.assign({'Content-Type':'application/json'},(options&&options.headers)||{})}));",
+    "  const body=await response.json().catch(function(){return {};});",
+    "  if(!response.ok) throw new Error(body.detail||body.error||('HTTP '+response.status));",
+    "  return body;",
+    "}",
+    "async function getOffset(url){",
+    "  const response=await fetch(url,{method:'HEAD',headers:{'Tus-Resumable':TUS_VERSION}});",
+    "  if(!response.ok) throw new Error('Vimeo 업로드 위치 확인 실패 ('+response.status+')');",
+    "  return Number(response.headers.get('Upload-Offset')||0);",
+    "}",
+    "function patchChunk(url,blob,offset,onProgress){",
+    "  return new Promise(function(resolve,reject){",
+    "    const xhr=new XMLHttpRequest();",
+    "    xhr.open('PATCH',url);",
+    "    xhr.setRequestHeader('Tus-Resumable',TUS_VERSION);",
+    "    xhr.setRequestHeader('Upload-Offset',String(offset));",
+    "    xhr.setRequestHeader('Content-Type','application/offset+octet-stream');",
+    "    xhr.upload.onprogress=function(event){if(event.lengthComputable) onProgress(offset+event.loaded);};",
+    "    xhr.onload=function(){",
+    "      if(xhr.status>=200&&xhr.status<300){resolve(Number(xhr.getResponseHeader('Upload-Offset')||offset+blob.size));}",
+    "      else reject(new Error('Vimeo 업로드 실패 ('+xhr.status+')'));",
+    "    };",
+    "    xhr.onerror=function(){reject(new Error('Vimeo 업로드 네트워크 오류'));};",
+    "    xhr.send(blob);",
+    "  });",
+    "}",
+    "async function uploadTus(url,file,onProgress){",
+    "  let offset=0;",
+    "  try{offset=await getOffset(url);}catch(_){offset=0;}",
+    "  while(offset<file.size){",
+    "    const end=Math.min(offset+CHUNK_SIZE,file.size);",
+    "    offset=await patchChunk(url,file.slice(offset,end),offset,onProgress);",
+    "  }",
+    "}",
+    "async function startUpload(box){",
+    "  const input=box.querySelector('.uploadfile');",
+    "  const button=box.querySelector('.uploadbutton');",
+    "  const status=box.querySelector('.uploadstatus');",
+    "  const bar=box.querySelector('.uploadbar span');",
+    "  const file=input&&input.files&&input.files[0];",
+    "  if(!file){status.textContent='영상 파일을 먼저 선택하세요.';return;}",
+    "  button.disabled=true;input.disabled=true;",
+    "  try{",
+    "    status.textContent='Vimeo 업로드 세션 생성 중…';",
+    "    const started=await api('/course-admin/api/vimeo/start',{method:'POST',body:JSON.stringify({course_id:box.dataset.courseId,lesson_id:box.dataset.lessonId,file_name:file.name,file_size:file.size,name:box.dataset.lessonTitle})});",
+    "    status.textContent='Vimeo 업로드 0%';",
+    "    await uploadTus(started.upload_link,file,function(done){",
+    "      const pct=Math.max(0,Math.min(100,Math.round(done/file.size*100)));",
+    "      bar.style.width=pct+'%';status.textContent='Vimeo 업로드 '+pct+'%';",
+    "    });",
+    "    status.textContent='업로드 완료 · Vimeo 처리 상태 확인 중…';",
+    "    const completed=await api('/course-admin/api/vimeo/complete',{method:'POST',body:JSON.stringify({upload_id:started.upload_id})});",
+    "    bar.style.width='100%';",
+    "    status.textContent=completed.status==='ready'?'영상 등록 완료':'업로드 완료 · Vimeo 인코딩 처리 중';",
+    "    setTimeout(function(){location.reload();},900);",
+    "  }catch(error){",
+    "    status.textContent=error&&error.message?error.message:String(error);",
+    "    status.classList.add('error');button.disabled=false;input.disabled=false;",
+    "  }",
+    "}",
+    "document.addEventListener('click',function(event){",
+    "  const button=event.target.closest('.uploadbutton');",
+    "  if(!button) return;",
+    "  const box=button.closest('[data-vimeo-upload]');",
+    "  if(box) startUpload(box);",
+    "});",
+    "})();"
+  ].join("\n");
+}
+
+function vimeoHeaders(env, hasBody) {
+  const headers = {
+    Authorization: "Bearer " + String(env.VIMEO_ACCESS_TOKEN || "").trim(),
+    Accept: "application/vnd.vimeo.*+json;version=3.4"
+  };
+  if (hasBody) headers["Content-Type"] = "application/json";
+  return headers;
+}
+
+async function vimeoRequest(path, env, init = {}) {
+  const response = await fetch(VIMEO_API_ORIGIN + path, {
+    ...init,
+    headers: { ...vimeoHeaders(env, Boolean(init.body)), ...(init.headers || {}) }
+  });
+  const payload = await response.json().catch(function () { return {}; });
+  if (!response.ok) {
+    throw new Error("Vimeo API failed (" + response.status + "): " + JSON.stringify(payload));
+  }
+  return payload;
+}
+
+function vimeoVideoId(uri) {
+  const match = String(uri || "").match(/\/videos\/(\d+)/);
+  return match ? match[1] : null;
+}
+
+async function readJson(request) {
+  try {
+    return await request.json();
+  } catch {
+    return null;
+  }
+}
+
+async function startVimeoUpload(body, env) {
+  if (!env.VIMEO_ACCESS_TOKEN) throw new Error("Vimeo 연결이 필요합니다.");
+
+  const courseId = String(body && body.course_id || "").trim();
+  const lessonId = String(body && body.lesson_id || "").trim();
+  const fileName = String(body && body.file_name || "").trim();
+  const fileSize = Number(body && body.file_size || 0);
+  const videoName = String(body && body.name || fileName || "강의 영상").trim();
+
+  if (!courseId || !lessonId || !fileName || !Number.isFinite(fileSize) || fileSize <= 0) {
+    throw new Error("업로드 정보가 부족합니다.");
+  }
+
+  const lesson = await env.COURSE_DB
+    .prepare("SELECT id,course_id,vimeo_id FROM lessons WHERE id=?")
+    .bind(lessonId)
+    .first();
+
+  if (!lesson || lesson.course_id !== courseId) throw new Error("차시 정보가 일치하지 않습니다.");
+  if (lesson.vimeo_id) throw new Error("이미 Vimeo 영상이 연결된 차시입니다.");
+
+  const video = await vimeoRequest("/me/videos", env, {
+    method: "POST",
+    body: JSON.stringify({
+      name: videoName,
+      privacy: { view: "disable" },
+      upload: { approach: "tus", size: Math.trunc(fileSize) }
+    })
+  });
+
+  const vimeoId = vimeoVideoId(video && video.uri);
+  const uploadLink = video && video.upload && video.upload.upload_link;
+  if (!vimeoId || !uploadLink) throw new Error("Vimeo 업로드 세션 생성에 실패했습니다.");
+
+  const uploadId = crypto.randomUUID();
+  await env.COURSE_DB.prepare(
+    "INSERT INTO video_uploads (id,course_id,lesson_id,file_name,file_size,vimeo_id,vimeo_uri,upload_status) VALUES (?,?,?,?,?,?,?, 'uploading')"
+  ).bind(uploadId, courseId, lessonId, fileName, Math.trunc(fileSize), vimeoId, video.uri).run();
+
+  await env.COURSE_DB.prepare(
+    "UPDATE lessons SET vimeo_id=?,status='uploading',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(vimeoId, lessonId).run();
+
+  return {
+    upload_id: uploadId,
+    upload_link: uploadLink,
+    vimeo_id: vimeoId,
+    tus_version: TUS_VERSION
+  };
+}
+
+async function completeVimeoUpload(body, env) {
+  const uploadId = String(body && body.upload_id || "").trim();
+  if (!uploadId) throw new Error("업로드 ID가 필요합니다.");
+
+  const upload = await env.COURSE_DB.prepare(
+    "SELECT id,lesson_id,vimeo_id FROM video_uploads WHERE id=?"
+  ).bind(uploadId).first();
+
+  if (!upload) throw new Error("업로드 기록을 찾을 수 없습니다.");
+
+  const video = await vimeoRequest("/videos/" + encodeURIComponent(upload.vimeo_id), env, { method: "GET" });
+  const duration = Number(video && video.duration || 0) || null;
+  const transcodeStatus = video && video.transcode && video.transcode.status || null;
+  const ready = transcodeStatus === "complete";
+  const status = ready ? "ready" : "processing";
+
+  await env.COURSE_DB.prepare(
+    "UPDATE video_uploads SET upload_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(status, uploadId).run();
+
+  await env.COURSE_DB.prepare(
+    "UPDATE lessons SET duration_seconds=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(duration, status, upload.lesson_id).run();
+
+  return {
+    upload_id: uploadId,
+    vimeo_id: upload.vimeo_id,
+    status,
+    transcode_status: transcodeStatus,
+    duration_seconds: duration
+  };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -343,6 +555,11 @@ export default {
       return html(await dashboardPage(env, url.searchParams.get("message") || ""));
     }
 
+    if (url.pathname === "/course-admin/app.js" && request.method === "GET") {
+      if (!authenticated) return javascript("/* admin auth required */", { status: 401 });
+      return javascript(adminClientScript());
+    }
+
     if (!authenticated) {
       return json({ ok: false, error: "admin_auth_required" }, { status: 401 });
     }
@@ -368,6 +585,24 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("차시를 추가했습니다."));
       } catch (error) {
         return json({ ok: false, error: "course_admin_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/vimeo/start" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        return json({ ok: true, ...(await startVimeoUpload(await readJson(request), env)) }, { status: 201 });
+      } catch (error) {
+        return json({ ok: false, error: "vimeo_upload_start_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/vimeo/complete" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        return json({ ok: true, ...(await completeVimeoUpload(await readJson(request), env)) });
+      } catch (error) {
+        return json({ ok: false, error: "vimeo_upload_complete_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
       }
     }
 
