@@ -18,7 +18,7 @@ export async function getPublishedD1Course(env, slug) {
       "SELECT id,course_id,title,description,sort_order,status FROM course_modules WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
     ).bind(course.id).all(),
     env.COURSE_DB.prepare(
-      "SELECT id,course_id,module_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+      "SELECT id,course_id,module_id,title,description,vimeo_id,duration_seconds,sort_order,status,is_preview FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
     ).bind(course.id).all()
   ]);
 
@@ -84,6 +84,7 @@ export function d1CourseToPlayerCourse(course) {
     lessons: (course.lessons || []).map((lesson) => ({
       id: lesson.id,
       title: lesson.title,
+      description: lesson.description || "",
       vimeoId: lesson.vimeo_id || null,
       durationSeconds: lesson.duration_seconds || null,
       status: lesson.status,
