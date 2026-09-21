@@ -43,6 +43,7 @@ const CLASSROOM_ROUTES = new Set([
   "/robots.txt",
   "/system-check",
   "/classroom",
+  "/classroom/progress",
   "/course-access"
 ]);
 
