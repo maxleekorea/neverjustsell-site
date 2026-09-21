@@ -172,7 +172,7 @@ function shell(title, body) {
     "input,textarea,select{width:100%;padding:11px 12px;background:#0d0d0d;border:1px solid #333;color:#fff}" +
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
-    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
+    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -234,6 +234,9 @@ function courseCard(course) {
     statusForm +
     "<p class=\"muted\">" + escapeHtml(course.summary || "") + "</p>" +
     lessonHtml +
+    "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
+    "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
+    "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
     "<form method=\"post\" action=\"/course-admin/lessons\">" +
     "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
     "<label>차시 추가</label><div class=\"row\"><input name=\"title\" required placeholder=\"차시명\">" +
@@ -441,11 +444,32 @@ function adminClientScript() {
     "    status.classList.add('error');button.disabled=false;input.disabled=false;",
     "  }",
     "}",
+    "function formatDuration(seconds){const s=Number(seconds||0);const m=Math.floor(s/60);const r=s%60;return m+':'+String(r).padStart(2,'0');}",
+    "async function loadLibrary(box){",
+    "  const list=box.querySelector('.librarylist');const actions=box.querySelector('.libraryactions');const status=box.querySelector('.uploadstatus');",
+    "  list.textContent='Vimeo 영상 목록을 불러오는 중…';actions.innerHTML='';status.textContent='';",
+    "  try{",
+    "    const data=await api('/course-admin/api/vimeo/library');",
+    "    if(!data.videos.length){list.textContent='연결 가능한 Vimeo 영상이 없습니다.';return;}",
+    "    list.innerHTML=data.videos.map(function(v){return '<label class=\"libraryitem\"><input type=\"checkbox\" value=\"'+v.vimeo_id+'\"><span><strong>'+escapeHtmlClient(v.name||('Vimeo '+v.vimeo_id))+'</strong><div class=\"librarymeta\">'+formatDuration(v.duration_seconds)+' · '+escapeHtmlClient(v.status||'unknown')+'</div></span><span class=\"librarymeta\">'+v.vimeo_id+'</span></label>';}).join('');",
+    "    actions.innerHTML='<button class=\"libraryimport\" type=\"button\">선택 영상 차시로 연결</button>';",
+    "  }catch(error){list.textContent='';status.textContent=error.message;status.classList.add('error');}",
+    "}",
+    "function escapeHtmlClient(value){return String(value==null?'':value).replace(/[&<>\"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[ch];});}",
+    "async function importLibrary(box){",
+    "  const selected=Array.from(box.querySelectorAll('.librarylist input[type=checkbox]:checked')).map(function(input){return input.value;});",
+    "  const status=box.querySelector('.uploadstatus');",
+    "  if(!selected.length){status.textContent='연결할 영상을 선택하세요.';return;}",
+    "  status.textContent='선택 영상을 차시로 연결하는 중…';",
+    "  try{const result=await api('/course-admin/api/vimeo/import',{method:'POST',body:JSON.stringify({course_id:box.dataset.courseId,video_ids:selected})});status.textContent=result.imported_count+'개 영상을 연결했습니다.';setTimeout(function(){location.reload();},700);}catch(error){status.textContent=error.message;status.classList.add('error');}",
+    "}",
     "document.addEventListener('click',function(event){",
-    "  const button=event.target.closest('.uploadbutton');",
-    "  if(!button) return;",
-    "  const box=button.closest('[data-vimeo-upload]');",
-    "  if(box) startUpload(box);",
+    "  const uploadButton=event.target.closest('.uploadbutton');",
+    "  if(uploadButton){const box=uploadButton.closest('[data-vimeo-upload]');if(box) startUpload(box);return;}",
+    "  const loadButton=event.target.closest('.libraryload');",
+    "  if(loadButton){const box=loadButton.closest('[data-vimeo-library]');if(box) loadLibrary(box);return;}",
+    "  const importButton=event.target.closest('.libraryimport');",
+    "  if(importButton){const box=importButton.closest('[data-vimeo-library]');if(box) importLibrary(box);return;}",
     "});",
     "})();"
   ].join("\n");
@@ -483,6 +507,81 @@ async function readJson(request) {
   } catch {
     return null;
   }
+}
+
+
+async function listVimeoLibrary(env) {
+  if (!env.VIMEO_ACCESS_TOKEN) throw new Error("Vimeo 연결이 필요합니다.");
+  const videos = [];
+  for (let page = 1; page <= 5; page += 1) {
+    const payload = await vimeoRequest(
+      "/me/videos?per_page=100&page=" + page + "&sort=date&direction=desc&fields=uri,name,duration,created_time,transcode.status",
+      env,
+      { method: "GET" }
+    );
+    const pageVideos = Array.isArray(payload && payload.data) ? payload.data : [];
+    videos.push(...pageVideos);
+    if (pageVideos.length < 100) break;
+  }
+  const linked = await env.COURSE_DB.prepare(
+    "SELECT vimeo_id FROM lessons WHERE vimeo_id IS NOT NULL"
+  ).all();
+  const linkedIds = new Set(
+    (Array.isArray(linked.results) ? linked.results : [])
+      .map((row) => String(row.vimeo_id || ""))
+      .filter(Boolean)
+  );
+
+  return videos
+    .map((video) => ({
+      vimeo_id: vimeoVideoId(video.uri),
+      name: video.name || "",
+      duration_seconds: Number(video.duration || 0) || 0,
+      created_time: video.created_time || null,
+      status: video.transcode && video.transcode.status || null
+    }))
+    .filter((video) => video.vimeo_id && !linkedIds.has(video.vimeo_id))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko", { numeric: true, sensitivity: "base" }));
+}
+
+async function importVimeoLibrary(body, env) {
+  const courseId = String(body && body.course_id || "").trim();
+  const requestedIds = Array.isArray(body && body.video_ids)
+    ? body.video_ids.map((id) => String(id || "").trim()).filter((id) => /^\d+$/.test(id))
+    : [];
+  if (!courseId || requestedIds.length === 0) throw new Error("강의와 Vimeo 영상을 선택해야 합니다.");
+
+  const course = await env.COURSE_DB.prepare("SELECT id FROM courses WHERE id=?").bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+
+  const library = await listVimeoLibrary(env);
+  const byId = new Map(library.map((video) => [video.vimeo_id, video]));
+  const selected = requestedIds.map((id) => byId.get(id)).filter(Boolean);
+  if (selected.length !== requestedIds.length) {
+    throw new Error("선택한 영상 중 이미 연결됐거나 현재 계정에서 확인할 수 없는 영상이 있습니다.");
+  }
+
+  const orderRow = await env.COURSE_DB.prepare(
+    "SELECT COALESCE(MAX(sort_order),-1)+1 AS next_order FROM lessons WHERE course_id=?"
+  ).bind(courseId).first();
+  let sortOrder = Number(orderRow && orderRow.next_order != null ? orderRow.next_order : 0);
+
+  for (const video of selected) {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO lessons (id,course_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview) VALUES (?,?,?,?,?,?,?,0)"
+    ).bind(
+      crypto.randomUUID(),
+      courseId,
+      video.name || ("Vimeo " + video.vimeo_id),
+      video.vimeo_id,
+      video.duration_seconds || null,
+      sortOrder,
+      video.status === "complete" ? "ready" : "processing"
+    ).run();
+    sortOrder += 1;
+  }
+
+  return { imported_count: selected.length };
 }
 
 async function startVimeoUpload(body, env) {
@@ -641,6 +740,23 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("차시를 추가했습니다."));
       } catch (error) {
         return json({ ok: false, error: "course_admin_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/vimeo/library" && request.method === "GET") {
+      try {
+        return json({ ok: true, videos: await listVimeoLibrary(env) });
+      } catch (error) {
+        return json({ ok: false, error: "vimeo_library_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/vimeo/import" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        return json({ ok: true, ...(await importVimeoLibrary(await readJson(request), env)) });
+      } catch (error) {
+        return json({ ok: false, error: "vimeo_import_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
       }
     }
 
