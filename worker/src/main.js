@@ -128,7 +128,12 @@ async function renderSystemCheck(request, env, ctx, url) {
     env,
     ctx
   );
-  const freeBody = await readText(freeAnonResponse);
+  const freeCurrentResponse = await app.fetch(
+    internalRequest(new URL("/classroom?course=free-lesson-1", url.origin), request),
+    env,
+    ctx
+  );
+  const freeBody = sessionOk ? await readText(freeCurrentResponse) : "";
 
   const paidAnonResponse = systemCheckSlug
     ? await app.fetch(
@@ -192,7 +197,10 @@ async function renderSystemCheck(request, env, ctx, url) {
   );
   const unknownProduct = await readJson(unknownProductResponse);
 
-  const freeOk = freeAnonResponse.status === 200;
+  const freeOk =
+    freeAnonResponse.status === 302 &&
+    freeAnonResponse.headers.get("location") === `${url.origin}/oauth/cafe24/customer/start` &&
+    freeCurrentResponse.status === (sessionOk ? 200 : 302);
   const anonPaidOk =
     paidAnonResponse.status === 302 &&
     paidAnonResponse.headers.get("location") === `${url.origin}/oauth/cafe24/customer/start`;
@@ -205,22 +213,26 @@ async function renderSystemCheck(request, env, ctx, url) {
     paidFirstLessonResponse.status === paidExpected &&
     paidLastLessonResponse.status === paidExpected;
   const invalidCourseOk = invalidCourseResponse.status === 404;
-  const invalidLessonOk = invalidLessonResponse.status === 404;
+  const invalidLessonOk = sessionOk ? invalidLessonResponse.status === 404 : null;
   const unknownProductOk = unknownProductResponse.status === 404 && unknownProduct?.error === "unknown_course_product";
   const paginationOk = sessionOk
     ? access?.pagination?.limit === 1000 && access?.pagination?.max_offset === 15000
     : null;
-  const mobileLayoutOk = freeBody.includes("viewport-fit=cover") && freeBody.includes("aspect-ratio:16/9");
-  const securityHeadersOk = Boolean(
-    freeAnonResponse.headers.get("Content-Security-Policy") &&
-    freeAnonResponse.headers.get("X-Frame-Options") === "DENY" &&
-    freeAnonResponse.headers.get("X-Content-Type-Options") === "nosniff"
-  );
+  const mobileLayoutOk = sessionOk
+    ? freeBody.includes("viewport-fit=cover") && freeBody.includes("aspect-ratio:16/9")
+    : null;
+  const securityHeadersOk = sessionOk
+    ? Boolean(
+        freeCurrentResponse.headers.get("Content-Security-Policy") &&
+        freeCurrentResponse.headers.get("X-Frame-Options") === "DENY" &&
+        freeCurrentResponse.headers.get("X-Content-Type-Options") === "nosniff"
+      )
+    : null;
 
   const checks = [
     { label: "Worker", ok: true, detail: "강의 시스템 Worker가 정상 응답했습니다." },
     { label: "강의 데이터", ok: catalogErrors.length === 0, detail: catalogErrors.length === 0 ? "등록된 강의의 상품번호·차시·Vimeo ID 형식이 정상입니다." : catalogErrors.join(" / ") },
-    { label: "무료 강의 공개", ok: freeOk, detail: `로그인 정보 없는 요청에서도 무료 1강 응답 코드 ${freeAnonResponse.status}` },
+    { label: "무료 강의 회원 전용", ok: freeOk, detail: `비로그인 무료 강의 응답 코드 ${freeAnonResponse.status} · Cafe24 회원 인증 후 구매 없이 수강` },
     { label: "회원 세션", ok: sessionOk ? true : null, detail: sessionOk ? "현재 브라우저의 강의실 회원 인증이 유효합니다." : "현재 브라우저는 강의실 비로그인 상태입니다." },
     { label: "구매 검증 API", ok: entitlementApiOk, detail: sessionOk ? `product_no=${systemCheckProductNo} 접근권: ${access?.access ? "허용" : "미허용"}` : "비로그인 상태에서 구매 검증 API가 차단됩니다." },
     { label: "현재 유료 강의", ok: paidCurrentOk, detail: `${systemCheckSlug || "fixture 없음"} · 현재 세션 기준 예상 코드 ${paidExpected}, 실제 코드 ${paidCurrentResponse.status}` },
@@ -228,7 +240,7 @@ async function renderSystemCheck(request, env, ctx, url) {
     { label: "익명 유료 접근 인증 전환", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 접근 응답 코드 ${paidAnonResponse.status} · Cafe24 인증 시작 경로로 전환` },
     { label: "등록되지 않은 상품 차단", ok: unknownProductOk, detail: `임의 product_no 요청 응답 코드 ${unknownProductResponse.status}` },
     { label: "잘못된 강의 주소", ok: invalidCourseOk, detail: `존재하지 않는 강의 응답 코드 ${invalidCourseResponse.status}` },
-    { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` },
+    { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: sessionOk ? `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` : "회원 로그인 후 잘못된 차시 주소 차단을 확인합니다." },
     { label: "대량 주문 페이지네이션", ok: paginationOk, detail: sessionOk ? `주문 조회 limit ${access?.pagination?.limit}, max offset ${access?.pagination?.max_offset}` : "로그인 후 주문 페이지네이션 설정을 자동 확인합니다." },
     { label: "모바일 플레이어 구조", ok: mobileLayoutOk, detail: "viewport-fit과 16:9 반응형 플레이어 구조를 확인했습니다." },
     { label: "보안 헤더", ok: securityHeadersOk, detail: "CSP · X-Frame-Options · nosniff 헤더를 확인했습니다." },

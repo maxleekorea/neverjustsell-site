@@ -191,7 +191,7 @@ function loginPage(message) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const lessonRows = await env.COURSE_DB.prepare(
     "SELECT id,course_id,title,vimeo_id,duration_seconds,sort_order,status,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
@@ -209,7 +209,7 @@ async function listCourses(env) {
 }
 
 function courseCard(course) {
-  const access = course.access_type === "paid" ? "유료" : "무료";
+  const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
   const lessonHtml = (course.lessons || []).map(function (lesson) {
     const vimeo = lesson.vimeo_id ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
@@ -249,7 +249,7 @@ async function dashboardPage(env, message) {
       "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
       "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
       "<label>설명</label><textarea name=\"summary\"></textarea>" +
-      "<div class=\"row\"><div><label>유형</label><select name=\"access_type\"><option value=\"public\">무료</option><option value=\"paid\">유료</option></select></div>" +
+      "<div class=\"row\"><div><label>유형</label><select name=\"access_type\"><option value=\"public\">무료 · 로그인 필요</option><option value=\"paid\">유료</option></select></div>" +
       "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
       "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
       "<section><h2>등록 강의</h2>" + cards + "</section></div>" +
@@ -300,7 +300,7 @@ async function createCourse(form, env) {
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
   const id = crypto.randomUUID();
   await env.COURSE_DB.prepare(
-    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?, 'draft',0,0,'not_linked')"
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,login_required,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,1,'draft',0,0,'not_linked')"
   ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw)).run();
 }
 
