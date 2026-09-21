@@ -78,6 +78,13 @@ r = await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?state=u
 body = await r.json();
 assert(r.status === 401 && body.error === "invalid_or_expired_state", "OAuth callback must have one state owner");
 
+r = await get("https://classroom.neverjustsell.com/classroom?course=free-lesson-1");
+assert(r.status === 302, "anonymous free course must require authentication");
+assert(
+  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
+  "anonymous free course must redirect to Cafe24 authentication"
+);
+
 r = await get("https://classroom.neverjustsell.com/classroom");
 assert(r.status === 302, "anonymous classroom must immediately start authentication");
 assert(
@@ -139,6 +146,13 @@ try {
   });
   body = await r.json();
   assert(r.status === 200 && body.authenticated === true, "stored classroom session must be recognized");
+
+  r = await get("https://classroom.neverjustsell.com/classroom?course=free-lesson-1", {
+    headers: { Cookie: "njs_session=test-session" }
+  });
+  const authenticatedFreeCourse = await r.text();
+  assert(r.status === 200, "authenticated member must access free course without purchase");
+  assert(authenticatedFreeCourse.includes("FREE CLASS"), "free course must render after member authentication");
 
   r = await get("https://classroom.neverjustsell.com/classroom", {
     headers: { Cookie: "njs_session=test-session" }
