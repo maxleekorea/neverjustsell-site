@@ -59,10 +59,6 @@ const VIMEO_ROUTES = new Set([
   "/vimeo/videos"
 ]);
 
-const COURSE_ADMIN_ROUTES = new Set([
-  "/course-admin/health"
-]);
-
 const BASE_ROUTES = new Set([
   "/",
   "/health",
@@ -108,7 +104,7 @@ export default {
       return vimeoApp.fetch(request, env, ctx);
     }
 
-    if (COURSE_ADMIN_ROUTES.has(url.pathname)) {
+    if (url.pathname === "/course-admin" || url.pathname.startsWith("/course-admin/")) {
       return courseAdminApp.fetch(request, env, ctx);
     }
 
