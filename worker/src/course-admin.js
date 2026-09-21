@@ -269,9 +269,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["courses", "lessons", "video_uploads"];
+    const expected = ["course_modules", "courses", "lesson_progress", "lessons", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('courses','lessons','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_modules','courses','lesson_progress','lessons','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
