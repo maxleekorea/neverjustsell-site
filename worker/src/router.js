@@ -204,6 +204,8 @@ async function renderClassroom(request, env, url) {
   }
 
   if (course.accessType === "public") {
+    const session = await getCustomerSession(request, env);
+    if (!session?.record?.member_id) return redirectToCustomerAuth();
     return renderCoursePlayer(course, "FREE CLASS", slug, url);
   }
 
