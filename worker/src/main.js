@@ -213,7 +213,7 @@ async function renderSystemCheck(request, env, ctx, url) {
     paidFirstLessonResponse.status === paidExpected &&
     paidLastLessonResponse.status === paidExpected;
   const invalidCourseOk = invalidCourseResponse.status === 404;
-  const invalidLessonOk = invalidLessonResponse.status === 404;
+  const invalidLessonOk = sessionOk ? invalidLessonResponse.status === 404 : null;
   const unknownProductOk = unknownProductResponse.status === 404 && unknownProduct?.error === "unknown_course_product";
   const paginationOk = sessionOk
     ? access?.pagination?.limit === 1000 && access?.pagination?.max_offset === 15000
@@ -240,7 +240,7 @@ async function renderSystemCheck(request, env, ctx, url) {
     { label: "익명 유료 접근 인증 전환", ok: anonPaidOk, detail: `쿠키 없는 유료 강의 접근 응답 코드 ${paidAnonResponse.status} · Cafe24 인증 시작 경로로 전환` },
     { label: "등록되지 않은 상품 차단", ok: unknownProductOk, detail: `임의 product_no 요청 응답 코드 ${unknownProductResponse.status}` },
     { label: "잘못된 강의 주소", ok: invalidCourseOk, detail: `존재하지 않는 강의 응답 코드 ${invalidCourseResponse.status}` },
-    { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` },
+    { label: "잘못된 차시 주소", ok: invalidLessonOk, detail: sessionOk ? `존재하지 않는 차시 응답 코드 ${invalidLessonResponse.status}` : "회원 로그인 후 잘못된 차시 주소 차단을 확인합니다." },
     { label: "대량 주문 페이지네이션", ok: paginationOk, detail: sessionOk ? `주문 조회 limit ${access?.pagination?.limit}, max offset ${access?.pagination?.max_offset}` : "로그인 후 주문 페이지네이션 설정을 자동 확인합니다." },
     { label: "모바일 플레이어 구조", ok: mobileLayoutOk, detail: "viewport-fit과 16:9 반응형 플레이어 구조를 확인했습니다." },
     { label: "보안 헤더", ok: securityHeadersOk, detail: "CSP · X-Frame-Options · nosniff 헤더를 확인했습니다." },
