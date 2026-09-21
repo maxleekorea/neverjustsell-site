@@ -54,7 +54,8 @@ const SESSION_ORDER_ROUTES = new Set([
 
 const VIMEO_ROUTES = new Set([
   "/vimeo/status",
-  "/vimeo/course-candidates"
+  "/vimeo/course-candidates",
+  "/vimeo/videos"
 ]);
 
 const BASE_ROUTES = new Set([

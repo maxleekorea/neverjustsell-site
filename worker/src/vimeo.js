@@ -140,6 +140,23 @@ export default {
         });
       }
 
+      if (url.pathname === "/vimeo/videos") {
+        const videos = await listVideos(env);
+        return json({
+          ok: true,
+          connected: true,
+          video_count: videos.length,
+          videos: videos.map((video) => ({
+            vimeo_id: videoId(video.uri),
+            name: video.name || null,
+            duration: video.duration ?? null,
+            privacy: video.privacy?.view || null,
+            created_time: video.created_time || null,
+            modified_time: video.modified_time || null
+          }))
+        });
+      }
+
       return json({ ok: false, error: "not_found" }, { status: 404 });
     } catch (error) {
       return json(
