@@ -20,10 +20,10 @@ const secrets = Object.fromEntries(required.map((key) => [key, process.env[key]]
 
 await writeFile(secretsPath, JSON.stringify(secrets), { mode: 0o600 });
 
-try {
+async function runWrangler(args) {
   const child = spawn(
     process.platform === "win32" ? "npx.cmd" : "npx",
-    ["wrangler", "deploy", "--secrets-file", secretsPath],
+    ["wrangler", ...args],
     { stdio: "inherit", env: process.env }
   );
 
@@ -33,6 +33,20 @@ try {
   });
 
   if (exitCode !== 0) process.exit(exitCode);
+}
+
+try {
+  await runWrangler([
+    "d1",
+    "migrations",
+    "apply",
+    "neverjustsell-courses",
+    "--remote",
+    "--config",
+    "wrangler.jsonc"
+  ]);
+
+  await runWrangler(["deploy", "--secrets-file", secretsPath]);
 } finally {
   await rm(secretsPath, { force: true });
 }
