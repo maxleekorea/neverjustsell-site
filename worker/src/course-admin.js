@@ -172,7 +172,7 @@ function shell(title, body) {
     "input,textarea,select{width:100%;padding:11px 12px;background:#0d0d0d;border:1px solid #333;color:#fff}" +
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
-    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}" +
+    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.lessonedit{display:grid;grid-template-columns:44px 1fr 150px auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #232323}.lessonedit input,.lessonedit select{margin:0}.orderbuttons{display:flex;gap:4px}.orderbuttons form{margin:0}.orderbuttons button{padding:8px 9px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}.lessonedit{grid-template-columns:1fr}.orderbuttons{justify-content:flex-start}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -193,33 +193,71 @@ async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
     "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
-  const lessonRows = await env.COURSE_DB.prepare(
-    "SELECT id,course_id,module_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
-  ).all();
+  const [lessonRows, moduleRows] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT id,course_id,module_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
+    ).all(),
+    env.COURSE_DB.prepare(
+      "SELECT id,course_id,title,description,sort_order,status,created_at,updated_at FROM course_modules WHERE status!='archived' ORDER BY course_id,sort_order,created_at"
+    ).all()
+  ]);
   const courses = Array.isArray(courseRows.results) ? courseRows.results : [];
   const lessons = Array.isArray(lessonRows.results) ? lessonRows.results : [];
+  const modules = Array.isArray(moduleRows.results) ? moduleRows.results : [];
   const grouped = new Map();
+  const groupedModules = new Map();
   for (const lesson of lessons) {
     if (!grouped.has(lesson.course_id)) grouped.set(lesson.course_id, []);
     grouped.get(lesson.course_id).push(lesson);
   }
+  for (const module of modules) {
+    if (!groupedModules.has(module.course_id)) groupedModules.set(module.course_id, []);
+    groupedModules.get(module.course_id).push(module);
+  }
   return courses.map(function (course) {
-    return { ...course, lessons: grouped.get(course.id) || [] };
+    return {
+      ...course,
+      lessons: grouped.get(course.id) || [],
+      modules: groupedModules.get(course.id) || []
+    };
   });
 }
 
 function courseCard(course) {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
-  const lessonHtml = (course.lessons || []).map(function (lesson) {
+  const moduleOptions = ['<option value="">강의 내용</option>']
+    .concat((course.modules || []).map(function (module) {
+      return '<option value="' + escapeHtml(module.id) + '">' + escapeHtml(module.title) + '</option>';
+    }));
+  const lessonHtml = (course.lessons || []).map(function (lesson, index) {
     const vimeo = lesson.vimeo_id ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
     const upload = lesson.vimeo_id ? "" :
       "<div class=\"upload\" data-vimeo-upload data-course-id=\"" + escapeHtml(course.id) + "\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\" data-lesson-title=\"" + escapeHtml(lesson.title) + "\">" +
       "<label>영상 파일</label><input class=\"uploadfile\" type=\"file\" accept=\"video/*\">" +
       "<button class=\"uploadbutton\" type=\"button\">Vimeo 업로드</button>" +
       "<div class=\"uploadbar\"><span></span></div><div class=\"uploadstatus\">영상 파일을 선택하세요.</div></div>";
-    return "<div class=\"lesson\"><strong>" + escapeHtml(lesson.title) + "</strong>" +
-      "<div class=\"muted\" style=\"font-size:12px;margin-top:4px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div>" + upload + "</div>";
+    const selectedOptions = moduleOptions.map(function (option) {
+      if (!lesson.module_id) return option;
+      return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
+    }).join("");
+    const preview = course.access_type === "paid"
+      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">무료 미리보기</label>"
+      : "";
+    const moveUp = index > 0
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\" title=\"위로\">↑</button></form>"
+      : "";
+    const moveDown = index < course.lessons.length - 1
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\" title=\"아래로\">↓</button></form>"
+      : "";
+    return "<div class=\"lesson\"><div class=\"muted\" style=\"font-size:12px;margin-bottom:6px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div>" +
+      "<form class=\"lessonedit\" method=\"post\" action=\"/course-admin/lesson-update\">" +
+      "<span class=\"muted\">" + (index + 1) + "</span>" +
+      "<input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\">" +
+      "<input name=\"title\" value=\"" + escapeHtml(lesson.title) + "\" required>" +
+      "<select name=\"module_id\">" + selectedOptions + "</select>" +
+      "<button class=\"secondary\" type=\"submit\">저장</button>" + preview + "</form>" +
+      "<div class=\"orderbuttons\">" + moveUp + moveDown + "</div>" + upload + "</div>";
   }).join("");
   const published = course.status === "published" && Number(course.visible) === 1;
   const statusForm =
@@ -233,7 +271,9 @@ function courseCard(course) {
     (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") + "</div>" +
     statusForm +
     "<p class=\"muted\">" + escapeHtml(course.summary || "") + "</p>" +
+    "<div class=\"editor\"><strong>커리큘럼 편집</strong><p class=\"muted\" style=\"font-size:12px\">차시 제목과 순서를 정리한 뒤 게시하세요.</p>" +
     lessonHtml +
+    "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\"><input name=\"title\" placeholder=\"새 모듈명\"><button class=\"secondary\" type=\"submit\">모듈 추가</button></form></div>" +
     "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
     "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
     "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
@@ -330,6 +370,63 @@ async function createLesson(form, env) {
 }
 
 
+
+
+async function createModule(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const title = String(form.get("title") || "").trim();
+  if (!courseId || !title) throw new Error("강의와 모듈명이 필요합니다.");
+  const course = await env.COURSE_DB.prepare("SELECT id FROM courses WHERE id=?").bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  const row = await env.COURSE_DB.prepare(
+    "SELECT COALESCE(MAX(sort_order),-1)+1 AS next_order FROM course_modules WHERE course_id=? AND status!='archived'"
+  ).bind(courseId).first();
+  await env.COURSE_DB.prepare(
+    "INSERT INTO course_modules (id,course_id,title,sort_order,status) VALUES (?,?,?,?, 'published')"
+  ).bind(crypto.randomUUID(), courseId, title, Number(row?.next_order || 0)).run();
+}
+
+async function updateLesson(form, env) {
+  const lessonId = String(form.get("lesson_id") || "").trim();
+  const title = String(form.get("title") || "").trim();
+  const moduleId = String(form.get("module_id") || "").trim() || null;
+  const isPreview = form.get("is_preview") === "1" ? 1 : 0;
+  if (!lessonId || !title) throw new Error("차시명과 차시 ID가 필요합니다.");
+  const lesson = await env.COURSE_DB.prepare(
+    "SELECT id,course_id FROM lessons WHERE id=?"
+  ).bind(lessonId).first();
+  if (!lesson) throw new Error("차시를 찾을 수 없습니다.");
+  if (moduleId) {
+    const module = await env.COURSE_DB.prepare(
+      "SELECT id FROM course_modules WHERE id=? AND course_id=? AND status!='archived'"
+    ).bind(moduleId, lesson.course_id).first();
+    if (!module) throw new Error("모듈 정보가 올바르지 않습니다.");
+  }
+  await env.COURSE_DB.prepare(
+    "UPDATE lessons SET title=?,module_id=?,is_preview=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(title, moduleId, isPreview, lessonId).run();
+}
+
+async function moveLesson(form, env) {
+  const lessonId = String(form.get("lesson_id") || "").trim();
+  const direction = String(form.get("direction") || "").trim();
+  if (!lessonId || !["up","down"].includes(direction)) throw new Error("차시 이동 요청이 올바르지 않습니다.");
+  const current = await env.COURSE_DB.prepare(
+    "SELECT id,course_id,sort_order FROM lessons WHERE id=?"
+  ).bind(lessonId).first();
+  if (!current) throw new Error("차시를 찾을 수 없습니다.");
+  const comparator = direction === "up" ? "<" : ">";
+  const order = direction === "up" ? "DESC" : "ASC";
+  const other = await env.COURSE_DB.prepare(
+    "SELECT id,sort_order FROM lessons WHERE course_id=? AND sort_order " + comparator + " ? ORDER BY sort_order " + order + " LIMIT 1"
+  ).bind(current.course_id, current.sort_order).first();
+  if (!other) return;
+  await env.COURSE_DB.batch([
+    env.COURSE_DB.prepare("UPDATE lessons SET sort_order=-999999,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(current.id),
+    env.COURSE_DB.prepare("UPDATE lessons SET sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(current.sort_order, other.id),
+    env.COURSE_DB.prepare("UPDATE lessons SET sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(other.sort_order, current.id)
+  ]);
+}
 
 async function setCourseStatus(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
@@ -728,6 +825,36 @@ export default {
       try {
         const message = await setCourseStatus(await request.formData(), env);
         return redirect("/course-admin?message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/modules" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await createModule(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("모듈을 추가했습니다."));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/lesson-update" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await updateLesson(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("차시를 저장했습니다."));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/lesson-move" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await moveLesson(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("차시 순서를 변경했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
