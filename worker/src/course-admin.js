@@ -194,7 +194,7 @@ async function listCourses(env) {
     "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const lessonRows = await env.COURSE_DB.prepare(
-    "SELECT id,course_id,title,vimeo_id,duration_seconds,sort_order,status,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
+    "SELECT id,course_id,module_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
   ).all();
   const courses = Array.isArray(courseRows.results) ? courseRows.results : [];
   const lessons = Array.isArray(lessonRows.results) ? lessonRows.results : [];
@@ -221,10 +221,17 @@ function courseCard(course) {
     return "<div class=\"lesson\"><strong>" + escapeHtml(lesson.title) + "</strong>" +
       "<div class=\"muted\" style=\"font-size:12px;margin-top:4px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div>" + upload + "</div>";
   }).join("");
+  const published = course.status === "published" && Number(course.visible) === 1;
+  const statusForm =
+    "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:12px 0\">" +
+    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+    "<input type=\"hidden\" name=\"action\" value=\"" + (published ? "unpublish" : "publish") + "\">" +
+    "<button class=\"secondary\" type=\"submit\">" + (published ? "게시 중지" : "강의 게시") + "</button></form>";
   return "<section class=\"card\">" +
     "<h3>" + escapeHtml(course.title) + "</h3>" +
     "<div><span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
     (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") + "</div>" +
+    statusForm +
     "<p class=\"muted\">" + escapeHtml(course.summary || "") + "</p>" +
     lessonHtml +
     "<form method=\"post\" action=\"/course-admin/lessons\">" +
@@ -262,9 +269,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["courses", "lessons", "video_uploads"];
+    const expected = ["course_modules", "courses", "lesson_progress", "lessons", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('courses','lessons','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_modules','courses','lesson_progress','lessons','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
@@ -319,6 +326,45 @@ async function createLesson(form, env) {
   ).bind(crypto.randomUUID(), courseId, title, sortOrder).run();
 }
 
+
+
+async function setCourseStatus(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const action = String(form.get("action") || "").trim();
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,title,access_type,cafe24_product_no FROM courses WHERE id=?"
+  ).bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+
+  if (action === "unpublish") {
+    await env.COURSE_DB.prepare(
+      "UPDATE courses SET visible=0,status='ready',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(courseId).run();
+    return "강의 게시를 중지했습니다.";
+  }
+
+  if (action !== "publish") throw new Error("잘못된 게시 요청입니다.");
+
+  const lessons = await env.COURSE_DB.prepare(
+    "SELECT id,vimeo_id,status FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+  ).bind(courseId).all();
+  const rows = Array.isArray(lessons.results) ? lessons.results : [];
+  if (rows.length === 0) throw new Error("게시하려면 차시가 하나 이상 필요합니다.");
+  if (rows.some((lesson) => !lesson.vimeo_id)) {
+    throw new Error("모든 차시에 영상을 연결한 뒤 게시해 주세요.");
+  }
+  if (course.access_type === "paid" && !(Number(course.cafe24_product_no) > 0)) {
+    throw new Error("유료 강의는 Cafe24 상품 연결 후 게시할 수 있습니다.");
+  }
+
+  await env.COURSE_DB.prepare(
+    "UPDATE lessons SET status=CASE WHEN status IN ('draft','uploading','processing') THEN 'ready' ELSE status END,updated_at=CURRENT_TIMESTAMP WHERE course_id=? AND vimeo_id IS NOT NULL"
+  ).bind(courseId).run();
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET visible=1,status='published',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(courseId).run();
+  return "강의를 게시했습니다.";
+}
 
 function javascript(body, init = {}) {
   const headers = new Headers(init.headers || {});
@@ -575,6 +621,16 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("강의를 만들었습니다."));
       } catch (error) {
         return html(loginPage(String(error && error.message ? error.message : error)), { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/course-status" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        const message = await setCourseStatus(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
