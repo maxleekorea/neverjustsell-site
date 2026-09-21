@@ -259,7 +259,7 @@ function courseCard(course) {
       "<button class=\"secondary\" type=\"submit\">저장</button>" + preview + "</form>" +
       "<div class=\"orderbuttons\">" + moveUp + moveDown + "</div>" + upload + "</div>";
   }).join("");
-  const published =  const published = course.status === "published" && Number(course.visible) === 1;
+  const published = course.status === "published" && Number(course.visible) === 1;
   const statusForm =
     "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:12px 0\">" +
     "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
