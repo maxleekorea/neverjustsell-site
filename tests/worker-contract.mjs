@@ -13,7 +13,8 @@ const env = {
   CAFE24_AUTH: new MemoryKV(),
   CAFE24_REDIRECT_URI: "https://classroom.neverjustsell.com/oauth/cafe24/callback",
   SITE_ORIGIN: "https://www.neverjustsell.com",
-  COMMUNITY_ALLOWED_ORIGINS: "https://community.neverjustsell.com"
+  COMMUNITY_ALLOWED_ORIGINS: "https://community.neverjustsell.com",
+  COURSE_ADMIN_PASSWORD: "test-admin-password"
 };
 
 function assert(condition, message) {
@@ -35,6 +36,15 @@ assert(body.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/c
 assert(body.admin_scopes.includes("mall.write_product"), "Cafe24 product write scope must be requested");
 assert(body.admin_scopes.includes("mall.write_order"), "Cafe24 order write scope must be requested");
 
+
+r = await get("https://classroom.neverjustsell.com/course-admin");
+let adminHtml = await r.text();
+assert(r.status === 200 && adminHtml.includes("강의 관리자"), "course admin login must render");
+assert(!adminHtml.includes("새 강의"), "anonymous course admin must not expose dashboard");
+
+r = await get("https://classroom.neverjustsell.com/course-admin/api/courses");
+body = await r.json();
+assert(r.status === 401 && body.error === "admin_auth_required", "course admin API must require admin auth");
 
 r = await get("https://classroom.neverjustsell.com/vimeo/status");
 body = await r.json();
