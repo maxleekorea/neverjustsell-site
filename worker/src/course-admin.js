@@ -164,7 +164,7 @@ function shell(title, body) {
     "*{box-sizing:border-box}body{margin:0;background:#0a0a0a;color:#f5f5f5;font-family:Arial,'Noto Sans KR',sans-serif}" +
     "a{color:inherit}.wrap{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:36px 0 70px}" +
     ".top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}" +
-    ".brand{font-size:12px;font-weight:800;letter-spacing:.16em}.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}" +
+    ".brand{font-size:12px;font-weight:800;letter-spacing:.16em}.grid{display:grid;grid-template-columns:320px 1fr;gap:18px}.sectionhead{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:22px 0 10px}.sectionhead h3{margin:0}.hint{font-size:12px;color:#888;margin:4px 0 0}" +
     ".card{background:#151515;border:1px solid #292929;border-radius:16px;padding:20px;margin-bottom:14px}" +
     "h1{font-size:30px;margin:0 0 8px}h2{font-size:18px;margin:0 0 14px}h3{margin:0 0 8px}" +
     "p{line-height:1.6}.muted{color:#999}.pill{display:inline-block;border:1px solid #333;border-radius:999px;padding:4px 8px;font-size:11px;color:#aaa;margin-right:5px}" +
@@ -172,7 +172,7 @@ function shell(title, body) {
     "input,textarea,select{width:100%;padding:11px 12px;background:#0d0d0d;border:1px solid #333;color:#fff}" +
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
-    ".error{color:#ff9696}.ok{color:#a8e6a8}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.lessonedit{display:grid;grid-template-columns:44px 1fr 150px auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #232323}.lessonedit input,.lessonedit select{margin:0}.orderbuttons{display:flex;gap:4px}.orderbuttons form{margin:0}.orderbuttons button{padding:8px 9px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}.lessonedit{grid-template-columns:1fr}.orderbuttons{justify-content:flex-start}}" +
+    ".error{color:#ff9696}.ok{color:#a8e6a8}.course-settings{padding:14px;background:#101010;border:1px solid #262626;border-radius:12px;margin:12px 0 18px}.lessoncard{border:1px solid #2a2a2a;border-radius:12px;margin:10px 0;background:#101010;overflow:hidden}.lessoncard summary{cursor:pointer;padding:13px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.lessoncard summary::-webkit-details-marker{display:none}.lessonbody{padding:0 14px 14px;border-top:1px solid #242424}.lessonmeta{font-size:11px;color:#777}.fieldgrid{display:grid;grid-template-columns:1fr 180px;gap:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar form{margin:0}.toolbar button{padding:8px 10px}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;margin-top:10px}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row,.fieldgrid{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -195,7 +195,7 @@ async function listCourses(env) {
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
-      "SELECT id,course_id,module_id,title,vimeo_id,duration_seconds,sort_order,status,is_preview,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
+      "SELECT id,course_id,module_id,title,description,vimeo_id,duration_seconds,sort_order,status,is_preview,created_at,updated_at FROM lessons ORDER BY course_id,sort_order,created_at"
     ).all(),
     env.COURSE_DB.prepare(
       "SELECT id,course_id,title,description,sort_order,status,created_at,updated_at FROM course_modules WHERE status!='archived' ORDER BY course_id,sort_order,created_at"
@@ -226,7 +226,7 @@ async function listCourses(env) {
 function courseCard(course) {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
-  const moduleOptions = ['<option value="">강의 내용</option>']
+  const moduleOptions = ['<option value="">섹션 없음</option>']
     .concat((course.modules || []).map(function (module) {
       return '<option value="' + escapeHtml(module.id) + '">' + escapeHtml(module.title) + '</option>';
     }));
@@ -242,22 +242,24 @@ function courseCard(course) {
       return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
     }).join("");
     const preview = course.access_type === "paid"
-      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">무료 미리보기</label>"
+      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">이 차시를 무료 미리보기로 공개</label>"
       : "";
-    const moveUp = index > 0
-      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\" title=\"위로\">↑</button></form>"
+    const up = index > 0
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">순서 올리기</button></form>"
       : "";
-    const moveDown = index < course.lessons.length - 1
-      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\" title=\"아래로\">↓</button></form>"
+    const down = index < course.lessons.length - 1
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\">순서 내리기</button></form>"
       : "";
-    return "<div class=\"lesson\"><div class=\"muted\" style=\"font-size:12px;margin-bottom:6px\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div>" +
-      "<form class=\"lessonedit\" method=\"post\" action=\"/course-admin/lesson-update\">" +
-      "<span class=\"muted\">" + (index + 1) + "</span>" +
+    return "<details class=\"lessoncard\" open>" +
+      "<summary><span><strong>" + (index + 1) + ". " + escapeHtml(lesson.title) + "</strong><div class=\"lessonmeta\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div></span><span class=\"pill\">차시 편집</span></summary>" +
+      "<div class=\"lessonbody\"><form method=\"post\" action=\"/course-admin/lesson-update\">" +
       "<input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\">" +
-      "<input name=\"title\" value=\"" + escapeHtml(lesson.title) + "\" required>" +
-      "<select name=\"module_id\">" + selectedOptions + "</select>" +
-      "<button class=\"secondary\" type=\"submit\">저장</button>" + preview + "</form>" +
-      "<div class=\"orderbuttons\">" + moveUp + moveDown + "</div>" + upload + "</div>";
+      "<label>차시 제목</label><input name=\"title\" value=\"" + escapeHtml(lesson.title) + "\" required>" +
+      "<label>차시 설명 · 학습 포인트</label><textarea name=\"description\" placeholder=\"수강생에게 이 차시에서 무엇을 배우는지 설명하세요.\">" + escapeHtml(lesson.description || "") + "</textarea>" +
+      "<div class=\"fieldgrid\"><div><label>소속 섹션</label><select name=\"module_id\">" + selectedOptions + "</select><div class=\"hint\">섹션은 여러 차시를 주제별로 묶을 때만 사용합니다.</div></div><div><label>영상 상태</label><div class=\"lessonmeta\" style=\"padding:12px 0\">" + vimeo + "</div></div></div>" +
+      preview +
+      "<button type=\"submit\" style=\"margin-top:12px\">차시 저장</button></form>" +
+      "<div class=\"toolbar\">" + up + down + "</div>" + upload + "</div></details>";
   }).join("");
   const published = course.status === "published" && Number(course.visible) === 1;
   const statusForm =
@@ -270,10 +272,16 @@ function courseCard(course) {
     "<div><span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
     (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") + "</div>" +
     statusForm +
-    "<p class=\"muted\">" + escapeHtml(course.summary || "") + "</p>" +
-    "<div class=\"editor\"><strong>커리큘럼 편집</strong><p class=\"muted\" style=\"font-size:12px\">차시 제목과 순서를 정리한 뒤 게시하세요.</p>" +
+    "<div class=\"course-settings\"><strong>강의 기본정보</strong>" +
+    "<form method=\"post\" action=\"/course-admin/course-update\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+    "<label>강의명</label><input name=\"title\" value=\"" + escapeHtml(course.title) + "\" required>" +
+    "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"수강 대상과 강의에서 얻을 수 있는 것을 간단히 설명하세요.\">" + escapeHtml(course.summary || "") + "</textarea>" +
+    "<div class=\"fieldgrid\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option><option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div><div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
+    "<button type=\"submit\" style=\"margin-top:12px\">기본정보 저장</button></form></div>" +
+    "<div class=\"editor\"><div class=\"sectionhead\"><div><h3>커리큘럼</h3><p class=\"hint\">영상 1개가 차시 1개입니다. 제목과 설명을 작성하고 필요할 때만 섹션으로 묶으세요.</p></div></div>" +
     lessonHtml +
-    "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\"><input name=\"title\" placeholder=\"새 모듈명\"><button class=\"secondary\" type=\"submit\">모듈 추가</button></form></div>" +
+    "<div class=\"sectionhead\"><div><h3>섹션</h3><p class=\"hint\">선택 기능입니다. 강의가 길 때 ‘기초’, ‘실전’처럼 차시를 묶는 용도입니다.</p></div></div>" +
+    "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\"><input name=\"title\" placeholder=\"예: 1부. 온라인 유통의 구조\"><button class=\"secondary\" type=\"submit\">섹션 추가</button></form></div>" +
     "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
     "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
     "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
@@ -298,8 +306,8 @@ async function dashboardPage(env, message) {
       "<form method=\"post\" action=\"/course-admin/courses\">" +
       "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
       "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
-      "<label>설명</label><textarea name=\"summary\"></textarea>" +
-      "<div class=\"row\"><div><label>유형</label><select name=\"access_type\"><option value=\"public\">무료 · 로그인 필요</option><option value=\"paid\">유료</option></select></div>" +
+      "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"누구를 위한 강의인지, 무엇을 배우는지 간단히 입력하세요.\"></textarea>" +
+      "<div class=\"row\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\">무료 · 회원 로그인 필요</option><option value=\"paid\">유료 · 구매 확인 필요</option></select></div>" +
       "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
       "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
       "<section><h2>등록 강의</h2>" + cards + "</section></div>" +
@@ -372,6 +380,20 @@ async function createLesson(form, env) {
 
 
 
+async function updateCourse(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const title = String(form.get("title") || "").trim();
+  const summary = String(form.get("summary") || "").trim();
+  const accessType = form.get("access_type") === "paid" ? "paid" : "public";
+  const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
+  if (!courseId || !title) throw new Error("강의 정보가 올바르지 않습니다.");
+  if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), courseId).run();
+}
+
+
 async function createModule(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
   const title = String(form.get("title") || "").trim();
@@ -390,6 +412,7 @@ async function updateLesson(form, env) {
   const lessonId = String(form.get("lesson_id") || "").trim();
   const title = String(form.get("title") || "").trim();
   const moduleId = String(form.get("module_id") || "").trim() || null;
+  const description = String(form.get("description") || "").trim();
   const isPreview = form.get("is_preview") === "1" ? 1 : 0;
   if (!lessonId || !title) throw new Error("차시명과 차시 ID가 필요합니다.");
   const lesson = await env.COURSE_DB.prepare(
@@ -403,8 +426,8 @@ async function updateLesson(form, env) {
     if (!module) throw new Error("모듈 정보가 올바르지 않습니다.");
   }
   await env.COURSE_DB.prepare(
-    "UPDATE lessons SET title=?,module_id=?,is_preview=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(title, moduleId, isPreview, lessonId).run();
+    "UPDATE lessons SET title=?,description=?,module_id=?,is_preview=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(title, description || null, moduleId, isPreview, lessonId).run();
 }
 
 async function moveLesson(form, env) {
@@ -825,6 +848,16 @@ export default {
       try {
         const message = await setCourseStatus(await request.formData(), env);
         return redirect("/course-admin?message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/course-update" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await updateCourse(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("강의 기본정보를 저장했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
