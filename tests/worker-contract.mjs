@@ -63,11 +63,23 @@ assert(r.status === 200 && body.ok === true && body.connected === false, "admin 
 
 r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to=https%3A%2F%2Fevil.example%2Fauth%2Fcallback");
 body = await r.json();
-assert(r.status === 400 && body.error === "invalid_community_return_to", "invalid community return_to must be rejected");
+assert(r.status === 400 && body.error === "invalid_customer_return_to", "invalid customer return_to must be rejected");
+
+r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to=https%3A%2F%2Fwww.neverjustsell.com%2F");
+assert(r.status === 302, "site login must start Cafe24 customer OAuth");
+let authLocation = new URL(r.headers.get("location"));
+assert(authLocation.origin === "https://neverjustsell.cafe24.com", "site login must go to Cafe24");
+assert(
+  authLocation.searchParams.get("redirect_uri") === "https://classroom.neverjustsell.com/oauth/cafe24/callback",
+  "Cafe24 redirect_uri must remain canonical and single-decoded"
+);
 
 r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start");
-assert(r.status === 302, "generic classroom auth must start without community return_to");
+assert(r.status === 302, "generic classroom auth must start without return_to");
 assert((r.headers.get("location") || "").startsWith("https://neverjustsell.cafe24.com/api/v2/oauth/authorize"), "generic auth must go to Cafe24");
+
+r = await get("https://classroom.neverjustsell.com/courses");
+assert(r.status === 200, "public course catalog must render without login");
 
 r = await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?error=access_denied&error_description=scope%20not%20approved&state=test");
 body = await r.json();
