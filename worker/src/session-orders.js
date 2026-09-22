@@ -25,6 +25,18 @@ function configReady(env) {
   return Boolean(env.CAFE24_CLIENT_ID && env.CAFE24_CLIENT_SECRET && env.CAFE24_AUTH);
 }
 
+function siteCorsHeaders(request) {
+  const origin = request.headers.get("Origin") || "";
+  if (origin !== SITE_ORIGIN && origin !== APEX_ORIGIN) return {};
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin"
+  };
+}
+
 function basicAuth(clientId, clientSecret) {
   return btoa(`${clientId}:${clientSecret}`);
 }
