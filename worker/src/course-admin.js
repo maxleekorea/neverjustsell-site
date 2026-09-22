@@ -289,14 +289,11 @@ async function syncOnlineCommerceBasics(env) {
   }
 
   const lessonByVimeo = new Map(rows.filter((row) => row.vimeo_id).map((row) => [String(row.vimeo_id), row]));
-  const usedIds = new Set();
-
   for (const video of videos) {
     const meta = ONLINE_COMMERCE_BASICS.lessons.find((item) => item.number === video.number);
     if (!meta) continue;
     const existing = lessonByVimeo.get(String(video.vimeo_id));
     if (existing) {
-      usedIds.add(existing.id);
       await env.COURSE_DB.prepare(
         "UPDATE lessons SET title=?,description=COALESCE(NULLIF(description,''),?),duration_seconds=?,sort_order=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
       ).bind(
@@ -309,7 +306,6 @@ async function syncOnlineCommerceBasics(env) {
       ).run();
     } else {
       const id = crypto.randomUUID();
-      usedIds.add(id);
       await env.COURSE_DB.prepare(
         "INSERT INTO lessons (id,course_id,title,description,vimeo_id,duration_seconds,sort_order,status,is_preview) VALUES (?,?,?,?,?,?,?,?,0)"
       ).bind(
@@ -323,20 +319,6 @@ async function syncOnlineCommerceBasics(env) {
         video.status === "complete" ? "ready" : "processing"
       ).run();
     }
-  }
-
-  const refreshed = await env.COURSE_DB.prepare(
-    "SELECT id,title,description,vimeo_id,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
-  ).bind(course.id).all();
-  const refreshedRows = Array.isArray(refreshed.results) ? refreshed.results : [];
-
-  for (let index = 0; index < Math.min(refreshedRows.length, 8); index += 1) {
-    const lesson = refreshedRows[index];
-    const meta = ONLINE_COMMERCE_BASICS.lessons[index];
-    if (!meta) continue;
-    await env.COURSE_DB.prepare(
-      "UPDATE lessons SET title=?,description=COALESCE(NULLIF(description,''),?),sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-    ).bind(meta.title, meta.description, index, lesson.id).run();
   }
 
   await env.COURSE_DB.prepare(
