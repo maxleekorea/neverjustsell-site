@@ -93,7 +93,11 @@ export default {
       return ticketApp.fetch(request, env, ctx);
     }
 
-    if (CLASSROOM_ROUTES.has(url.pathname)) {
+    if (
+      CLASSROOM_ROUTES.has(url.pathname) ||
+      url.pathname === "/courses" ||
+      url.pathname.startsWith("/courses/")
+    ) {
       return classroomApp.fetch(request, env, ctx);
     }
 
