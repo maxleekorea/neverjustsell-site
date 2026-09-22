@@ -5,9 +5,11 @@
   const oauthReturnAtKey = 'njs:cafe24-customer-oauth-return-at';
   const pageParams = new URLSearchParams(location.search);
   const loginReturnUrl = pageParams.get('returnUrl');
-  const workerBaseUrl = 'https://neverjustsell-course-access.max-lee-korea.workers.dev';
+  const workerBaseUrl = 'https://classroom.neverjustsell.com';
   const classroomUrl = `${workerBaseUrl}/classroom`;
-  const freeLessonUrl = `${classroomUrl}?course=free-lesson-1`;
+  const courseCatalogUrl = `${workerBaseUrl}/courses`;
+  const freeLessonUrl = `${workerBaseUrl}/courses/online-commerce-basics`;
+  const loginUrl = `${workerBaseUrl}/oauth/cafe24/customer/start?return_to=${encodeURIComponent('https://www.neverjustsell.com/')}`;
   const syncLogoutUrl = `${workerBaseUrl}/session/logout-sync`;
 
   const syncCafe24LogoutLinks = () => {
@@ -17,17 +19,34 @@
     });
   };
 
+  const normalizeCafe24OAuthReturn = (value) => {
+    if (!value || !value.startsWith('/api/v2/oauth/authorize')) return null;
+    try {
+      const parsed = new URL(value, location.origin);
+      parsed.searchParams.set(
+        'redirect_uri',
+        'https://classroom.neverjustsell.com/oauth/cafe24/callback'
+      );
+      return parsed.pathname + parsed.search;
+    } catch (_) {
+      return null;
+    }
+  };
+
   // Cafe24's stock member-login skin can send a successful login to /index.html
-  // instead of preserving the OAuth returnUrl. Keep only our Cafe24 OAuth return
-  // and resume it once after the customer reaches the home page.
+  // instead of preserving the OAuth returnUrl. Store a canonicalized OAuth
+  // authorize URL and resume it once after customer login.
   if (
     path === '/member/login.html' &&
     loginReturnUrl &&
     loginReturnUrl.startsWith('/api/v2/oauth/authorize')
   ) {
     try {
-      sessionStorage.setItem(oauthReturnKey, loginReturnUrl);
-      sessionStorage.setItem(oauthReturnAtKey, String(Date.now()));
+      const normalizedReturn = normalizeCafe24OAuthReturn(loginReturnUrl);
+      if (normalizedReturn) {
+        sessionStorage.setItem(oauthReturnKey, normalizedReturn);
+        sessionStorage.setItem(oauthReturnAtKey, String(Date.now()));
+      }
     } catch (_) {}
   }
 
@@ -147,7 +166,7 @@
           <div class="njs-utility">
             ${cafe24LoggedIn
               ? `<a href="${syncLogoutUrl}">로그아웃</a>`
-              : `<a href="/member/login.html">로그인</a>`}
+              : `<a href="${loginUrl}">로그인</a>`}
             <a href="${classroomUrl}">내 강의실</a>
             <a href="/order/basket.html">장바구니</a>
           </div>
@@ -212,7 +231,7 @@
           <div class="njs-shell">
             <div class="njs-section-head">
               <div><p class="njs-section-no">02 / CLASS</p><h2>온라인 강의</h2></div>
-              <a class="njs-text-link" href="${freeLessonUrl}">무료 1강 보기 →</a>
+              <a class="njs-text-link" href="${freeLessonUrl}">무료 강의 수강 신청 →</a>
             </div>
             <div class="njs-class-grid">
               <article><span>01</span><h3>온라인 유통업의 본질</h3><p>상품을 파는 기술보다 먼저 유통과 시장이 작동하는 구조를 이해합니다.</p></article>

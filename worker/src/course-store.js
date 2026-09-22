@@ -1,3 +1,32 @@
+
+export async function getEnrollment(env, memberId, courseId) {
+  if (!env.COURSE_DB || !memberId || !courseId) return null;
+  return env.COURSE_DB.prepare(
+    "SELECT member_id,course_id,enrollment_type,status,enrolled_at,updated_at FROM course_enrollments WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
+}
+
+export async function isCourseEnrolled(env, memberId, courseId) {
+  const row = await getEnrollment(env, memberId, courseId);
+  return Boolean(row && row.status === "enrolled");
+}
+
+export async function enrollFreeCourse(env, memberId, course) {
+  if (!env.COURSE_DB || !memberId || !course?.id) throw new Error("enrollment_target_missing");
+  if (course.access_type !== "public") throw new Error("free_enrollment_only");
+  await env.COURSE_DB.prepare(
+    "INSERT INTO course_enrollments (member_id,course_id,enrollment_type,status) VALUES (?,?, 'free','enrolled') ON CONFLICT(member_id,course_id) DO UPDATE SET enrollment_type='free',status='enrolled',updated_at=CURRENT_TIMESTAMP"
+  ).bind(memberId, course.id).run();
+}
+
+export async function getEnrolledCourseIds(env, memberId) {
+  if (!env.COURSE_DB || !memberId) return new Set();
+  const result = await env.COURSE_DB.prepare(
+    "SELECT course_id FROM course_enrollments WHERE member_id=? AND status='enrolled'"
+  ).bind(memberId).all();
+  return new Set((Array.isArray(result?.results) ? result.results : []).map((row) => row.course_id));
+}
+
 export async function listPublishedD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(

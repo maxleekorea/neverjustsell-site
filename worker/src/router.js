@@ -11,7 +11,10 @@ import {
   getCourseProgress,
   touchLessonProgress,
   completeLesson,
-  d1CourseToPlayerCourse
+  d1CourseToPlayerCourse,
+  isCourseEnrolled,
+  enrollFreeCourse,
+  getEnrolledCourseIds
 } from "./course-store.js";
 
 import { getCustomerSession } from "./session-orders.js";
@@ -83,7 +86,7 @@ function classroomShell(title, content) {
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
-<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="${SITE_ORIGIN}/">홈</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a></span></div>${content}</main></body>
+<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/classroom">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
 </html>`;
 }
 
@@ -159,6 +162,107 @@ function renderCoursePlayer(course, label = "MY CLASSROOM", slug = "", url = nul
   );
 }
 
+
+function formatPrice(course) {
+  if (course.access_type !== "paid") return "무료";
+  const price = Number(course.price_krw || 0);
+  return price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 준비 중";
+}
+
+function renderCourseOutline(course) {
+  const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
+  if (lessons.length === 0) return '<p class="note">커리큘럼 준비 중입니다.</p>';
+  return '<div class="curriculum"><div class="module-title">커리큘럼</div>' +
+    lessons.map((lesson, index) =>
+      '<div class="lesson-row"><span class="lesson-link" style="cursor:default">' +
+      (index + 1) + '. ' + escapeHtml(lesson.title) + '</span></div>'
+    ).join('') + '</div>';
+}
+
+async function renderCourseCatalog(request, env) {
+  const courses = await listPublishedD1Courses(env);
+  const session = await getCustomerSession(request, env);
+  const memberId = session?.record?.member_id || null;
+  const enrolledIds = memberId ? await getEnrolledCourseIds(env, memberId) : new Set();
+
+  const cards = courses.map((course) => {
+    const enrolled = enrolledIds.has(course.id);
+    const label = enrolled
+      ? "수강 중"
+      : (course.access_type === "paid" ? formatPrice(course) : "무료");
+    const cta = enrolled ? "계속 수강" : (course.access_type === "paid" ? "강의 보기" : "무료 수강 신청");
+    return '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
+      '<div class="eyebrow">' + escapeHtml(label) + '</div>' +
+      '<h2>' + escapeHtml(course.title) + '</h2>' +
+      '<p>' + escapeHtml(course.summary || "") + '</p>' +
+      '<div class="action" style="margin-top:16px">' + escapeHtml(cta) + '</div></a>';
+  }).join("");
+
+  const content = courses.length
+    ? '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">수강할 강의를 선택하세요. 무료 강의도 수강 신청 후 내 강의실에 추가됩니다.</p></section><div class="grid">' + cards + '</div>'
+    : '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">현재 신청 가능한 강의가 없습니다.</p></section>';
+
+  return html(classroomShell("강의 찾기", content));
+}
+
+async function renderCourseLanding(request, env, slug) {
+  const course = await getPublishedD1Course(env, slug);
+  if (!course) {
+    return html(classroomShell("강의를 찾을 수 없습니다", '<section class="card"><h1 class="title">강의를 찾을 수 없습니다.</h1><a class="action" href="/courses">강의 찾기로</a></section>'), { status: 404 });
+  }
+
+  const session = await getCustomerSession(request, env);
+  const memberId = session?.record?.member_id || null;
+  const enrolled = memberId ? await isCourseEnrolled(env, memberId, course.id) : false;
+  const playerCourse = d1CourseToPlayerCourse(course);
+  const lessonCount = playerCourse.lessons.length;
+
+  let cta = "";
+  if (course.access_type === "public") {
+    if (enrolled) {
+      cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
+    } else if (memberId) {
+      cta = '<form method="post" action="/courses/enroll"><input type="hidden" name="course_slug" value="' + escapeHtml(course.slug) + '"><button class="action" style="border:0;cursor:pointer" type="submit">무료 수강 신청</button></form>';
+    } else {
+      const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
+      cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
+    }
+  } else {
+    cta = course.sales_url
+      ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
+      : '<span class="action secondary">판매 준비 중</span>';
+  }
+
+  return html(classroomShell(
+    course.title,
+    '<section class="card"><div class="eyebrow">' + escapeHtml(formatPrice(course)) + '</div>' +
+    '<h1 class="title">' + escapeHtml(course.title) + '</h1>' +
+    '<p class="desc">' + escapeHtml(course.summary || "") + '</p>' +
+    '<p class="note">' + lessonCount + '개 차시 · ' + (course.access_type === "public" ? '회원 무료' : '구매 후 수강') + '</p>' +
+    cta + renderCourseOutline(course) + '</section>'
+  ));
+}
+
+async function handleFreeEnrollment(request, env) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.record?.member_id) {
+    return redirectToCustomerAuth();
+  }
+
+  const form = await request.formData().catch(() => null);
+  const slug = String(form?.get("course_slug") || "").trim();
+  const course = await getPublishedD1Course(env, slug);
+  if (!course || course.access_type !== "public") {
+    return json({ ok: false, error: "free_course_not_found" }, { status: 404 });
+  }
+
+  await enrollFreeCourse(env, session.record.member_id, course);
+  return Response.redirect(
+    new URL('/classroom?course=' + encodeURIComponent(course.slug), CLASSROOM_ORIGIN).toString(),
+    303
+  );
+}
+
 async function loadAccessibleD1Courses(request, env, memberId) {
   const summaries = await listPublishedD1Courses(env);
   if (summaries.length === 0) return [];
@@ -171,8 +275,11 @@ async function loadAccessibleD1Courses(request, env, memberId) {
     const access = await getAccessiblePaidProductNos(request, env, paidProductNos);
     paidAccess = access.productNos;
   }
+  const enrolledIds = await getEnrolledCourseIds(env, memberId);
   return full.filter((course) =>
-    course.access_type !== "paid" || paidAccess.has(Number(course.cafe24_product_no))
+    course.access_type === "paid"
+      ? paidAccess.has(Number(course.cafe24_product_no))
+      : enrolledIds.has(course.id)
   );
 }
 
@@ -226,6 +333,19 @@ async function renderPublishedD1Course(request, env, url, course) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) return redirectToCustomerAuth();
 
+  if (course.access_type === "public") {
+    const enrolled = await isCourseEnrolled(env, session.record.member_id, course.id);
+    if (!enrolled) {
+      return html(
+        classroomShell(
+          course.title,
+          '<section class="card"><div class="eyebrow">ENROLLMENT REQUIRED</div><h1 class="title">수강 신청이 필요합니다.</h1><p class="desc">무료 강의도 수강 신청 후 내 강의실에서 이용할 수 있습니다.</p><a class="action" href="/courses/' + encodeURIComponent(course.slug) + '">무료 수강 신청</a></section>'
+        ),
+        { status: 403 }
+      );
+    }
+  }
+
   if (course.access_type === "paid") {
     const productNo = Number(course.cafe24_product_no);
     if (!Number.isInteger(productNo) || productNo <= 0) {
@@ -259,7 +379,10 @@ async function handleProgressPost(request, env) {
   if (!course || !course.lessons.some((lesson) => lesson.id === lessonId)) {
     return json({ ok: false, error: "invalid_progress_target" }, { status: 400 });
   }
-  if (course.access_type === "paid") {
+  if (course.access_type === "public") {
+    const enrolled = await isCourseEnrolled(env, session.record.member_id, course.id);
+    if (!enrolled) return json({ ok: false, error: "course_enrollment_required" }, { status: 403 });
+  } else {
     const decision = await getCourseAccessDecision(request, env, Number(course.cafe24_product_no));
     if (!decision.body.access) return json({ ok: false, error: "course_access_required" }, { status: 403 });
   }
@@ -291,10 +414,10 @@ async function renderClassroomHome(request, env) {
 
   const cards = [...d1Cards, ...staticCards];
   if (cards.length === 0) {
-    return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">현재 수강 가능한 강의가 없습니다. 회원용 무료 강의와 구매가 확인된 유료 강의가 이곳에 표시됩니다.</p><a class="action" href="${SITE_ORIGIN}/">강의 둘러보기</a></section>`));
+    return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">아직 수강 중인 강의가 없습니다. 무료 강의도 먼저 수강 신청해야 내 강의실에 추가됩니다.</p><a class="action" href="/courses">강의 찾기</a></section>`));
   }
 
-  return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">무료 강의는 로그인 후 바로 수강할 수 있고, 유료 강의는 구매 확인 후 표시됩니다.</p></section><div class="grid">${cards.join("")}</div>`));
+  return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">수강 신청한 무료 강의와 구매가 확인된 유료 강의가 표시됩니다.</p></section><div class="grid">${cards.join("")}</div>`));
 }
 
 async function renderClassroom(request, env, url) {
@@ -341,6 +464,31 @@ export default {
           },
           { status: 502 }
         );
+      }
+    }
+
+    if (url.pathname === "/courses" && request.method === "GET") {
+      try {
+        return await renderCourseCatalog(request, env);
+      } catch {
+        return renderClassroomError("강의 찾기");
+      }
+    }
+
+    if (url.pathname.startsWith("/courses/") && url.pathname !== "/courses/enroll" && request.method === "GET") {
+      try {
+        const slug = decodeURIComponent(url.pathname.slice("/courses/".length));
+        return await renderCourseLanding(request, env, slug);
+      } catch {
+        return renderClassroomError("강의 정보");
+      }
+    }
+
+    if (url.pathname === "/courses/enroll" && request.method === "POST") {
+      try {
+        return await handleFreeEnrollment(request, env);
+      } catch {
+        return renderClassroomError("수강 신청");
       }
     }
 

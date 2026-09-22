@@ -27,6 +27,31 @@ export function allowedCommunityOrigins(env) {
   return new Set([COMMUNITY_ORIGIN, ...configured]);
 }
 
+export function validCustomerReturn(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== "https:") return null;
+
+    if (url.origin === SITE_ORIGIN) {
+      if (url.pathname !== "/") return null;
+      return url.toString();
+    }
+
+    if (url.origin === CLASSROOM_ORIGIN) {
+      const allowed =
+        url.pathname === "/classroom" ||
+        url.pathname === "/courses" ||
+        url.pathname.startsWith("/courses/");
+      return allowed ? url.toString() : null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function validCommunityReturn(value, env) {
   if (!value) return null;
   try {
