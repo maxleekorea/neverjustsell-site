@@ -399,18 +399,60 @@ async function handleProgressPost(request, env) {
   return Response.redirect(new URL(safeNext, CLASSROOM_ORIGIN).toString(), 303);
 }
 
-async function renderClassroomHome(request, env) {
+
+function learnerCourseCard(course, playerCourse, progress, label = "") {
+  const lessonCount = playerCourse.lessons.length;
+  const continueLesson = lessonNumberById(playerCourse, progress.continueLessonId);
+  const status = progress.percent === 100
+    ? "완료"
+    : progress.lastActivity
+      ? "학습 중"
+      : "수강 시작";
+  const eyebrow = label || (course.access_type === "paid" ? "유료 강의" : "무료 강의");
+  const cta = progress.percent === 100 ? "다시 보기" : progress.lastActivity ? "이어서 학습" : "학습 시작";
+
+  return '<a class="course" href="/classroom?course=' + encodeURIComponent(course.slug) + '&lesson=' + continueLesson + '">' +
+    '<div class="eyebrow">' + escapeHtml(eyebrow) + '</div>' +
+    '<h2>' + escapeHtml(course.title) + '</h2>' +
+    '<p>' + lessonCount + '개 차시 · ' + progress.percent + '% 완료</p>' +
+    '<div class="progress"><span style="width:' + progress.percent + '%"></span></div>' +
+    '<div class="course-meta"><span class="badge">' + escapeHtml(status) + '</span><span class="badge">' +
+      (course.access_type === "paid" ? "구매 강의" : "무료 신청") + '</span></div>' +
+    '<div class="course-cta">' + escapeHtml(cta) + ' →</div></a>';
+}
+
+function dashboardSection(title, description, cards, moreHref = null, moreLabel = "전체 보기") {
+  if (!cards.length) return "";
+  return '<section class="dashboard-section"><div class="dashboard-head"><div><h2>' + escapeHtml(title) +
+    '</h2>' + (description ? '<p>' + escapeHtml(description) + '</p>' : '') + '</div>' +
+    (moreHref ? '<a class="home" href="' + escapeHtml(moreHref) + '">' + escapeHtml(moreLabel) + ' →</a>' : '') +
+    '</div><div class="grid">' + cards.join("") + '</div></section>';
+}
+
+async function buildLearnerCourseRows(request, env, memberId) {
+  const d1Courses = await loadAccessibleD1Courses(request, env, memberId);
+  const rows = [];
+  for (const course of d1Courses) {
+    const playerCourse = d1CourseToPlayerCourse(course);
+    const progress = await getCourseProgress(env, memberId, playerCourse);
+    rows.push({ course, playerCourse, progress });
+  }
+  rows.sort((a, b) => {
+    const aTime = a.progress.lastActivity ? Date.parse(a.progress.lastActivity) : 0;
+    const bTime = b.progress.lastActivity ? Date.parse(b.progress.lastActivity) : 0;
+    return bTime - aTime;
+  });
+  return rows;
+}
+
+async function renderLearnerLibrary(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) return redirectToCustomerAuth();
 
-  const d1Courses = await loadAccessibleD1Courses(request, env, session.record.member_id);
-  const d1Cards = [];
-  for (const course of d1Courses) {
-    const playerCourse = d1CourseToPlayerCourse(course);
-    const progress = await getCourseProgress(env, session.record.member_id, playerCourse);
-    const continueLesson = lessonNumberById(playerCourse, progress.continueLessonId);
-    d1Cards.push(`<a class="course" href="/classroom?course=${encodeURIComponent(course.slug)}&lesson=${continueLesson}"><div class="eyebrow">${course.access_type === "paid" ? "PAID COURSE" : "FREE COURSE"}</div><h2>${escapeHtml(course.title)}</h2><p>${playerCourse.lessons.length}개 차시 · ${progress.percent}% 완료 · 계속 수강하기</p><div class="progress"><span style="width:${progress.percent}%"></span></div></a>`);
-  }
+  const rows = await buildLearnerCourseRows(request, env, session.record.member_id);
+  const cards = rows.map(({ course, playerCourse, progress }) =>
+    learnerCourseCard(course, playerCourse, progress)
+  );
 
   const paidCourses = getVisiblePaidCourses();
   const access = paidCourses.length > 0
@@ -418,14 +460,77 @@ async function renderClassroomHome(request, env) {
     : { productNos: new Set() };
   const staticCards = paidCourses
     .filter(([, course]) => access.productNos.has(Number(course.productNo)))
-    .map(([slug, course]) => `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>${getCourseLessons(course).length}개 차시 · 계속 수강하기</p></a>`);
+    .map(([slug, course]) =>
+      '<a class="course" href="/classroom?course=' + encodeURIComponent(slug) + '">' +
+      '<div class="eyebrow">기존 강의</div><h2>' + escapeHtml(course.title) + '</h2>' +
+      '<p>' + getCourseLessons(course).length + '개 차시</p><div class="course-cta">학습하기 →</div></a>'
+    );
 
-  const cards = [...d1Cards, ...staticCards];
-  if (cards.length === 0) {
-    return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">아직 수강 중인 강의가 없습니다. 무료 강의도 먼저 수강 신청해야 내 강의실에 추가됩니다.</p><a class="action" href="/courses">강의 찾기</a></section>`));
-  }
+  const allCards = [...cards, ...staticCards];
+  const content = allCards.length
+    ? '<section class="card"><div class="eyebrow">MY LIBRARY</div><h1 class="title">내 강의</h1><p class="desc">수강 신청했거나 구매한 강의를 한곳에서 관리합니다.</p></section>' +
+      dashboardSection("전체 강의", "", allCards)
+    : '<section class="card"><div class="eyebrow">MY LIBRARY</div><h1 class="title">내 강의</h1><p class="desc">아직 등록된 강의가 없습니다.</p><a class="action" href="/courses">강의 찾기</a></section>';
 
-  return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">수강 신청한 무료 강의와 구매가 확인된 유료 강의가 표시됩니다.</p></section><div class="grid">${cards.join("")}</div>`));
+  return html(classroomShell("내 강의", content));
+}
+
+async function renderClassroomHome(request, env) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.record?.member_id) return redirectToCustomerAuth();
+
+  const memberId = session.record.member_id;
+  const rows = await buildLearnerCourseRows(request, env, memberId);
+  const accessibleIds = new Set(rows.map(({ course }) => course.id));
+
+  const inProgress = rows
+    .filter(({ progress }) => progress.lastActivity && progress.percent < 100)
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress, "이어서 학습")
+    );
+
+  const library = rows
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress)
+    );
+
+  const completed = rows
+    .filter(({ progress }) => progress.percent === 100)
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress, "완료한 강의")
+    );
+
+  const published = await listPublishedD1Courses(env);
+  const explore = published
+    .filter((course) => !accessibleIds.has(course.id))
+    .slice(0, 2)
+    .map((course) =>
+      '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
+      '<div class="eyebrow">' + escapeHtml(formatPrice(course)) + '</div>' +
+      '<h2>' + escapeHtml(course.title) + '</h2>' +
+      '<p>' + escapeHtml(course.summary || "") + '</p>' +
+      '<div class="course-cta">' + (course.access_type === "paid" ? "강의 자세히 보기" : "무료 수강 신청") + ' →</div></a>'
+    );
+
+  const sections = [
+    dashboardSection("이어서 학습하기", "최근 학습한 강의부터 이어서 볼 수 있습니다.", inProgress),
+    dashboardSection("내 강의", "현재 수강 권한이 있는 강의입니다.", library, "/library", "전체 내 강의"),
+    dashboardSection("완료한 강의", "완료한 강의를 다시 복습할 수 있습니다.", completed),
+    dashboardSection("새로운 강의", "아직 수강 신청하거나 구매하지 않은 강의입니다.", explore, "/courses", "강의 찾기")
+  ].join("");
+
+  const empty = sections
+    ? ""
+    : '<section class="card" style="margin-top:24px"><p class="desc">아직 학습할 강의가 없습니다.</p><a class="action" href="/courses">강의 찾기</a></section>';
+
+  return html(classroomShell(
+    "학습 홈",
+    '<section class="card"><div class="eyebrow">LEARNING HOME</div><h1 class="title">학습 홈</h1><p class="desc">최근 학습을 이어가고, 내 강의를 확인하고, 새로운 강의를 찾을 수 있습니다.</p></section>' +
+    sections + empty
+  ));
 }
 
 async function renderClassroom(request, env, url) {
@@ -472,6 +577,14 @@ export default {
           },
           { status: 502 }
         );
+      }
+    }
+
+    if (url.pathname === "/library" && request.method === "GET") {
+      try {
+        return await renderLearnerLibrary(request, env);
+      } catch {
+        return renderClassroomError("내 강의");
       }
     }
 
