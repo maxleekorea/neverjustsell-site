@@ -1,5 +1,5 @@
 import runtime from "./runtime.js";
-import { COMMERCE_ORIGIN } from "./config.js";
+import { COMMERCE_ORIGIN, SITE_ORIGIN, validCustomerReturn } from "./config.js";
 
 const CAFE24_CUSTOMER_LOGOUT_URL =
   `${COMMERCE_ORIGIN}/exec/front/Member/logout/`;
@@ -52,8 +52,13 @@ async function handleCafe24LogoutSync(request, env, ctx) {
   });
   const localLogoutResponse = await runtime.fetch(localLogoutRequest, env, ctx);
 
+  const requestUrl = new URL(request.url);
+  const returnTo = validCustomerReturn(requestUrl.searchParams.get("return_to")) || SITE_ORIGIN;
+  const cafe24Logout = new URL(CAFE24_CUSTOMER_LOGOUT_URL);
+  cafe24Logout.searchParams.set("returnUrl", returnTo);
+
   const headers = new Headers({
-    Location: CAFE24_CUSTOMER_LOGOUT_URL,
+    Location: cafe24Logout.toString(),
     "Cache-Control": "no-store"
   });
   const authCookie = localLogoutResponse.headers.get("Set-Cookie");
