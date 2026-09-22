@@ -3,6 +3,54 @@ const ADMIN_TTL_SECONDS = 60 * 60 * 12;
 const VIMEO_API_ORIGIN = "https://api.vimeo.com";
 const TUS_VERSION = "1.0.0";
 
+const ONLINE_COMMERCE_BASICS = {
+  slug: "online-commerce-basics",
+  summary: "온라인 유통을 단순히 상품을 등록하고 판매하는 일로만 이해하면 오래 버티기 어렵습니다. 스마트스토어와 온라인 커머스는 상품, 고객, 콘텐츠, 검색 알고리즘, 플랫폼 정책, 데이터, 재고 흐름이 함께 맞물려 움직이는 사업입니다. 이 클래스는 스마트스토어를 처음 시작하는 셀러가 온라인 유통업의 본질을 이해하고, 네이버 쇼핑이라는 플랫폼 안에서 어떤 방식으로 상품을 기획하고 노출시키며 고객을 설득해야 하는지 체계적으로 배우는 온라인 유통 실전 강의입니다. 첫 강의에서는 온라인 유통을 유통업, 서비스업, 콘텐츠업이라는 세 가지 관점으로 나누어 설명합니다. 이어지는 강의에서는 대한민국 온라인 커머스의 역사, 네이버 검색 알고리즘의 변화, 스마트스토어가 성장한 배경, 키워드 전략, 상세페이지, 상품 소싱, 콘텐츠 마케팅, 퍼스널 브랜딩, 리뷰 전략, 데이터 분석, AI 활용 전략까지 온라인 셀러가 반드시 알아야 할 핵심 주제를 단계적으로 다룹니다. 이 클래스의 목적은 단순한 판매 요령을 알려주는 것이 아닙니다. 플랫폼이 왜 그렇게 작동하는지, 고객은 왜 특정 상품을 선택하는지, 네이버는 어떤 셀러를 선호하는지, 상품과 콘텐츠가 어떻게 검색과 구매로 연결되는지를 이해하도록 돕는 것입니다. 스마트스토어를 부업 수준의 단기 시도로 끝내지 않고 지속 가능한 온라인 유통 사업으로 키우고 싶은 분들을 위한 클래스입니다.",
+  lessons: [
+    {
+      number: 1,
+      title: "강사 소개와 온라인 유통을 보는 관점",
+      description: "강사의 유통·제조·스마트스토어 경험을 바탕으로, 재고와 데이터가 왜 유통 사업의 핵심인지 살펴봅니다. 이 강의가 단기 판매 요령보다 온라인 유통의 구조와 판단 기준을 먼저 다루는 이유를 설명합니다."
+    },
+    {
+      number: 2,
+      title: "유통업의 본질: 통하게 하고 흐르게 만드는 일",
+      description: "제1원칙 사고법으로 온라인 유통을 유통업·서비스업·콘텐츠업으로 나누어 봅니다. 유통의 핵심인 ‘통하게 하는 일’과 ‘흐르게 하는 일’을 통해 소싱, 상품 기획, 상세페이지가 어떤 역할을 하는지 이해합니다."
+    },
+    {
+      number: 3,
+      title: "서비스업의 본질 ① 제조사의 문제를 해결하는 셀러",
+      description: "온라인 셀러를 단순 판매자가 아니라 다른 주체의 문제를 해결하는 서비스 사업자로 바라봅니다. 제조사의 제품 개발, 판로, 판촉과 재고 문제를 이해하고, 신뢰와 협업을 통해 장기적인 판매 관계를 만드는 방법을 살펴봅니다."
+    },
+    {
+      number: 4,
+      title: "서비스업의 본질 ② 도매업자와 함께 흐름 만들기",
+      description: "도매업자가 담당하는 재고, 물류, 정보, 거래처 네트워크의 가치를 이해합니다. 판매력을 바탕으로 도매 파트너와 관계를 만들고, 공급 조건·여신·제조사 연결 등 사업 인프라를 확장하는 관점을 다룹니다."
+    },
+    {
+      number: 5,
+      title: "서비스업의 본질 ③ 고객의 불안과 신뢰",
+      description: "고객의 수요를 읽고 적합한 상품을 연결하는 것이 셀러의 핵심 역할임을 살펴봅니다. 단순 소싱을 넘어 구매 실패에 대한 불안을 낮추고, 직접 검증한 정보와 솔직한 설명으로 신뢰를 만드는 방법을 이해합니다."
+    },
+    {
+      number: 6,
+      title: "플랫폼의 문제를 이해해야 노출 구조가 보인다",
+      description: "검색 알고리즘과 노출 정책을 플랫폼의 사업 목표와 문제 해결 방식이라는 관점에서 해석합니다. 공지, 정책 변화, 검색 구조를 관찰해 플랫폼이 원하는 판매자와 콘텐츠의 방향을 읽는 방법을 설명합니다."
+    },
+    {
+      number: 7,
+      title: "콘텐츠업의 본질: 미디어와 이야기의 힘",
+      description: "온라인 유통에서는 상품명, 썸네일, 상세페이지, 영상, 후기까지 모두 콘텐츠가 됩니다. 고객의 문제를 고객의 언어로 표현하고, 여러 미디어를 활용해 상품의 가치와 선택 이유를 전달하는 역량을 다룹니다."
+    },
+    {
+      number: 8,
+      title: "온라인 유통은 ‘업’이다: 핵심 정리",
+      description: "온라인 유통의 세 가지 본질인 유통업·서비스업·콘텐츠업을 다시 연결해 정리합니다. 단기적인 요령보다 기본 구조를 이해하고, 문제를 읽고 흐름을 만들며 신뢰를 쌓는 사업가의 관점을 강조합니다."
+    }
+  ]
+};
+
+
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "application/json; charset=utf-8");
@@ -189,6 +237,113 @@ function loginPage(message) {
   );
 }
 
+
+async function listAllVimeoVideos(env) {
+  if (!env.VIMEO_ACCESS_TOKEN) return [];
+  const videos = [];
+  for (let page = 1; page <= 5; page += 1) {
+    const payload = await vimeoRequest(
+      "/me/videos?per_page=100&page=" + page + "&sort=date&direction=desc&fields=uri,name,duration,created_time,transcode.status",
+      env,
+      { method: "GET" }
+    );
+    const pageVideos = Array.isArray(payload && payload.data) ? payload.data : [];
+    videos.push(...pageVideos);
+    if (pageVideos.length < 100) break;
+  }
+  return videos.map((video) => ({
+    vimeo_id: vimeoVideoId(video.uri),
+    name: video.name || "",
+    duration_seconds: Number(video.duration || 0) || 0,
+    created_time: video.created_time || null,
+    status: video.transcode && video.transcode.status || null
+  })).filter((video) => video.vimeo_id);
+}
+
+function basicVideoNumber(name) {
+  const match = String(name || "").match(/^유통기본_(\d{2})_/);
+  return match ? Number(match[1]) : null;
+}
+
+async function syncOnlineCommerceBasics(env) {
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,summary,status FROM courses WHERE slug=? LIMIT 1"
+  ).bind(ONLINE_COMMERCE_BASICS.slug).first();
+  if (!course || course.status === "published") return;
+
+  const current = await env.COURSE_DB.prepare(
+    "SELECT id,title,description,vimeo_id,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+  ).bind(course.id).all();
+  const rows = Array.isArray(current.results) ? current.results : [];
+  const needsSeed = !course.summary || rows.length < ONLINE_COMMERCE_BASICS.lessons.length ||
+    rows.some((lesson) => !String(lesson.description || "").trim());
+  if (!needsSeed) return;
+
+  let videos = [];
+  try {
+    videos = (await listAllVimeoVideos(env))
+      .map((video) => ({ ...video, number: basicVideoNumber(video.name) }))
+      .filter((video) => Number.isInteger(video.number) && video.number >= 1 && video.number <= 8);
+  } catch {
+    videos = [];
+  }
+
+  const lessonByVimeo = new Map(rows.filter((row) => row.vimeo_id).map((row) => [String(row.vimeo_id), row]));
+  const usedIds = new Set();
+
+  for (const video of videos) {
+    const meta = ONLINE_COMMERCE_BASICS.lessons.find((item) => item.number === video.number);
+    if (!meta) continue;
+    const existing = lessonByVimeo.get(String(video.vimeo_id));
+    if (existing) {
+      usedIds.add(existing.id);
+      await env.COURSE_DB.prepare(
+        "UPDATE lessons SET title=?,description=COALESCE(NULLIF(description,''),?),duration_seconds=?,sort_order=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+      ).bind(
+        meta.title,
+        meta.description,
+        video.duration_seconds || null,
+        video.number - 1,
+        video.status === "complete" ? "ready" : "processing",
+        existing.id
+      ).run();
+    } else {
+      const id = crypto.randomUUID();
+      usedIds.add(id);
+      await env.COURSE_DB.prepare(
+        "INSERT INTO lessons (id,course_id,title,description,vimeo_id,duration_seconds,sort_order,status,is_preview) VALUES (?,?,?,?,?,?,?,?,0)"
+      ).bind(
+        id,
+        course.id,
+        meta.title,
+        meta.description,
+        video.vimeo_id,
+        video.duration_seconds || null,
+        video.number - 1,
+        video.status === "complete" ? "ready" : "processing"
+      ).run();
+    }
+  }
+
+  const refreshed = await env.COURSE_DB.prepare(
+    "SELECT id,title,description,vimeo_id,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+  ).bind(course.id).all();
+  const refreshedRows = Array.isArray(refreshed.results) ? refreshed.results : [];
+
+  for (let index = 0; index < Math.min(refreshedRows.length, 8); index += 1) {
+    const lesson = refreshedRows[index];
+    const meta = ONLINE_COMMERCE_BASICS.lessons[index];
+    if (!meta) continue;
+    await env.COURSE_DB.prepare(
+      "UPDATE lessons SET title=?,description=COALESCE(NULLIF(description,''),?),sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(meta.title, meta.description, index, lesson.id).run();
+  }
+
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET summary=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(ONLINE_COMMERCE_BASICS.summary, course.id).run();
+}
+
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
     "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
@@ -292,6 +447,7 @@ function courseCard(course) {
 }
 
 async function dashboardPage(env, message) {
+  await syncOnlineCommerceBasics(env);
   const courses = await listCourses(env);
   const cards = courses.length
     ? courses.map(courseCard).join("")
@@ -632,17 +788,7 @@ async function readJson(request) {
 
 async function listVimeoLibrary(env) {
   if (!env.VIMEO_ACCESS_TOKEN) throw new Error("Vimeo 연결이 필요합니다.");
-  const videos = [];
-  for (let page = 1; page <= 5; page += 1) {
-    const payload = await vimeoRequest(
-      "/me/videos?per_page=100&page=" + page + "&sort=date&direction=desc&fields=uri,name,duration,created_time,transcode.status",
-      env,
-      { method: "GET" }
-    );
-    const pageVideos = Array.isArray(payload && payload.data) ? payload.data : [];
-    videos.push(...pageVideos);
-    if (pageVideos.length < 100) break;
-  }
+  const videos = await listAllVimeoVideos(env);
   const linked = await env.COURSE_DB.prepare(
     "SELECT vimeo_id FROM lessons WHERE vimeo_id IS NOT NULL"
   ).all();
@@ -653,13 +799,6 @@ async function listVimeoLibrary(env) {
   );
 
   return videos
-    .map((video) => ({
-      vimeo_id: vimeoVideoId(video.uri),
-      name: video.name || "",
-      duration_seconds: Number(video.duration || 0) || 0,
-      created_time: video.created_time || null,
-      status: video.transcode && video.transcode.status || null
-    }))
     .filter((video) => video.vimeo_id && !linkedIds.has(video.vimeo_id))
     .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko", { numeric: true, sensitivity: "base" }));
 }
