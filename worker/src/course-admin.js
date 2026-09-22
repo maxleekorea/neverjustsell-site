@@ -289,6 +289,16 @@ async function syncOnlineCommerceBasics(env) {
   }
 
   const lessonByVimeo = new Map(rows.filter((row) => row.vimeo_id).map((row) => [String(row.vimeo_id), row]));
+
+  // The lessons table enforces UNIQUE(course_id, sort_order). Move existing draft
+  // rows out of the final 0..7 range before applying Vimeo filename numbering.
+  if (rows.length > 0) {
+    await env.COURSE_DB.prepare(
+      "UPDATE lessons SET sort_order=sort_order+1000,updated_at=CURRENT_TIMESTAMP WHERE course_id=? AND status!='archived'"
+    ).bind(course.id).run();
+  }
+
+  videos.sort((a, b) => a.number - b.number);
   for (const video of videos) {
     const meta = ONLINE_COMMERCE_BASICS.lessons.find((item) => item.number === video.number);
     if (!meta) continue;
@@ -429,17 +439,24 @@ function courseCard(course) {
 }
 
 async function dashboardPage(env, message) {
-  await syncOnlineCommerceBasics(env);
+  let syncWarning = "";
+  try {
+    await syncOnlineCommerceBasics(env);
+  } catch (error) {
+    syncWarning = "강의 정보 자동 동기화 중 오류가 발생했습니다: " +
+      String(error && error.message ? error.message : error);
+  }
   const courses = await listCourses(env);
   const cards = courses.length
     ? courses.map(courseCard).join("")
     : "<div class=\"card\"><p class=\"muted\">아직 등록된 강의가 없습니다.</p></div>";
   const note = message ? "<p class=\"ok\">" + escapeHtml(message) + "</p>" : "";
+  const warning = syncWarning ? "<p class=\"error\">" + escapeHtml(syncWarning) + "</p>" : "";
   return shell(
     "강의 관리자",
     "<div class=\"top\"><div><div class=\"brand\">NEVER JUST SELL · COURSE ADMIN</div><h1>강의 관리</h1></div>" +
       "<form method=\"post\" action=\"/course-admin/logout\"><button class=\"secondary\" type=\"submit\">로그아웃</button></form></div>" +
-      note +
+      note + warning +
       "<div class=\"grid\"><section class=\"card\"><h2>새 강의</h2>" +
       "<form method=\"post\" action=\"/course-admin/courses\">" +
       "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
