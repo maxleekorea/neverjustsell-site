@@ -172,7 +172,7 @@ try {
   const authenticatedClassroom = await r.text();
   assert(r.status === 200, "authenticated classroom home must not return login-required 401");
   assert(!authenticatedClassroom.includes("회원 인증이 필요합니다."), "authenticated classroom home must not loop back to member verification");
-  assert(authenticatedClassroom.includes("현재 수강 가능한 강의가 없습니다."), "authenticated no-purchase member must reach classroom home state");
+  assert(authenticatedClassroom.includes("아직 수강 중인 강의가 없습니다."), "authenticated unenrolled member must reach empty learner library state");
 } finally {
   globalThis.fetch = originalFetch;
 }
