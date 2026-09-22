@@ -7,6 +7,7 @@ import {
   CAFE24_ADMIN_SCOPES as ADMIN_SCOPES,
   cafe24RedirectUri,
   allowedCommunityOrigins,
+  validCustomerReturn,
   validCommunityReturn
 } from "./config.js";
 
@@ -163,9 +164,11 @@ async function startAuthorization(request, env, mode) {
     authUrl.searchParams.set("scope", ADMIN_SCOPES.join(" "));
   } else {
     const rawReturnTo = requestUrl.searchParams.get("return_to");
-    const returnTo = validCommunityReturn(rawReturnTo, env);
+    const communityReturn = validCommunityReturn(rawReturnTo, env);
+    const customerReturn = validCustomerReturn(rawReturnTo);
+    const returnTo = communityReturn || customerReturn;
     if (rawReturnTo && !returnTo) {
-      return json({ ok: false, error: "invalid_community_return_to" }, { status: 400 });
+      return json({ ok: false, error: "invalid_customer_return_to" }, { status: 400 });
     }
     await env.CAFE24_AUTH.put(
       `${CUSTOMER_STATE_PREFIX}${state}`,
@@ -243,6 +246,11 @@ async function finishAuthorization(request, env) {
     const target = new URL(communityReturn);
     target.searchParams.set("ticket", await createCommunityTicket(env, record.member_id));
     return redirectWithCookies(target.toString(), cookies);
+  }
+
+  const customerReturn = validCustomerReturn(stateRecord.return_to);
+  if (customerReturn) {
+    return redirectWithCookies(customerReturn, cookies);
   }
 
   return redirectWithCookies(`${CLASSROOM_ORIGIN}/classroom`, cookies);
