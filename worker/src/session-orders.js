@@ -248,9 +248,22 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (url.pathname === "/session/status" && request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: siteCorsHeaders(request)
+      });
+    }
+
     if (url.pathname === "/session/status") {
+      const corsHeaders = siteCorsHeaders(request);
       const session = await getCustomerSession(request, env);
-      if (!session) return json({ ok: true, authenticated: false });
+      if (!session) {
+        return json(
+          { ok: true, authenticated: false },
+          { headers: corsHeaders }
+        );
+      }
 
       return json({
         ok: true,
@@ -263,7 +276,7 @@ export default {
           : false,
         authenticated_at: session.record.authenticated_at || null,
         session_mode: "per_browser"
-      });
+      }, { headers: corsHeaders });
     }
 
     if (url.pathname === "/session/logout") {
