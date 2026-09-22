@@ -30,13 +30,33 @@ await check("/about", 200, "판매자가 아니라 사업가의 시선으로 봅
 await check("/book", 200, "9791124121061");
 await check("/book", 200, "9791124121122");
 await check("/book", 200, "product/detail.html?product_no=11");
-await check("/class", 200, "무료 1강 보기");
+await check("/class", 200, "무료 강의 수강 신청");
 await check("/content", 200, "유행보다 오래 남는 설명을 만듭니다.");
 await check("/lecture", 200, "온라인 커머스를 현장의 문제와 연결합니다.");
 await check("/robots.txt", 200, "Sitemap: https://www.neverjustsell.com/sitemap.xml");
 await check("/sitemap.xml", 200, "https://www.neverjustsell.com/about");
 await check("/llms.txt", 200, "Main: https://www.neverjustsell.com/");
-await check("/login", 302, null, "https://neverjustsell.cafe24.com/member/login.html");
+let authRedirect = await fetchPath("/login");
+if (authRedirect.status !== 302) throw new Error("/login must redirect");
+let authTarget = new URL(authRedirect.headers.get("Location"));
+if (
+  authTarget.origin !== "https://classroom.neverjustsell.com" ||
+  authTarget.pathname !== "/oauth/cafe24/customer/start" ||
+  authTarget.searchParams.get("return_to") !== "https://www.neverjustsell.com/"
+) {
+  throw new Error("/login auth target mismatch");
+}
+
+let logoutRedirect = await fetchPath("/logout");
+if (logoutRedirect.status !== 302) throw new Error("/logout must redirect");
+let logoutTarget = new URL(logoutRedirect.headers.get("Location"));
+if (
+  logoutTarget.origin !== "https://classroom.neverjustsell.com" ||
+  logoutTarget.pathname !== "/session/logout-sync" ||
+  logoutTarget.searchParams.get("return_to") !== "https://www.neverjustsell.com/"
+) {
+  throw new Error("/logout target mismatch");
+}
 await check("/store", 302, null, "https://neverjustsell.cafe24.com/");
 await check("/cart", 302, null, "https://neverjustsell.cafe24.com/order/basket.html");
 await check("/community", 302, null, "https://community.neverjustsell.com/");
