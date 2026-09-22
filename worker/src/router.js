@@ -183,10 +183,11 @@ async function renderCourseCatalog(request, env) {
   const courses = await listPublishedD1Courses(env);
   const session = await getCustomerSession(request, env);
   const memberId = session?.record?.member_id || null;
-  const enrolledIds = memberId ? await getEnrolledCourseIds(env, memberId) : new Set();
+  const accessibleCourses = memberId ? await loadAccessibleD1Courses(request, env, memberId) : [];
+  const accessibleIds = new Set(accessibleCourses.map((course) => course.id));
 
   const cards = courses.map((course) => {
-    const enrolled = enrolledIds.has(course.id);
+    const enrolled = accessibleIds.has(course.id);
     const label = enrolled
       ? "수강 중"
       : (course.access_type === "paid" ? formatPrice(course) : "무료");
@@ -216,6 +217,11 @@ async function renderCourseLanding(request, env, slug) {
   const enrolled = memberId ? await isCourseEnrolled(env, memberId, course.id) : false;
   const playerCourse = d1CourseToPlayerCourse(course);
   const lessonCount = playerCourse.lessons.length;
+  let paidAccess = false;
+  if (memberId && course.access_type === "paid" && Number(course.cafe24_product_no) > 0) {
+    const decision = await getCourseAccessDecision(request, env, Number(course.cafe24_product_no));
+    paidAccess = Boolean(decision.body.access);
+  }
 
   let cta = "";
   if (course.access_type === "public") {
@@ -227,6 +233,8 @@ async function renderCourseLanding(request, env, slug) {
       const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
       cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
     }
+  } else if (paidAccess) {
+    cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
   } else {
     cta = course.sales_url
       ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
