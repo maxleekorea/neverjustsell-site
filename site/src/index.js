@@ -130,13 +130,13 @@ function nav(env) {
           <a href="/lecture">강연</a>
           <a href="/community">커뮤니티</a>
           <span class="njs-mobile-services" aria-label="회원 메뉴">
-            <a href="/login">로그인</a>
+            <a data-njs-auth-link href="/login">로그인</a>
             <a href="${escapeHtml(classroom)}">내 강의실</a>
             <a href="/cart">장바구니</a>
           </span>
         </nav>
         <div class="njs-utility">
-          <a href="/login">로그인</a>
+          <a data-njs-auth-link href="/login">로그인</a>
           <a href="${escapeHtml(classroom)}">내 강의실</a>
           <a href="/cart">장바구니</a>
         </div>
@@ -166,7 +166,7 @@ function footer(env) {
 
 function homeBody(env) {
   const classroom = `${authOrigin(env)}/classroom`;
-  const freeLesson = `${classroom}?course=free-lesson-1`;
+  const freeLesson = `${authOrigin(env)}/courses/online-commerce-basics`;
   return `
     <main id="main-content">
       <section class="njs-hero">
@@ -222,7 +222,7 @@ function homeBody(env) {
         <div class="njs-shell">
           <div class="njs-section-head">
             <div><p class="njs-section-no">02 / CLASS</p><h2>온라인 강의</h2></div>
-            <a class="njs-text-link" href="${escapeHtml(freeLesson)}">무료 1강 보기 →</a>
+            <a class="njs-text-link" href="${escapeHtml(freeLesson)}">무료 강의 수강 신청 →</a>
           </div>
           <div class="njs-class-grid">
             <article><span>01</span><h3>온라인 유통업의 본질</h3><p>상품을 파는 기술보다 먼저 유통과 시장이 작동하는 구조를 이해합니다.</p></article>
@@ -300,7 +300,7 @@ function detailBody(type, env) {
         ["02", "키워드와 롱테일, 탐색 행동"],
         ["03", "인포먼스, 브랜드, 고객 경험과 AI"]
       ],
-      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(authOrigin(env))}/classroom?course=free-lesson-1">무료 1강 보기</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/classroom">내 강의실</a>`
+      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(authOrigin(env))}/courses/online-commerce-basics">무료 강의 수강 신청</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/classroom">내 강의실</a>`
     },
     content: {
       eyebrow: "CONTENT",
@@ -483,7 +483,18 @@ export default {
 
     if (url.pathname === "/community") return redirect(`${communityOrigin(env)}/${url.search}`);
     if (url.pathname === "/classroom") return redirect(`${authOrigin(env)}/classroom${url.search}`);
-    if (url.pathname === "/login") return redirect(`${shopOrigin(env)}/member/login.html`);
+    if (url.pathname === "/login") {
+      const returnTo = `${siteOrigin(env)}/`;
+      return redirect(
+        `${authOrigin(env)}/oauth/cafe24/customer/start?return_to=${encodeURIComponent(returnTo)}`
+      );
+    }
+    if (url.pathname === "/logout") {
+      const returnTo = `${siteOrigin(env)}/`;
+      return redirect(
+        `${authOrigin(env)}/session/logout-sync?return_to=${encodeURIComponent(returnTo)}`
+      );
+    }
     if (url.pathname === "/store") return redirect(`${shopOrigin(env)}/`);
     if (url.pathname === "/cart") return redirect(`${shopOrigin(env)}/order/basket.html`);
 

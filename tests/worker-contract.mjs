@@ -107,9 +107,26 @@ assert(
   "anonymous classroom must not add a redundant verification screen"
 );
 
-r = await get("https://classroom.neverjustsell.com/session/status");
+r = await get("https://classroom.neverjustsell.com/session/status", {
+  headers: { Origin: "https://www.neverjustsell.com" }
+});
 body = await r.json();
 assert(r.status === 200 && body.authenticated === false, "anonymous session status must be explicit");
+assert(
+  r.headers.get("Access-Control-Allow-Origin") === "https://www.neverjustsell.com",
+  "public site must be allowed to read classroom session status"
+);
+assert(
+  r.headers.get("Access-Control-Allow-Credentials") === "true",
+  "session status CORS must allow credentialed requests"
+);
+
+r = await get("https://classroom.neverjustsell.com/session/logout-sync?return_to=https%3A%2F%2Fwww.neverjustsell.com%2F");
+assert(r.status === 302, "synchronized logout must redirect to Cafe24 logout");
+let logoutLocation = new URL(r.headers.get("location"));
+assert(logoutLocation.origin === "https://neverjustsell.cafe24.com", "synchronized logout must terminate Cafe24 session");
+assert(logoutLocation.pathname === "/exec/front/Member/logout/", "Cafe24 logout path mismatch");
+assert(logoutLocation.searchParams.get("returnUrl") === "https://www.neverjustsell.com/", "synchronized logout must return to public site");
 
 r = await get("https://classroom.neverjustsell.com/system-check");
 const anonymousSystemCheck = await r.text();

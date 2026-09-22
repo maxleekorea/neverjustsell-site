@@ -1,7 +1,9 @@
 import baseApp from "./index.js";
 import {
   CAFE24_ADMIN_ORIGIN,
-  CAFE24_CUSTOMER_SCOPE as CUSTOMER_SCOPE
+  CAFE24_CUSTOMER_SCOPE as CUSTOMER_SCOPE,
+  SITE_ORIGIN,
+  APEX_ORIGIN
 } from "./config.js";
 
 const CUSTOMER_TEST_KEY = "cafe24:customer-test";
@@ -21,6 +23,18 @@ function json(data, init = {}) {
 
 function configReady(env) {
   return Boolean(env.CAFE24_CLIENT_ID && env.CAFE24_CLIENT_SECRET && env.CAFE24_AUTH);
+}
+
+function siteCorsHeaders(request) {
+  const origin = request.headers.get("Origin") || "";
+  if (origin !== SITE_ORIGIN && origin !== APEX_ORIGIN) return {};
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Vary": "Origin"
+  };
 }
 
 function basicAuth(clientId, clientSecret) {
@@ -234,9 +248,22 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (url.pathname === "/session/status" && request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: siteCorsHeaders(request)
+      });
+    }
+
     if (url.pathname === "/session/status") {
+      const corsHeaders = siteCorsHeaders(request);
       const session = await getCustomerSession(request, env);
-      if (!session) return json({ ok: true, authenticated: false });
+      if (!session) {
+        return json(
+          { ok: true, authenticated: false },
+          { headers: corsHeaders }
+        );
+      }
 
       return json({
         ok: true,
@@ -249,7 +276,7 @@ export default {
           : false,
         authenticated_at: session.record.authenticated_at || null,
         session_mode: "per_browser"
-      });
+      }, { headers: corsHeaders });
     }
 
     if (url.pathname === "/session/logout") {

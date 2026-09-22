@@ -19,7 +19,17 @@ assert(r.headers.get("location") === "https://www.neverjustsell.com/about?x=1", 
 
 r = await request("https://www.neverjustsell.com/login");
 assert(r.status === 302, "public login is a redirect");
-assert(r.headers.get("location") === "https://neverjustsell.cafe24.com/member/login.html", "public login must go to commerce login, not site-login bridge");
+let loginTarget = new URL(r.headers.get("location"));
+assert(loginTarget.origin === "https://classroom.neverjustsell.com", "public login must use classroom auth");
+assert(loginTarget.pathname === "/oauth/cafe24/customer/start", "public login must start Cafe24 customer OAuth");
+assert(loginTarget.searchParams.get("return_to") === "https://www.neverjustsell.com/", "public login must return to canonical site");
+
+r = await request("https://www.neverjustsell.com/logout");
+assert(r.status === 302, "public logout is a redirect");
+let logoutTarget = new URL(r.headers.get("location"));
+assert(logoutTarget.origin === "https://classroom.neverjustsell.com", "public logout must use classroom logout sync");
+assert(logoutTarget.pathname === "/session/logout-sync", "public logout must clear classroom and Cafe24 sessions");
+assert(logoutTarget.searchParams.get("return_to") === "https://www.neverjustsell.com/", "public logout must return to canonical site");
 
 r = await request("https://www.neverjustsell.com/auth/complete");
 assert(r.status === 302 && r.headers.get("location") === "/", "legacy auth complete must only return home");
