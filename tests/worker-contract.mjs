@@ -97,6 +97,9 @@ assert(
   "anonymous free course must redirect to Cafe24 authentication"
 );
 
+r = await get("https://classroom.neverjustsell.com/library");
+assert(r.status === 302, "anonymous learner library must require authentication");
+
 r = await get("https://classroom.neverjustsell.com/classroom");
 assert(r.status === 302, "anonymous classroom must immediately start authentication");
 assert(
@@ -170,9 +173,16 @@ try {
     headers: { Cookie: "njs_session=test-session" }
   });
   const authenticatedClassroom = await r.text();
-  assert(r.status === 200, "authenticated classroom home must not return login-required 401");
-  assert(!authenticatedClassroom.includes("회원 인증이 필요합니다."), "authenticated classroom home must not loop back to member verification");
-  assert(authenticatedClassroom.includes("아직 수강 중인 강의가 없습니다."), "authenticated unenrolled member must reach empty learner library state");
+  assert(r.status === 200, "authenticated learning home must not return login-required 401");
+  assert(authenticatedClassroom.includes("학습 홈"), "authenticated learner must reach personalized learning home");
+
+  r = await get("https://classroom.neverjustsell.com/library", {
+    headers: { Cookie: "njs_session=test-session" }
+  });
+  const authenticatedLibrary = await r.text();
+  assert(r.status === 200, "authenticated learner library must render");
+  assert(authenticatedLibrary.includes("내 강의"), "learner library heading missing");
+  assert(authenticatedLibrary.includes("아직 등록된 강의가 없습니다."), "unenrolled learner must see empty library state");
 } finally {
   globalThis.fetch = originalFetch;
 }
