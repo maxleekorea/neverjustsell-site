@@ -1,7 +1,9 @@
 import baseApp from "./index.js";
 import {
   CAFE24_ADMIN_ORIGIN,
-  CAFE24_CUSTOMER_SCOPE as CUSTOMER_SCOPE
+  CAFE24_CUSTOMER_SCOPE as CUSTOMER_SCOPE,
+  SITE_ORIGIN,
+  APEX_ORIGIN
 } from "./config.js";
 
 const CUSTOMER_TEST_KEY = "cafe24:customer-test";
