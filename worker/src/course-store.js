@@ -74,7 +74,7 @@ export async function getCourseProgress(env, memberId, course) {
   const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
   const total = lessons.length;
   if (!env.COURSE_DB || !memberId || !course?.id || total === 0) {
-    return { total, completed: 0, percent: 0, completedIds: new Set(), continueLessonId: lessons[0]?.id || null };
+    return { total, completed: 0, percent: 0, completedIds: new Set(), continueLessonId: lessons[0]?.id || null, lastActivity: null };
   }
 
   const result = await env.COURSE_DB.prepare(
@@ -95,7 +95,8 @@ export async function getCourseProgress(env, memberId, course) {
     completed,
     percent: total > 0 ? Math.round((completed / total) * 100) : 0,
     completedIds,
-    continueLessonId
+    continueLessonId,
+    lastActivity: rows[0]?.updated_at || null
   };
 }
 

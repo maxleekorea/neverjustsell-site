@@ -44,6 +44,7 @@ const CLASSROOM_ROUTES = new Set([
   "/system-check",
   "/classroom",
   "/classroom/progress",
+  "/library",
   "/course-access"
 ]);
 

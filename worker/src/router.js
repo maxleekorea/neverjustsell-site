@@ -83,10 +83,10 @@ function classroomShell(title, content) {
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${escapeHtml(title)} | NEVER JUST SELL</title>
 <style>
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.dashboard-section{margin-top:34px}.dashboard-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.dashboard-head h2{font-size:22px;margin:0}.dashboard-head p{margin:0;color:#777;font-size:13px}.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.badge{display:inline-block;padding:4px 8px;border:1px solid #343434;border-radius:999px;font-size:11px;color:#aaa}.course-cta{margin-top:14px;font-size:13px;font-weight:700;color:#ddd}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
-<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/classroom">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
+<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/classroom">학습 홈</a><a class="home" href="/library">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
 </html>`;
 }
 
@@ -183,10 +183,11 @@ async function renderCourseCatalog(request, env) {
   const courses = await listPublishedD1Courses(env);
   const session = await getCustomerSession(request, env);
   const memberId = session?.record?.member_id || null;
-  const enrolledIds = memberId ? await getEnrolledCourseIds(env, memberId) : new Set();
+  const accessibleCourses = memberId ? await loadAccessibleD1Courses(request, env, memberId) : [];
+  const accessibleIds = new Set(accessibleCourses.map((course) => course.id));
 
   const cards = courses.map((course) => {
-    const enrolled = enrolledIds.has(course.id);
+    const enrolled = accessibleIds.has(course.id);
     const label = enrolled
       ? "수강 중"
       : (course.access_type === "paid" ? formatPrice(course) : "무료");
@@ -216,6 +217,11 @@ async function renderCourseLanding(request, env, slug) {
   const enrolled = memberId ? await isCourseEnrolled(env, memberId, course.id) : false;
   const playerCourse = d1CourseToPlayerCourse(course);
   const lessonCount = playerCourse.lessons.length;
+  let paidAccess = false;
+  if (memberId && course.access_type === "paid" && Number(course.cafe24_product_no) > 0) {
+    const decision = await getCourseAccessDecision(request, env, Number(course.cafe24_product_no));
+    paidAccess = Boolean(decision.body.access);
+  }
 
   let cta = "";
   if (course.access_type === "public") {
@@ -227,6 +233,8 @@ async function renderCourseLanding(request, env, slug) {
       const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
       cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
     }
+  } else if (paidAccess) {
+    cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
   } else {
     cta = course.sales_url
       ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
@@ -391,18 +399,60 @@ async function handleProgressPost(request, env) {
   return Response.redirect(new URL(safeNext, CLASSROOM_ORIGIN).toString(), 303);
 }
 
-async function renderClassroomHome(request, env) {
+
+function learnerCourseCard(course, playerCourse, progress, label = "") {
+  const lessonCount = playerCourse.lessons.length;
+  const continueLesson = lessonNumberById(playerCourse, progress.continueLessonId);
+  const status = progress.percent === 100
+    ? "완료"
+    : progress.lastActivity
+      ? "학습 중"
+      : "수강 시작";
+  const eyebrow = label || (course.access_type === "paid" ? "유료 강의" : "무료 강의");
+  const cta = progress.percent === 100 ? "다시 보기" : progress.lastActivity ? "이어서 학습" : "학습 시작";
+
+  return '<a class="course" href="/classroom?course=' + encodeURIComponent(course.slug) + '&lesson=' + continueLesson + '">' +
+    '<div class="eyebrow">' + escapeHtml(eyebrow) + '</div>' +
+    '<h2>' + escapeHtml(course.title) + '</h2>' +
+    '<p>' + lessonCount + '개 차시 · ' + progress.percent + '% 완료</p>' +
+    '<div class="progress"><span style="width:' + progress.percent + '%"></span></div>' +
+    '<div class="course-meta"><span class="badge">' + escapeHtml(status) + '</span><span class="badge">' +
+      (course.access_type === "paid" ? "구매 강의" : "무료 신청") + '</span></div>' +
+    '<div class="course-cta">' + escapeHtml(cta) + ' →</div></a>';
+}
+
+function dashboardSection(title, description, cards, moreHref = null, moreLabel = "전체 보기") {
+  if (!cards.length) return "";
+  return '<section class="dashboard-section"><div class="dashboard-head"><div><h2>' + escapeHtml(title) +
+    '</h2>' + (description ? '<p>' + escapeHtml(description) + '</p>' : '') + '</div>' +
+    (moreHref ? '<a class="home" href="' + escapeHtml(moreHref) + '">' + escapeHtml(moreLabel) + ' →</a>' : '') +
+    '</div><div class="grid">' + cards.join("") + '</div></section>';
+}
+
+async function buildLearnerCourseRows(request, env, memberId) {
+  const d1Courses = await loadAccessibleD1Courses(request, env, memberId);
+  const rows = [];
+  for (const course of d1Courses) {
+    const playerCourse = d1CourseToPlayerCourse(course);
+    const progress = await getCourseProgress(env, memberId, playerCourse);
+    rows.push({ course, playerCourse, progress });
+  }
+  rows.sort((a, b) => {
+    const aTime = a.progress.lastActivity ? Date.parse(a.progress.lastActivity) : 0;
+    const bTime = b.progress.lastActivity ? Date.parse(b.progress.lastActivity) : 0;
+    return bTime - aTime;
+  });
+  return rows;
+}
+
+async function renderLearnerLibrary(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) return redirectToCustomerAuth();
 
-  const d1Courses = await loadAccessibleD1Courses(request, env, session.record.member_id);
-  const d1Cards = [];
-  for (const course of d1Courses) {
-    const playerCourse = d1CourseToPlayerCourse(course);
-    const progress = await getCourseProgress(env, session.record.member_id, playerCourse);
-    const continueLesson = lessonNumberById(playerCourse, progress.continueLessonId);
-    d1Cards.push(`<a class="course" href="/classroom?course=${encodeURIComponent(course.slug)}&lesson=${continueLesson}"><div class="eyebrow">${course.access_type === "paid" ? "PAID COURSE" : "FREE COURSE"}</div><h2>${escapeHtml(course.title)}</h2><p>${playerCourse.lessons.length}개 차시 · ${progress.percent}% 완료 · 계속 수강하기</p><div class="progress"><span style="width:${progress.percent}%"></span></div></a>`);
-  }
+  const rows = await buildLearnerCourseRows(request, env, session.record.member_id);
+  const cards = rows.map(({ course, playerCourse, progress }) =>
+    learnerCourseCard(course, playerCourse, progress)
+  );
 
   const paidCourses = getVisiblePaidCourses();
   const access = paidCourses.length > 0
@@ -410,14 +460,77 @@ async function renderClassroomHome(request, env) {
     : { productNos: new Set() };
   const staticCards = paidCourses
     .filter(([, course]) => access.productNos.has(Number(course.productNo)))
-    .map(([slug, course]) => `<a class="course" href="/classroom?course=${encodeURIComponent(slug)}"><div class="eyebrow">COURSE</div><h2>${escapeHtml(course.title)}</h2><p>${getCourseLessons(course).length}개 차시 · 계속 수강하기</p></a>`);
+    .map(([slug, course]) =>
+      '<a class="course" href="/classroom?course=' + encodeURIComponent(slug) + '">' +
+      '<div class="eyebrow">기존 강의</div><h2>' + escapeHtml(course.title) + '</h2>' +
+      '<p>' + getCourseLessons(course).length + '개 차시</p><div class="course-cta">학습하기 →</div></a>'
+    );
 
-  const cards = [...d1Cards, ...staticCards];
-  if (cards.length === 0) {
-    return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">아직 수강 중인 강의가 없습니다. 무료 강의도 먼저 수강 신청해야 내 강의실에 추가됩니다.</p><a class="action" href="/courses">강의 찾기</a></section>`));
-  }
+  const allCards = [...cards, ...staticCards];
+  const content = allCards.length
+    ? '<section class="card"><div class="eyebrow">MY LIBRARY</div><h1 class="title">내 강의</h1><p class="desc">수강 신청했거나 구매한 강의를 한곳에서 관리합니다.</p></section>' +
+      dashboardSection("전체 강의", "", allCards)
+    : '<section class="card"><div class="eyebrow">MY LIBRARY</div><h1 class="title">내 강의</h1><p class="desc">아직 등록된 강의가 없습니다.</p><a class="action" href="/courses">강의 찾기</a></section>';
 
-  return html(classroomShell("내 강의실", `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">내 강의실</h1><p class="desc">수강 신청한 무료 강의와 구매가 확인된 유료 강의가 표시됩니다.</p></section><div class="grid">${cards.join("")}</div>`));
+  return html(classroomShell("내 강의", content));
+}
+
+async function renderClassroomHome(request, env) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.record?.member_id) return redirectToCustomerAuth();
+
+  const memberId = session.record.member_id;
+  const rows = await buildLearnerCourseRows(request, env, memberId);
+  const accessibleIds = new Set(rows.map(({ course }) => course.id));
+
+  const inProgress = rows
+    .filter(({ progress }) => progress.lastActivity && progress.percent < 100)
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress, "이어서 학습")
+    );
+
+  const library = rows
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress)
+    );
+
+  const completed = rows
+    .filter(({ progress }) => progress.percent === 100)
+    .slice(0, 4)
+    .map(({ course, playerCourse, progress }) =>
+      learnerCourseCard(course, playerCourse, progress, "완료한 강의")
+    );
+
+  const published = await listPublishedD1Courses(env);
+  const explore = published
+    .filter((course) => !accessibleIds.has(course.id))
+    .slice(0, 2)
+    .map((course) =>
+      '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
+      '<div class="eyebrow">' + escapeHtml(formatPrice(course)) + '</div>' +
+      '<h2>' + escapeHtml(course.title) + '</h2>' +
+      '<p>' + escapeHtml(course.summary || "") + '</p>' +
+      '<div class="course-cta">' + (course.access_type === "paid" ? "강의 자세히 보기" : "무료 수강 신청") + ' →</div></a>'
+    );
+
+  const sections = [
+    dashboardSection("이어서 학습하기", "최근 학습한 강의부터 이어서 볼 수 있습니다.", inProgress),
+    dashboardSection("내 강의", "현재 수강 권한이 있는 강의입니다.", library, "/library", "전체 내 강의"),
+    dashboardSection("완료한 강의", "완료한 강의를 다시 복습할 수 있습니다.", completed),
+    dashboardSection("새로운 강의", "아직 수강 신청하거나 구매하지 않은 강의입니다.", explore, "/courses", "강의 찾기")
+  ].join("");
+
+  const empty = sections
+    ? ""
+    : '<section class="card" style="margin-top:24px"><p class="desc">아직 학습할 강의가 없습니다.</p><a class="action" href="/courses">강의 찾기</a></section>';
+
+  return html(classroomShell(
+    "학습 홈",
+    '<section class="card"><div class="eyebrow">LEARNING HOME</div><h1 class="title">학습 홈</h1><p class="desc">최근 학습을 이어가고, 내 강의를 확인하고, 새로운 강의를 찾을 수 있습니다.</p></section>' +
+    sections + empty
+  ));
 }
 
 async function renderClassroom(request, env, url) {
@@ -464,6 +577,14 @@ export default {
           },
           { status: 502 }
         );
+      }
+    }
+
+    if (url.pathname === "/library" && request.method === "GET") {
+      try {
+        return await renderLearnerLibrary(request, env);
+      } catch {
+        return renderClassroomError("내 강의");
       }
     }
 
