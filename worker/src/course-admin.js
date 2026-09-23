@@ -1,3 +1,5 @@
+import { listActiveCreators, assertActiveCreator } from "./roles.js";
+
 const ADMIN_COOKIE = "njs_course_admin";
 const ADMIN_TTL_SECONDS = 60 * 60 * 12;
 const VIMEO_API_ORIGIN = "https://api.vimeo.com";
@@ -338,7 +340,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -370,7 +372,16 @@ async function listCourses(env) {
   });
 }
 
-function courseCard(course) {
+function creatorOptions(creators, selectedMemberId = "") {
+  const base = ['<option value="">소유자 미지정</option>'];
+  return base.concat(creators.map((memberId) =>
+    '<option value="' + escapeHtml(memberId) + '"' +
+    (memberId === selectedMemberId ? ' selected' : '') +
+    '>' + escapeHtml(memberId) + '</option>'
+  )).join("");
+}
+
+function courseCard(course, creators) {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
   const moduleOptions = ['<option value="">섹션 없음</option>']
@@ -423,6 +434,7 @@ function courseCard(course) {
     "<form method=\"post\" action=\"/course-admin/course-update\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
     "<label>강의명</label><input name=\"title\" value=\"" + escapeHtml(course.title) + "\" required>" +
     "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"수강 대상과 강의에서 얻을 수 있는 것을 간단히 설명하세요.\">" + escapeHtml(course.summary || "") + "</textarea>" +
+    "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators, course.owner_member_id || "") + "</select><div class=\"hint\">승인된 creator 계정만 지정할 수 있습니다. 게시 권한은 관리자에게 유지됩니다.</div>" +
     "<div class=\"fieldgrid\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option><option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div><div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
     "<button type=\"submit\" style=\"margin-top:12px\">기본정보 저장</button></form></div>" +
     "<div class=\"editor\"><div class=\"sectionhead\"><div><h3>커리큘럼</h3><p class=\"hint\">영상 1개가 차시 1개입니다. 제목과 설명을 작성하고 필요할 때만 섹션으로 묶으세요.</p></div></div>" +
@@ -446,9 +458,12 @@ async function dashboardPage(env, message) {
     syncWarning = "강의 정보 자동 동기화 중 오류가 발생했습니다: " +
       String(error && error.message ? error.message : error);
   }
-  const courses = await listCourses(env);
+  const [courses, creators] = await Promise.all([
+    listCourses(env),
+    listActiveCreators(env)
+  ]);
   const cards = courses.length
-    ? courses.map(courseCard).join("")
+    ? courses.map((course) => courseCard(course, creators)).join("")
     : "<div class=\"card\"><p class=\"muted\">아직 등록된 강의가 없습니다.</p></div>";
   const note = message ? "<p class=\"ok\">" + escapeHtml(message) + "</p>" : "";
   const warning = syncWarning ? "<p class=\"error\">" + escapeHtml(syncWarning) + "</p>" : "";
@@ -462,6 +477,7 @@ async function dashboardPage(env, message) {
       "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
       "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
       "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"누구를 위한 강의인지, 무엇을 배우는지 간단히 입력하세요.\"></textarea>" +
+      "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators) + "</select>" +
       "<div class=\"row\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\">무료 · 회원 로그인 필요</option><option value=\"paid\">유료 · 구매 확인 필요</option></select></div>" +
       "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
       "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
@@ -475,9 +491,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "video_uploads"];
+    const expected = ["course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_enrollments','course_modules','courses','lesson_progress','lessons','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
@@ -508,13 +524,15 @@ async function createCourse(form, env) {
   const summary = String(form.get("summary") || "").trim();
   const accessType = form.get("access_type") === "paid" ? "paid" : "public";
   const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
+  const ownerMemberId = String(form.get("owner_member_id") || "").trim() || null;
   if (!title) throw new Error("강의명이 필요합니다.");
   if (!slug || !/^[a-z0-9가-힣][a-z0-9가-힣-]*$/.test(slug)) throw new Error("URL 슬러그가 올바르지 않습니다.");
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
+  await assertActiveCreator(env, ownerMemberId);
   const id = crypto.randomUUID();
   await env.COURSE_DB.prepare(
-    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,login_required,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,1,'draft',0,0,'not_linked')"
-  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw)).run();
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,?,1,'draft',0,0,'not_linked')"
+  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId).run();
 }
 
 async function createLesson(form, env) {
@@ -541,11 +559,13 @@ async function updateCourse(form, env) {
   const summary = String(form.get("summary") || "").trim();
   const accessType = form.get("access_type") === "paid" ? "paid" : "public";
   const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
+  const ownerMemberId = String(form.get("owner_member_id") || "").trim() || null;
   if (!courseId || !title) throw new Error("강의 정보가 올바르지 않습니다.");
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
+  await assertActiveCreator(env, ownerMemberId);
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), courseId).run();
+    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, courseId).run();
 }
 
 
