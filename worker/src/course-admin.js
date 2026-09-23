@@ -1,5 +1,6 @@
 import { listActiveCreators, assertActiveCreator } from "./roles.js";
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
+import { isPaymentConfirmed, isItemRevoked } from "./access.js";
 import { COMMERCE_ORIGIN, CAFE24_ADMIN_SCOPES } from "./config.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
@@ -627,7 +628,45 @@ function courseListTable(courses) {
     "</tr></thead><tbody>" + rows + "</tbody></table></section>";
 }
 
-function paymentE2EPanel(course) {
+async function inspectPaymentE2EOrder(orderId, env) {
+  const normalized = String(orderId || "").trim();
+  if (!/^\d{8}-\d{7}$/.test(normalized)) {
+    throw new Error("주문번호 형식이 올바르지 않습니다.");
+  }
+
+  const payload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    order_id: normalized,
+    embed: "items"
+  });
+  const orders = Array.isArray(payload?.orders) ? payload.orders : [];
+  const order = orders.find((item) => String(item?.order_id || "") === normalized) || orders[0] || null;
+  if (!order) throw new Error("Cafe24에서 주문을 찾을 수 없습니다.");
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const item = items.find((entry) => Number(entry?.product_no) === 13) || null;
+  if (!item) throw new Error("이 주문에는 결제 E2E 상품 #13이 없습니다.");
+
+  const paid = isPaymentConfirmed(order, item);
+  const revoked = isItemRevoked(order, item);
+  const entitlement = await env.COURSE_DB.prepare(
+    "SELECT member_id,status,source_order_id,source_order_item_code,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE course_id='system-check-paid-course' AND product_no=13 AND source_order_id=? ORDER BY updated_at DESC LIMIT 1"
+  ).bind(normalized).first();
+
+  return {
+    order_id: normalized,
+    member_id: order.member_id || null,
+    paid,
+    revoked,
+    order_status: item.order_status || order.order_status || "",
+    payment_status: item.payment_status || order.payment_status || "",
+    canceled: order.canceled || "",
+    refund_status: order.refund_status || "",
+    entitlement: entitlement || null
+  };
+}
+
+function paymentE2EPanel(course, inspection = null, orderId = "") {
   if (!course) {
     return "<section class=\"card\"><h2>결제 E2E 테스트</h2><p class=\"muted\">테스트 fixture 준비 중입니다. 최신 배포 후 다시 확인하세요.</p></section>";
   }
@@ -657,10 +696,26 @@ function paymentE2EPanel(course) {
       : "<p class=\"hint\">시작하면 테스트 상품만 1,000원 무통장입금 테스트 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
     "<form method=\"post\" action=\"/course-admin/e2e-test\" style=\"margin-top:12px\">" +
     "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
-    "<button class=\"" + actionClass + "\" type=\"submit\">" + buttonLabel + "</button></form></section>";
+    "<button class=\"" + actionClass + "\" type=\"submit\">" + buttonLabel + "</button></form>" +
+    "<hr style=\"border:0;border-top:1px solid #e4e4e7;margin:18px 0\">" +
+    "<h3 style=\"margin:0 0 8px\">주문번호 검증</h3>" +
+    "<form method=\"get\" action=\"/course-admin\"><div class=\"row\">" +
+    "<input name=\"e2e_order\" value=\"" + escapeHtml(orderId || "") + "\" placeholder=\"예: 20260923-0000010\">" +
+    "<button class=\"secondary\" type=\"submit\">상태 확인</button></div></form>" +
+    (inspection
+      ? "<div class=\"readiness\">" +
+        "<div class=\"ready-row\"><span>주문번호</span><strong>" + escapeHtml(inspection.order_id) + "</strong></div>" +
+        "<div class=\"ready-row\"><span>결제 확인</span><span class=\"" + (inspection.paid ? "ready-ok" : "ready-wait") + "\">" + (inspection.paid ? "완료" : "미확인") + "</span></div>" +
+        "<div class=\"ready-row\"><span>취소·환불</span><span class=\"" + (inspection.revoked ? "ready-wait" : "ready-ok") + "\">" + (inspection.revoked ? "감지됨" : "없음") + "</span></div>" +
+        "<div class=\"ready-row\"><span>D1 수강권</span><span class=\"" + (inspection.entitlement?.status === "active" ? "ready-ok" : inspection.entitlement?.status === "revoked" ? "ready-wait" : "") + "\">" + escapeHtml(inspection.entitlement?.status || "기록 없음") + "</span></div>" +
+        "<div class=\"ready-row\"><span>주문 상태</span><span>" + escapeHtml(inspection.order_status || "-") + "</span></div>" +
+        "<div class=\"ready-row\"><span>결제 상태</span><span>" + escapeHtml(inspection.payment_status || "-") + "</span></div>" +
+        "</div>"
+      : "") +
+    "</section>";
 }
 
-async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab) {
+async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab, e2eOrderId) {
   let syncWarning = "";
   try {
     await syncOnlineCommerceBasics(env);
@@ -684,6 +739,15 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
   const errorNote = errorMessage ? "<p class=\"error\">" + escapeHtml(errorMessage) + "</p>" : "";
   const warning = syncWarning ? "<p class=\"error\">" + escapeHtml(syncWarning) + "</p>" : "";
   const cafe24Notice = cafe24ConnectionNotice(cafe24State);
+  let e2eInspection = null;
+  let e2eInspectError = "";
+  if (e2eOrderId) {
+    try {
+      e2eInspection = await inspectPaymentE2EOrder(e2eOrderId, env);
+    } catch (error) {
+      e2eInspectError = friendlyCafe24Error(error);
+    }
+  }
 
   const newCourse =
     "<details class=\"card new-course\"><summary>+ 새 강의 만들기</summary>" +
@@ -699,7 +763,7 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
 
   const content = selectedCourse
     ? courseCard(selectedCourse, creators, selectedTab || "content")
-    : paymentE2EPanel(e2eCourse) + newCourse +
+    : (e2eInspectError ? "<p class=\"error\">" + escapeHtml(e2eInspectError) + "</p>" : "") + paymentE2EPanel(e2eCourse, e2eInspection, e2eOrderId) + newCourse +
       "<div class=\"list-toolbar\"><div><h2 style=\"margin:0\">등록 강의</h2>" +
       "<p class=\"hint\">강의를 선택하면 기본 정보·콘텐츠·판매 설정을 분리해서 편집합니다.</p></div></div>" +
       courseListTable(normalCourses);
@@ -1434,7 +1498,8 @@ export default {
         url.searchParams.get("message") || "",
         url.searchParams.get("error") || "",
         url.searchParams.get("course") || "",
-        url.searchParams.get("tab") || "content"
+        url.searchParams.get("tab") || "content",
+        url.searchParams.get("e2e_order") || ""
       ));
     }
 
