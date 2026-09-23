@@ -688,9 +688,7 @@ async function updateCafe24CourseSales(form, env) {
       body: {
         shop_no: 1,
         display: "T",
-        selling: "T",
-        price: Math.trunc(price),
-        supply_price: Math.trunc(price)
+        selling: "T"
       }
     });
     await env.COURSE_DB.prepare(
