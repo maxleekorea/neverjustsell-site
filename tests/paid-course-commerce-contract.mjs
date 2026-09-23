@@ -32,9 +32,11 @@ assert(admin.includes("linked_hidden"), "new course products must start hidden")
 assert(admin.includes('display: "F"'), "new Cafe24 course product must start undisplayed");
 assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not selling");
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
-assert(!admin.includes('buy_limit_by_product: "T"'), "hidden product creation must not force customer-level purchase restriction");
-assert(!admin.includes('buy_limit_type: "M"'), "hidden product creation must not force customer-level purchase type");
-assert(!admin.includes('repurchase_restriction: "T"'), "hidden product creation must not force repurchase restriction before customer policy is resolved");
+assert(admin.includes('buy_limit_by_product: "T"'), "sales activation must enforce customer-only purchase restriction");
+assert(admin.includes('buy_limit_type: "M"'), "sales activation must require a customer account");
+assert(admin.includes("selling_member_only"), "member-only selling state must be persisted");
+assert(admin.includes("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매를 시작하지 않았습니다."), "sales activation must fail closed when member-only policy cannot be verified");
+assert(!admin.includes('repurchase_restriction: "T"'), "repurchase restriction remains intentionally deferred until its Cafe24 prerequisites are verified");
 assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
 assert(!admin.includes('use_naverpay: "F"'), "course product must not force Naver Pay setting");
 const adminApi = await readFile(
