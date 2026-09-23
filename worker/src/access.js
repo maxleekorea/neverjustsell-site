@@ -84,6 +84,63 @@ export function hasValidCourseItem(order, productNo) {
   });
 }
 
+export function findValidCoursePurchase(orders, productNo) {
+  for (const order of orders) {
+    const items = Array.isArray(order?.items) ? order.items : [];
+    for (const item of items) {
+      if (Number(item?.product_no) !== Number(productNo)) continue;
+      if (!isPaymentConfirmed(order, item)) continue;
+      if (isItemRevoked(order, item)) continue;
+      const status = String(item?.order_status || order?.order_status || "");
+      if (status && !status.startsWith("N")) continue;
+      return { order, item };
+    }
+  }
+  return null;
+}
+
+export function findRevokedCoursePurchase(orders, productNo) {
+  for (const order of orders) {
+    const items = Array.isArray(order?.items) ? order.items : [];
+    for (const item of items) {
+      if (Number(item?.product_no) !== Number(productNo)) continue;
+      if (isItemRevoked(order, item)) return { order, item };
+    }
+  }
+  return null;
+}
+
+async function courseIdForProduct(env, productNo) {
+  if (!env.COURSE_DB) return null;
+  const row = await env.COURSE_DB.prepare(
+    "SELECT id FROM courses WHERE cafe24_product_no=? AND access_type='paid' LIMIT 1"
+  ).bind(Number(productNo)).first();
+  return row?.id || null;
+}
+
+async function persistEntitlement(env, memberId, courseId, productNo, purchase, active) {
+  if (!env.COURSE_DB || !memberId || !courseId) return;
+  const orderId = purchase?.order?.order_id || null;
+  const itemCode = purchase?.item?.order_item_code || null;
+
+  if (active) {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at) VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP) ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase',revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
+    ).bind(memberId, courseId, Number(productNo), orderId, itemCode).run();
+    return;
+  }
+
+  const existing = await env.COURSE_DB.prepare(
+    "SELECT status FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
+
+  if (!existing) return;
+
+  await env.COURSE_DB.prepare(
+    "UPDATE course_entitlements SET status='revoked',source_order_id=COALESCE(?,source_order_id),source_order_item_code=COALESCE(?,source_order_item_code),revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP),last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=?"
+  ).bind(orderId, itemCode, memberId, courseId).run();
+}
+
 export function getValidPaidProductNos(orders, targetProductNos) {
   const targets = new Set(targetProductNos.map(Number).filter(Number.isFinite));
   const valid = new Set();
@@ -97,7 +154,7 @@ export function getValidPaidProductNos(orders, targetProductNos) {
   return valid;
 }
 
-export async function getCourseAccessDecision(request, env, productNo) {
+export async function getCourseAccessDecision(request, env, productNo, courseId = null) {
   if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
     return {
       status: 503,
@@ -130,6 +187,8 @@ export async function getCourseAccessDecision(request, env, productNo) {
   const windows = buildOrderWindows(ENTITLEMENT_START_DATE, endDate);
   let matchingOrderCount = 0;
   let access = false;
+  let validPurchase = null;
+  let revokedPurchase = null;
 
   for (const window of windows) {
     const orders = await fetchAllOrders(env, {
@@ -143,10 +202,34 @@ export async function getCourseAccessDecision(request, env, productNo) {
     });
 
     matchingOrderCount += orders.length;
-    if (orders.some((order) => hasValidCourseItem(order, productNo))) {
+    const valid = findValidCoursePurchase(orders, productNo);
+    if (valid) {
+      validPurchase = valid;
       access = true;
       break;
     }
+    if (!revokedPurchase) revokedPurchase = findRevokedCoursePurchase(orders, productNo);
+  }
+
+  const resolvedCourseId = courseId || await courseIdForProduct(env, productNo);
+  if (access && validPurchase) {
+    await persistEntitlement(
+      env,
+      session.record.member_id,
+      resolvedCourseId,
+      productNo,
+      validPurchase,
+      true
+    );
+  } else if (revokedPurchase) {
+    await persistEntitlement(
+      env,
+      session.record.member_id,
+      resolvedCourseId,
+      productNo,
+      revokedPurchase,
+      false
+    );
   }
 
   return {
@@ -176,6 +259,7 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
 
   const targets = [...new Set(productNos.map(Number).filter(Number.isFinite))];
   const accessible = new Set();
+  const allOrders = [];
   const endDate = todayDate();
   const windows = buildOrderWindows(ENTITLEMENT_START_DATE, endDate);
 
@@ -189,9 +273,24 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
       embed: "items"
     });
 
+    allOrders.push(...orders);
     const validThisWindow = getValidPaidProductNos(orders, targets);
     for (const productNo of validThisWindow) accessible.add(productNo);
     if (accessible.size === targets.length) break;
+  }
+
+  if (env.COURSE_DB) {
+    for (const productNo of targets) {
+      const courseId = await courseIdForProduct(env, productNo);
+      if (!courseId) continue;
+      const valid = findValidCoursePurchase(allOrders, productNo);
+      const revoked = valid ? null : findRevokedCoursePurchase(allOrders, productNo);
+      if (valid) {
+        await persistEntitlement(env, session.record.member_id, courseId, productNo, valid, true);
+      } else if (revoked) {
+        await persistEntitlement(env, session.record.member_id, courseId, productNo, revoked, false);
+      }
+    }
   }
 
   return { authenticated: true, productNos: accessible };

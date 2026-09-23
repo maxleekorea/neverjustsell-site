@@ -2,7 +2,9 @@ import {
   isPaymentConfirmed,
   isItemRevoked,
   hasValidCourseItem,
-  getValidPaidProductNos
+  getValidPaidProductNos,
+  findValidCoursePurchase,
+  findRevokedCoursePurchase
 } from "../worker/src/access.js";
 
 function assert(condition, message) {
@@ -40,6 +42,8 @@ assert(hasValidCourseItem(paidCourseOrder, 13), "paid active course item must gr
 assert(!hasValidCourseItem(refundedCourseOrder, 13), "refunded course must not grant access");
 assert(!hasValidCourseItem(canceledItemOrder, 13), "cancelled course item must not grant access");
 assert(!hasValidCourseItem(unrelatedPaidOrder, 13), "other product purchase must not grant course access");
+assert(findValidCoursePurchase([paidCourseOrder], 13)?.order === paidCourseOrder, "valid purchase fact must be identifiable");
+assert(findRevokedCoursePurchase([canceledItemOrder], 13)?.order === canceledItemOrder, "revoked purchase fact must be identifiable");
 
 const valid = getValidPaidProductNos(
   [paidCourseOrder, unrelatedPaidOrder, canceledItemOrder],
