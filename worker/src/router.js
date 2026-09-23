@@ -6,6 +6,8 @@ import {
 } from "./courses.js";
 import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN } from "./config.js";
 import {
+  listCatalogD1Courses,
+  getCatalogD1Course,
   listPublishedD1Courses,
   getPublishedD1Course,
   getCourseProgress,
@@ -180,7 +182,7 @@ function renderCourseOutline(course) {
 }
 
 async function renderCourseCatalog(request, env) {
-  const courses = await listPublishedD1Courses(env);
+  const courses = await listCatalogD1Courses(env);
   const session = await getCustomerSession(request, env);
   const memberId = session?.record?.member_id || null;
   const accessibleCourses = memberId ? await loadAccessibleD1Courses(request, env, memberId) : [];
@@ -207,7 +209,7 @@ async function renderCourseCatalog(request, env) {
 }
 
 async function renderCourseLanding(request, env, slug) {
-  const course = await getPublishedD1Course(env, slug);
+  const course = await getCatalogD1Course(env, slug);
   if (!course) {
     return html(classroomShell("강의를 찾을 수 없습니다", '<section class="card"><h1 class="title">강의를 찾을 수 없습니다.</h1><a class="action" href="/courses">강의 찾기로</a></section>'), { status: 404 });
   }
@@ -241,7 +243,7 @@ async function renderCourseLanding(request, env, slug) {
   } else if (paidAccess) {
     cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
   } else {
-    cta = course.sales_url
+    cta = Number(course.sales_enabled) === 1 && course.sales_url
       ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
       : '<span class="action secondary">판매 준비 중</span>';
   }
@@ -508,8 +510,8 @@ async function renderClassroomHome(request, env) {
       learnerCourseCard(course, playerCourse, progress, "완료한 강의")
     );
 
-  const published = await listPublishedD1Courses(env);
-  const explore = published
+  const catalog = await listCatalogD1Courses(env);
+  const explore = catalog
     .filter((course) => !accessibleIds.has(course.id))
     .slice(0, 2)
     .map((course) =>
