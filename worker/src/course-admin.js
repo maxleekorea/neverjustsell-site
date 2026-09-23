@@ -227,7 +227,7 @@ function shell(title, body) {
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
     ".error{color:#ff9696}.ok{color:#a8e6a8}.course-settings{padding:14px;background:#101010;border:1px solid #262626;border-radius:12px;margin:12px 0 18px}.lessoncard{border:1px solid #2a2a2a;border-radius:12px;margin:10px 0;background:#101010;overflow:hidden}.lessoncard summary{cursor:pointer;padding:13px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.lessoncard summary::-webkit-details-marker{display:none}.lessonbody{padding:0 14px 14px;border-top:1px solid #242424}.lessonmeta{font-size:11px;color:#777}.fieldgrid{display:grid;grid-template-columns:1fr 180px;gap:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar form{margin:0}.toolbar button{padding:8px 10px}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;margin-top:10px}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row,.fieldgrid{grid-template-columns:1fr}}" +
-    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}.action-link{display:inline-block;padding:9px 12px;border:1px solid #d4d4d8;border-radius:9px;text-decoration:none;font-size:13px;font-weight:700;background:#fff;color:#27272a}.student-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}.student-metric{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-metric .value{font-size:22px;font-weight:800;margin-top:4px}.student-table-wrap{overflow:auto;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-table{width:100%;border-collapse:collapse;min-width:900px}.student-table th{font-size:12px;text-align:left;color:#71717a;font-weight:700;padding:11px 12px;border-bottom:1px solid #e4e4e7;background:#fafafa}.student-table td{padding:12px;border-bottom:1px solid #f1f1f3;font-size:13px;vertical-align:middle}.student-table tr:last-child td{border-bottom:0}.status-active{color:#166534;font-weight:800}.status-revoked{color:#b91c1c;font-weight:800}.status-neutral{color:#71717a;font-weight:700}.student-search{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 14px}.progress-mini{display:flex;align-items:center;gap:8px}.progress-mini-track{width:84px;height:6px;background:#e4e4e7;border-radius:999px;overflow:hidden}.progress-mini-track span{display:block;height:100%;background:#18181b}.nowrap{white-space:nowrap}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
+    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}.action-link{display:inline-block;padding:9px 12px;border:1px solid #d4d4d8;border-radius:9px;text-decoration:none;font-size:13px;font-weight:700;background:#fff;color:#27272a}.student-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}.student-metric{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-metric .value{font-size:22px;font-weight:800;margin-top:4px}.student-table-wrap{overflow:auto;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-table{width:100%;border-collapse:collapse;min-width:900px}.student-table th{font-size:12px;text-align:left;color:#71717a;font-weight:700;padding:11px 12px;border-bottom:1px solid #e4e4e7;background:#fafafa}.student-table td{padding:12px;border-bottom:1px solid #f1f1f3;font-size:13px;vertical-align:middle}.student-table tr:last-child td{border-bottom:0}.status-active{color:#166534;font-weight:800}.status-revoked{color:#b91c1c;font-weight:800}.status-neutral{color:#71717a;font-weight:700}.student-search{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 14px}.progress-mini{display:flex;align-items:center;gap:8px}.progress-mini-track{width:84px;height:6px;background:#e4e4e7;border-radius:999px;overflow:hidden}.progress-mini-track span{display:block;height:100%;background:#18181b}.nowrap{white-space:nowrap}.student-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}.student-detail-card{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-detail-card strong{display:block;margin-top:4px;font-size:15px}.timeline{display:grid;gap:10px;margin:10px 0 18px}.timeline-item{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid #f0f0f2}.timeline-item:last-child{border-bottom:0}.timeline-time{font-size:12px;color:#71717a}.timeline-title{font-weight:800}.timeline-sub{font-size:12px;color:#71717a;margin-top:3px}.student-section{margin:20px 0}.student-section h3{margin-bottom:10px}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -548,6 +548,178 @@ function formatAdminDate(value) {
   return text.replace("T", " ").replace(/\.\d+Z?$/, "").replace(/Z$/, "");
 }
 
+async function loadCourseStudentDetail(env, course, memberId) {
+  const normalized = String(memberId || "").trim();
+  if (!normalized) return null;
+
+  let access = null;
+  let events = [];
+  if (course.access_type === "paid") {
+    access = await env.COURSE_DB.prepare(
+      "SELECT member_id,status,source_order_id,source_order_item_code,grant_reason,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+    ).bind(normalized, course.id).first();
+
+    const eventRows = await env.COURSE_DB.prepare(
+      "SELECT event_type,source_order_id,source_order_item_code,reason,actor_type,occurred_at FROM course_entitlement_events WHERE member_id=? AND course_id=? ORDER BY occurred_at DESC,created_at DESC LIMIT 100"
+    ).bind(normalized, course.id).all();
+    events = Array.isArray(eventRows?.results) ? eventRows.results : [];
+  } else {
+    access = await env.COURSE_DB.prepare(
+      "SELECT member_id,status,enrollment_type,enrolled_at AS granted_at,updated_at,last_verified_at FROM course_enrollments WHERE member_id=? AND course_id=? LIMIT 1"
+    ).bind(normalized, course.id).first();
+  }
+
+  if (!access) return null;
+
+  const progressRows = await env.COURSE_DB.prepare(
+    "SELECT l.id,l.title,l.sort_order,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
+    "FROM lessons l LEFT JOIN lesson_progress lp ON lp.lesson_id=l.id AND lp.member_id=? AND lp.course_id=l.course_id " +
+    "WHERE l.course_id=? AND l.status!='archived' ORDER BY l.sort_order,l.created_at"
+  ).bind(normalized, course.id).all();
+  const progress = Array.isArray(progressRows?.results) ? progressRows.results : [];
+
+  let order = null;
+  let orderError = "";
+  if (course.access_type === "paid" && access.source_order_id) {
+    try {
+      const payload = await cafe24AdminGet("/orders", env, {
+        shop_no: 1,
+        order_id: access.source_order_id,
+        embed: "items"
+      });
+      const orders = Array.isArray(payload?.orders) ? payload.orders : [];
+      const source = orders.find((item) => String(item?.order_id || "") === String(access.source_order_id)) || orders[0] || null;
+      if (source) {
+        const items = Array.isArray(source.items) ? source.items : [];
+        const item = items.find((entry) => Number(entry?.product_no) === Number(course.cafe24_product_no)) || items[0] || null;
+        order = {
+          order_id: source.order_id || access.source_order_id,
+          paid: isPaymentConfirmed(source, item),
+          revoked: isItemRevoked(source, item),
+          order_status: item?.order_status || source.order_status || "",
+          payment_status: item?.payment_status || source.payment_status || "",
+          canceled: source.canceled || "",
+          refund_status: source.refund_status || "",
+          order_date: source.order_date || source.created_date || ""
+        };
+      }
+    } catch (error) {
+      orderError = friendlyCafe24Error(error);
+    }
+  }
+
+  const completed = progress.filter((row) => Number(row.completed) === 1).length;
+  const started = progress.filter((row) => row.first_started_at).length;
+  const lastActivity = progress
+    .map((row) => row.updated_at)
+    .filter(Boolean)
+    .sort()
+    .reverse()[0] || null;
+  const total = progress.length;
+  const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+
+  return {
+    member_id: normalized,
+    access,
+    events,
+    progress,
+    order,
+    order_error: orderError,
+    metrics: {
+      total_lessons: total,
+      started_lessons: started,
+      completed_lessons: completed,
+      progress_percent: percent,
+      last_activity: lastActivity
+    }
+  };
+}
+
+function entitlementEventLabel(type) {
+  const labels = {
+    granted: "수강권 부여",
+    restored: "수강권 복구",
+    revoked: "수강권 회수",
+    manual_grant: "관리자 수강권 부여",
+    manual_revoke: "관리자 수강권 회수",
+    expired: "수강기간 만료"
+  };
+  return labels[type] || type || "상태 변경";
+}
+
+function studentDetailPanel(course, detail) {
+  if (!detail) {
+    return "<div class=\"panel\"><p class=\"error\">수강생 정보를 찾을 수 없습니다.</p></div>";
+  }
+
+  const accessStatus = course.access_type === "paid"
+    ? String(detail.access.status || "")
+    : (detail.access.status === "enrolled" ? "active" : "revoked");
+  const active = accessStatus === "active";
+  const back = "/course-admin?course=" + encodeURIComponent(course.id) + "&tab=students";
+
+  const orderSection = course.access_type === "paid"
+    ? "<div class=\"student-section\"><h3>Cafe24 주문</h3>" +
+      (detail.order_error ? "<p class=\"error\">" + escapeHtml(detail.order_error) + "</p>" : "") +
+      (detail.order
+        ? "<div class=\"readiness\">" +
+          "<div class=\"ready-row\"><span>주문번호</span><strong>" + escapeHtml(detail.order.order_id || "-") + "</strong></div>" +
+          "<div class=\"ready-row\"><span>결제 확인</span><span class=\"" + (detail.order.paid ? "ready-ok" : "ready-wait") + "\">" + (detail.order.paid ? "완료" : "미확인") + "</span></div>" +
+          "<div class=\"ready-row\"><span>취소·환불</span><span class=\"" + (detail.order.revoked ? "ready-wait" : "ready-ok") + "\">" + (detail.order.revoked ? "감지됨" : "없음") + "</span></div>" +
+          "<div class=\"ready-row\"><span>주문 상태</span><span>" + escapeHtml(detail.order.order_status || "-") + "</span></div>" +
+          "<div class=\"ready-row\"><span>결제 상태</span><span>" + escapeHtml(detail.order.payment_status || "-") + "</span></div>" +
+          "</div>"
+        : "<p class=\"muted\">연결된 Cafe24 주문을 확인하지 못했습니다.</p>") +
+      "</div>"
+    : "";
+
+  const history = course.access_type === "paid"
+    ? "<div class=\"student-section\"><h3>수강권 변경 이력</h3>" +
+      (detail.events.length
+        ? "<div class=\"timeline\">" + detail.events.map((event) =>
+            "<div class=\"timeline-item\"><div class=\"timeline-time\">" + escapeHtml(formatAdminDate(event.occurred_at)) + "</div>" +
+            "<div><div class=\"timeline-title\">" + escapeHtml(entitlementEventLabel(event.event_type)) + "</div>" +
+            "<div class=\"timeline-sub\">" +
+            escapeHtml(event.reason || "-") +
+            (event.source_order_id ? " · 주문 " + escapeHtml(event.source_order_id) : "") +
+            " · " + escapeHtml(event.actor_type === "admin" ? "관리자" : "시스템") +
+            "</div></div></div>"
+          ).join("") + "</div>"
+        : "<p class=\"muted\">기록된 수강권 변경 이력이 없습니다.</p>") +
+      "</div>"
+    : "";
+
+  const progressRows = detail.progress.length
+    ? detail.progress.map((row, index) => {
+        const state = Number(row.completed) === 1 ? "완료" : row.first_started_at ? "학습 중" : "미수강";
+        const cls = Number(row.completed) === 1 ? "status-active" : row.first_started_at ? "status-neutral" : "muted";
+        return "<tr>" +
+          "<td>" + (index + 1) + ". " + escapeHtml(row.title) + "</td>" +
+          "<td><span class=\"" + cls + "\">" + state + "</span></td>" +
+          "<td>" + Number(row.last_position_seconds || 0) + "초</td>" +
+          "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.first_started_at)) + "</td>" +
+          "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.completed_at)) + "</td>" +
+          "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.updated_at)) + "</td>" +
+          "</tr>";
+      }).join("")
+    : "<tr><td colspan=\"6\" class=\"muted\">등록된 차시가 없습니다.</td></tr>";
+
+  return "<div class=\"panel\"><a class=\"backlink\" href=\"" + back + "\">← 수강생 목록</a>" +
+    "<div class=\"sectionhead\"><div><h3>" + escapeHtml(detail.member_id) + "</h3><p class=\"hint\">회원의 주문·수강권·학습 진행 상태를 확인합니다.</p></div>" +
+    "<span class=\"" + (active ? "status-active" : "status-revoked") + "\">" + (active ? "수강 가능" : "수강 회수") + "</span></div>" +
+    "<div class=\"student-detail-grid\">" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">진도율</div><strong>" + Number(detail.metrics.progress_percent || 0) + "%</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">완료 차시</div><strong>" + Number(detail.metrics.completed_lessons || 0) + " / " + Number(detail.metrics.total_lessons || 0) + "</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">마지막 학습</div><strong>" + escapeHtml(formatAdminDate(detail.metrics.last_activity)) + "</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">수강 시작</div><strong>" + escapeHtml(formatAdminDate(detail.access.granted_at || detail.access.enrolled_at)) + "</strong></div>" +
+    "</div>" +
+    orderSection + history +
+    "<div class=\"student-section\"><h3>차시별 학습 진도</h3><div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
+    "<th>차시</th><th>상태</th><th>마지막 위치</th><th>첫 학습</th><th>완료</th><th>최근 변경</th>" +
+    "</tr></thead><tbody>" + progressRows + "</tbody></table></div></div>" +
+    "</div>";
+}
+
 function studentManagementPanel(course, rows, query = "") {
   const total = rows.length;
   const active = rows.filter((row) => row.access_status === "active").length;
@@ -574,7 +746,7 @@ function studentManagementPanel(course, rows, query = "") {
         const statusClass = row.access_status === "active" ? "status-active" : "status-revoked";
         const statusLabel = row.access_status === "active" ? "수강 가능" : "수강 회수";
         return "<tr>" +
-          "<td><strong>" + escapeHtml(row.member_id || "-") + "</strong></td>" +
+          "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=students&student=" + encodeURIComponent(row.member_id || "") + "\"><strong>" + escapeHtml(row.member_id || "-") + "</strong></a></td>" +
           "<td class=\"nowrap\">" + escapeHtml(row.source_order_id || "-") + "</td>" +
           "<td><span class=\"" + statusClass + "\">" + statusLabel + "</span></td>" +
           "<td>" + escapeHtml(row.refund_state) + "</td>" +
@@ -596,7 +768,7 @@ function studentManagementPanel(course, rows, query = "") {
     "<p class=\"hint\" style=\"margin-top:10px\">수동 수강권 부여·회수는 운영자 변경 이력 기능과 함께 추가합니다.</p></div>";
 }
 
-function courseCard(course, creators, activeTab = "content", studentRows = [], studentQuery = "") {
+function courseCard(course, creators, activeTab = "content", studentRows = [], studentQuery = "", studentDetail = null, studentMemberId = "") {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
   const moduleOptions = ['<option value="">섹션 없음</option>']
@@ -688,7 +860,9 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       (Number(course.cafe24_product_no || 0) > 0 ? "Cafe24 상품 #" + Number(course.cafe24_product_no) : "Cafe24 상품 미연결") +
       "</p><span class=\"pill\">" + (Number(course.sales_enabled) === 1 ? "판매 중" : "판매 중지") + "</span></aside></div>";
   } else if (tab === "students") {
-    panel = studentManagementPanel(course, studentRows, studentQuery);
+    panel = studentMemberId
+      ? studentDetailPanel(course, studentDetail)
+      : studentManagementPanel(course, studentRows, studentQuery);
   } else if (tab === "advanced") {
     panel =
       "<div class=\"panel narrow\"><div class=\"course-settings\"><h3>고급 설정</h3>" +
@@ -827,7 +1001,7 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
     "</section>";
 }
 
-async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab, e2eOrderId, studentQuery) {
+async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab, e2eOrderId, studentQuery, studentMemberId) {
   let syncWarning = "";
   try {
     await syncOnlineCommerceBasics(env);
@@ -852,8 +1026,13 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
   const warning = syncWarning ? "<p class=\"error\">" + escapeHtml(syncWarning) + "</p>" : "";
   const cafe24Notice = cafe24ConnectionNotice(cafe24State);
   let studentRows = [];
+  let studentDetail = null;
   if (selectedCourse && selectedTab === "students") {
-    studentRows = await listCourseStudents(env, selectedCourse, studentQuery || "");
+    if (studentMemberId) {
+      studentDetail = await loadCourseStudentDetail(env, selectedCourse, studentMemberId);
+    } else {
+      studentRows = await listCourseStudents(env, selectedCourse, studentQuery || "");
+    }
   }
   let e2eInspection = null;
   let e2eInspectError = "";
@@ -879,7 +1058,7 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
     "<button type=\"submit\" style=\"margin-top:14px\">강의 만들기</button></form></details>";
 
   const content = selectedCourse
-    ? courseCard(selectedCourse, creators, selectedTab || "content", studentRows, studentQuery || "")
+    ? courseCard(selectedCourse, creators, selectedTab || "content", studentRows, studentQuery || "", studentDetail, studentMemberId || "")
     : (e2eInspectError ? "<p class=\"error\">" + escapeHtml(e2eInspectError) + "</p>" : "") + paymentE2EPanel(e2eCourse, e2eInspection, e2eOrderId) + newCourse +
       "<div class=\"list-toolbar\"><div><h2 style=\"margin:0\">등록 강의</h2>" +
       "<p class=\"hint\">강의를 선택하면 기본 정보·콘텐츠·판매 설정을 분리해서 편집합니다.</p></div></div>" +
@@ -899,9 +1078,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["course_entitlements", "course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
+    const expected = ["course_entitlement_events", "course_entitlements", "course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_entitlements','course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_entitlement_events','course_entitlements','course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
@@ -1619,7 +1798,8 @@ export default {
         url.searchParams.get("course") || "",
         url.searchParams.get("tab") || "content",
         url.searchParams.get("e2e_order") || "",
-        url.searchParams.get("student_q") || ""
+        url.searchParams.get("student_q") || "",
+        url.searchParams.get("student") || ""
       ));
     }
 
