@@ -27,10 +27,39 @@ export async function getEnrolledCourseIds(env, memberId) {
   return new Set((Array.isArray(result?.results) ? result.results : []).map((row) => row.course_id));
 }
 
+export async function listCatalogD1Courses(env) {
+  if (!env.COURSE_DB) return [];
+  const result = await env.COURSE_DB.prepare(
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE catalog_visible=1 AND status!='system_check' ORDER BY sort_order,created_at"
+  ).all();
+  return Array.isArray(result?.results) ? result.results : [];
+}
+
+export async function getCatalogD1Course(env, slug) {
+  if (!env.COURSE_DB || !slug) return null;
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE slug=? AND catalog_visible=1 AND status!='system_check' LIMIT 1"
+  ).bind(slug).first();
+  if (!course) return null;
+
+  const [moduleRows, lessonRows] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT id,course_id,title,description,sort_order,status FROM course_modules WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    ).bind(course.id).all(),
+    env.COURSE_DB.prepare(
+      "SELECT id,course_id,module_id,title,description,vimeo_id,duration_seconds,sort_order,status,is_preview FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    ).bind(course.id).all()
+  ]);
+
+  const modules = Array.isArray(moduleRows?.results) ? moduleRows.results : [];
+  const lessons = Array.isArray(lessonRows?.results) ? lessonRows.results : [];
+  return { ...course, modules, lessons };
+}
+
 export async function listPublishedD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
   ).all();
   return Array.isArray(result?.results) ? result.results : [];
 }
@@ -38,7 +67,7 @@ export async function listPublishedD1Courses(env) {
 export async function getPublishedD1Course(env, slug) {
   if (!env.COURSE_DB || !slug) return null;
   const course = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
   ).bind(slug).first();
   if (!course) return null;
 
