@@ -1,4 +1,6 @@
 import { listActiveCreators, assertActiveCreator } from "./roles.js";
+import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
+import { COMMERCE_ORIGIN } from "./config.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
 const ADMIN_TTL_SECONDS = 60 * 60 * 12;
@@ -381,6 +383,50 @@ function creatorOptions(creators, selectedMemberId = "") {
   )).join("");
 }
 
+function cafe24ProductDetailUrl(productNo) {
+  return `${COMMERCE_ORIGIN}/product/detail.html?product_no=${encodeURIComponent(productNo)}`;
+}
+
+function commercePanel(course) {
+  if (course.access_type !== "paid") return "";
+
+  const productNo = Number(course.cafe24_product_no || 0);
+  const price = Number(course.price_krw || 0);
+
+  if (!productNo) {
+    const create = price > 0
+      ? "<form method=\"post\" action=\"/course-admin/cafe24-product-create\">" +
+        "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+        "<button type=\"submit\">Cafe24 상품 생성 · 연결</button></form>"
+      : "<p class=\"hint\">판매가를 먼저 확정해 저장하면 Cafe24 상품을 생성할 수 있습니다.</p>";
+
+    return "<div class=\"course-settings\"><strong>Cafe24 판매 연결</strong>" +
+      "<p class=\"hint\">상품은 처음에는 진열안함·판매안함으로 생성합니다. 강의 게시 후 판매 시작을 별도로 승인합니다.</p>" +
+      create +
+      "<form method=\"post\" action=\"/course-admin/cafe24-product-link\" style=\"margin-top:12px\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<label>기존 Cafe24 상품 연결</label><div class=\"row\"><input name=\"product_no\" type=\"number\" min=\"1\" placeholder=\"상품번호\">" +
+      "<button class=\"secondary\" type=\"submit\">연결</button></div></form></div>";
+  }
+
+  const selling = Number(course.sales_enabled) === 1;
+  const action = selling ? "pause" : "start";
+  const actionLabel = selling ? "판매 중지 · 숨김" : "판매 시작";
+  const disabledHint = !selling && course.status !== "published"
+    ? "<p class=\"hint\">판매 시작 전 강의를 먼저 게시해야 합니다.</p>"
+    : "";
+
+  return "<div class=\"course-settings\"><strong>Cafe24 판매 연결</strong>" +
+    "<p><span class=\"pill\">상품 #" + productNo + "</span><span class=\"pill\">" +
+    escapeHtml(course.cafe24_sync_status || "linked") + "</span></p>" +
+    "<a href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">Cafe24 상품 확인 →</a>" +
+    disabledHint +
+    "<form method=\"post\" action=\"/course-admin/cafe24-product-sales\" style=\"margin-top:12px\">" +
+    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+    "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
+    "<button class=\"" + (selling ? "secondary" : "") + "\" type=\"submit\">" + actionLabel + "</button></form></div>";
+}
+
 function courseCard(course, creators) {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
@@ -437,6 +483,7 @@ function courseCard(course, creators) {
     "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators, course.owner_member_id || "") + "</select><div class=\"hint\">승인된 creator 계정만 지정할 수 있습니다. 게시 권한은 관리자에게 유지됩니다.</div>" +
     "<div class=\"fieldgrid\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option><option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div><div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
     "<button type=\"submit\" style=\"margin-top:12px\">기본정보 저장</button></form></div>" +
+    commercePanel(course) +
     "<div class=\"editor\"><div class=\"sectionhead\"><div><h3>커리큘럼</h3><p class=\"hint\">영상 1개가 차시 1개입니다. 제목과 설명을 작성하고 필요할 때만 섹션으로 묶으세요.</p></div></div>" +
     lessonHtml +
     "<div class=\"sectionhead\"><div><h3>섹션</h3><p class=\"hint\">선택 기능입니다. 강의가 길 때 ‘기초’, ‘실전’처럼 차시를 묶는 용도입니다.</p></div></div>" +
@@ -491,9 +538,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
+    const expected = ["course_entitlements", "course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_entitlements','course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
@@ -533,6 +580,137 @@ async function createCourse(form, env) {
   await env.COURSE_DB.prepare(
     "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,?,1,'draft',0,0,'not_linked')"
   ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId).run();
+}
+
+function cafe24ProductNumber(payload) {
+  return Number(
+    payload?.product?.product_no ||
+    payload?.products?.[0]?.product_no ||
+    payload?.resource?.product_no ||
+    payload?.product_no ||
+    0
+  );
+}
+
+async function getAdminCourse(env, courseId) {
+  return env.COURSE_DB.prepare(
+    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,status FROM courses WHERE id=? LIMIT 1"
+  ).bind(courseId).first();
+}
+
+async function createCafe24CourseProduct(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const course = await getAdminCourse(env, courseId);
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  if (course.access_type !== "paid") throw new Error("유료 강의만 Cafe24 상품으로 만들 수 있습니다.");
+  if (Number(course.cafe24_product_no) > 0) throw new Error("이미 Cafe24 상품이 연결되어 있습니다.");
+
+  const price = Number(course.price_krw || 0);
+  if (!Number.isFinite(price) || price <= 0) throw new Error("판매가를 먼저 확정해 주세요.");
+
+  const summary = String(course.summary || "").trim();
+  const payload = await cafe24AdminRequest("/products", env, {
+    method: "POST",
+    body: {
+      shop_no: 1,
+      display: "F",
+      selling: "F",
+      product_condition: "N",
+      product_name: course.title,
+      internal_product_name: ("NJS 강의 " + course.slug).slice(0, 50),
+      price: Math.trunc(price),
+      supply_price: Math.trunc(price),
+      has_option: "F",
+      summary_description: summary.slice(0, 255),
+      description: summary,
+      shipping_fee_by_product: "T",
+      shipping_method: "09",
+      shipping_fee_type: "T",
+      buy_limit_by_product: "T",
+      buy_limit_type: "M",
+      repurchase_restriction: "T",
+      use_naverpay: "F"
+    }
+  });
+
+  const productNo = cafe24ProductNumber(payload);
+  if (!Number.isInteger(productNo) || productNo <= 0) {
+    throw new Error("Cafe24 상품번호를 응답에서 확인하지 못했습니다.");
+  }
+
+  const salesUrl = cafe24ProductDetailUrl(productNo);
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=0,cafe24_sync_status='linked_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(productNo, salesUrl, course.id).run();
+
+  return productNo;
+}
+
+async function linkExistingCafe24CourseProduct(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const productNo = Number(form.get("product_no") || 0);
+  if (!Number.isInteger(productNo) || productNo <= 0) throw new Error("올바른 Cafe24 상품번호를 입력해 주세요.");
+
+  const course = await getAdminCourse(env, courseId);
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  if (course.access_type !== "paid") throw new Error("유료 강의만 Cafe24 상품과 연결할 수 있습니다.");
+
+  const payload = await cafe24AdminGet("/products/" + productNo, env, { shop_no: 1 });
+  const remote = payload?.product || payload?.products?.[0] || payload?.resource || payload;
+  if (Number(remote?.product_no || 0) !== productNo) throw new Error("Cafe24 상품을 확인하지 못했습니다.");
+
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=?,cafe24_sync_status='linked_existing',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(
+    productNo,
+    cafe24ProductDetailUrl(productNo),
+    remote?.selling === "T" ? 1 : 0,
+    course.id
+  ).run();
+}
+
+async function updateCafe24CourseSales(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const action = String(form.get("action") || "").trim();
+  const course = await getAdminCourse(env, courseId);
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+
+  const productNo = Number(course.cafe24_product_no || 0);
+  if (!Number.isInteger(productNo) || productNo <= 0) throw new Error("Cafe24 상품 연결이 필요합니다.");
+
+  if (action === "start") {
+    if (course.status !== "published") throw new Error("강의를 먼저 게시한 뒤 판매를 시작해 주세요.");
+    const price = Number(course.price_krw || 0);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("판매가가 올바르지 않습니다.");
+
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        display: "T",
+        selling: "T",
+        price: Math.trunc(price),
+        supply_price: Math.trunc(price)
+      }
+    });
+    await env.COURSE_DB.prepare(
+      "UPDATE courses SET sales_enabled=1,cafe24_sync_status='selling',sales_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(cafe24ProductDetailUrl(productNo), course.id).run();
+    return;
+  }
+
+  if (action === "pause") {
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body: { shop_no: 1, display: "F", selling: "F" }
+    });
+    await env.COURSE_DB.prepare(
+      "UPDATE courses SET sales_enabled=0,cafe24_sync_status='paused_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(course.id).run();
+    return;
+  }
+
+  throw new Error("잘못된 판매 상태 요청입니다.");
 }
 
 async function createLesson(form, env) {
@@ -1016,6 +1194,36 @@ export default {
       try {
         await updateCourse(await request.formData(), env);
         return redirect("/course-admin?message=" + encodeURIComponent("강의 기본정보를 저장했습니다."));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/cafe24-product-create" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        const productNo = await createCafe24CourseProduct(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("Cafe24 상품 #" + productNo + "을 생성하고 연결했습니다. 현재는 진열·판매 중지 상태입니다."));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/cafe24-product-link" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await linkExistingCafe24CourseProduct(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("기존 Cafe24 상품을 강의와 연결했습니다."));
+      } catch (error) {
+        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/cafe24-product-sales" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        await updateCafe24CourseSales(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent("Cafe24 판매 상태를 반영했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
