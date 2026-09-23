@@ -152,19 +152,36 @@ async function getAdminToken(env) {
 }
 
 async function fetchAdminRequest(apiUrl, accessToken, init = {}) {
-  const response = await fetch(apiUrl.toString(), {
-    method: init.method || "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {})
-    },
-    body: init.body === undefined
-      ? undefined
-      : (typeof init.body === "string" ? init.body : JSON.stringify(init.body))
-  });
-  const payload = await response.json().catch(() => ({}));
-  return { response, payload };
+  const serialize = (body) => body === undefined
+    ? undefined
+    : (typeof body === "string" ? body : JSON.stringify(body));
+
+  const send = async (body) => {
+    const response = await fetch(apiUrl.toString(), {
+      method: init.method || "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        ...(init.headers || {})
+      },
+      body: serialize(body)
+    });
+    const payload = await response.json().catch(() => ({}));
+    return { response, payload };
+  };
+
+  let result = await send(init.body);
+  const requestParameterMissing =
+    result.response.status === 400 &&
+    /Request parameter/i.test(String(result.payload?.error?.message || "")) &&
+    init.body !== undefined &&
+    typeof init.body !== "string";
+
+  if (requestParameterMissing) {
+    result = await send({ request: init.body });
+  }
+
+  return result;
 }
 
 export async function cafe24AdminGet(path, env, params = {}) {
