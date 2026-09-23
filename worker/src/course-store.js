@@ -30,7 +30,7 @@ export async function getEnrolledCourseIds(env, memberId) {
 export async function listPublishedD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
   ).all();
   return Array.isArray(result?.results) ? result.results : [];
 }
@@ -38,7 +38,7 @@ export async function listPublishedD1Courses(env) {
 export async function getPublishedD1Course(env, slug) {
   if (!env.COURSE_DB || !slug) return null;
   const course = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,visible,sort_order,status,price_krw,login_required,owner_member_id FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
   ).bind(slug).first();
   if (!course) return null;
 
@@ -111,6 +111,7 @@ export function d1CourseToPlayerCourse(course) {
     productNo: course.cafe24_product_no ? Number(course.cafe24_product_no) : null,
     salesUrl: course.sales_url || null,
     loginRequired: Number(course.login_required) !== 0,
+    ownerMemberId: course.owner_member_id || null,
     lessons: (course.lessons || []).map((lesson) => ({
       id: lesson.id,
       title: lesson.title,
