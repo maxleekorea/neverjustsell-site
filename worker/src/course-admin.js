@@ -565,7 +565,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
     events = Array.isArray(eventRows?.results) ? eventRows.results : [];
   } else {
     access = await env.COURSE_DB.prepare(
-      "SELECT member_id,status,enrollment_type,enrolled_at AS granted_at,updated_at,last_verified_at FROM course_enrollments WHERE member_id=? AND course_id=? LIMIT 1"
+      "SELECT member_id,status,enrollment_type,enrolled_at AS granted_at,updated_at FROM course_enrollments WHERE member_id=? AND course_id=? LIMIT 1"
     ).bind(normalized, course.id).first();
   }
 
