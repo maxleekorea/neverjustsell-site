@@ -13,6 +13,16 @@ assert(seed.includes("'naver-keyword-strategy'"), "keyword strategy paid course 
 assert(seed.includes("'maxjagga'"), "paid course owner seed missing");
 assert(seed.includes("'paid'"), "paid access type missing");
 
+
+const e2eSeed = await readFile(
+  new URL("../worker/migrations/0011_seed_payment_e2e_fixture.sql", import.meta.url),
+  "utf8"
+);
+assert(e2eSeed.includes("'system-check-paid-course'"), "payment E2E D1 fixture missing");
+assert(e2eSeed.includes("1227604364"), "payment E2E Vimeo fixture 1 missing");
+assert(e2eSeed.includes("1227604365"), "payment E2E Vimeo fixture 2 missing");
+assert(e2eSeed.includes("'system_check'"), "payment E2E fixture must remain outside public catalog");
+
 const entitlements = await readFile(
   new URL("../worker/migrations/0009_course_entitlements.sql", import.meta.url),
   "utf8"
@@ -32,6 +42,11 @@ assert(admin.includes("linked_hidden"), "new course products must start hidden")
 assert(admin.includes('display: "F"'), "new Cafe24 course product must start undisplayed");
 assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not selling");
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
+assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
+assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
+assert(admin.includes("price: 1000"), "payment E2E test price must be 1,000 KRW");
+assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
+assert(admin.includes("display: \"F\""), "payment E2E must configure policy while hidden");
 assert(admin.includes('buy_limit_by_product: "T"'), "sales activation must enforce customer-only purchase restriction");
 assert(admin.includes('buy_limit_type: "M"'), "sales activation must require a customer account");
 assert(admin.includes("selling_member_only"), "member-only selling state must be persisted");
