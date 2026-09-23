@@ -44,7 +44,7 @@ assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
-assert(admin.includes("price: 0"), "payment E2E test must use a zero-price order");
+assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
 assert(admin.includes("display: \"F\""), "payment E2E must configure policy while hidden");
 assert(admin.includes('buy_limit_by_product: "T"'), "sales activation must enforce customer-only purchase restriction");
