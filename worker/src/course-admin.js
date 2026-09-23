@@ -226,7 +226,7 @@ function shell(title, body) {
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
     ".error{color:#ff9696}.ok{color:#a8e6a8}.course-settings{padding:14px;background:#101010;border:1px solid #262626;border-radius:12px;margin:12px 0 18px}.lessoncard{border:1px solid #2a2a2a;border-radius:12px;margin:10px 0;background:#101010;overflow:hidden}.lessoncard summary{cursor:pointer;padding:13px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.lessoncard summary::-webkit-details-marker{display:none}.lessonbody{padding:0 14px 14px;border-top:1px solid #242424}.lessonmeta{font-size:11px;color:#777}.fieldgrid{display:grid;grid-template-columns:1fr 180px;gap:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar form{margin:0}.toolbar button{padding:8px 10px}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;margin-top:10px}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row,.fieldgrid{grid-template-columns:1fr}}" +
-    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
+    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}.action-link{display:inline-block;padding:9px 12px;border:1px solid #d4d4d8;border-radius:9px;text-decoration:none;font-size:13px;font-weight:700;background:#fff;color:#27272a}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -627,6 +627,39 @@ function courseListTable(courses) {
     "</tr></thead><tbody>" + rows + "</tbody></table></section>";
 }
 
+function paymentE2EPanel(course) {
+  if (!course) {
+    return "<section class=\"card\"><h2>결제 E2E 테스트</h2><p class=\"muted\">테스트 fixture 준비 중입니다. 최신 배포 후 다시 확인하세요.</p></section>";
+  }
+
+  const active = Number(course.sales_enabled) === 1;
+  const productNo = Number(course.cafe24_product_no || 13);
+  const price = Number(course.price_krw || 1000);
+  const action = active ? "stop" : "start";
+  const buttonLabel = active ? "테스트 판매 종료" : "테스트 판매 시작";
+  const actionClass = active ? "secondary" : "";
+  const state = active
+    ? "<span class=\"pill\">테스트 판매 중</span>"
+    : "<span class=\"pill\">테스트 대기</span>";
+
+  return "<section class=\"card\"><div class=\"sectionhead\"><div><h2>결제 E2E 테스트</h2>" +
+    "<p class=\"hint\">실제 강의와 분리된 product_no=13 테스트 fixture입니다. 테스트 결제 금액은 " + price.toLocaleString("ko-KR") + "원입니다.</p></div>" +
+    state + "</div>" +
+    "<div class=\"readiness\">" +
+    "<div class=\"ready-row\"><span>Cafe24 테스트 상품</span><span class=\"ready-ok\">#" + productNo + "</span></div>" +
+    "<div class=\"ready-row\"><span>Vimeo 테스트 영상</span><span class=\"ready-ok\">2개 연결</span></div>" +
+    "<div class=\"ready-row\"><span>D1 수강권 기록</span><span class=\"ready-ok\">active / revoked 검증</span></div>" +
+    "</div>" +
+    (active
+      ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
+        "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
+        "<a class=\"action-link\" href=\"/classroom?course=paid-course\" target=\"_blank\">테스트 강의 열기 →</a></div>"
+      : "<p class=\"hint\">시작하면 테스트 상품만 1,000원으로 판매 가능 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
+    "<form method=\"post\" action=\"/course-admin/e2e-test\" style=\"margin-top:12px\">" +
+    "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
+    "<button class=\"" + actionClass + "\" type=\"submit\">" + buttonLabel + "</button></form></section>";
+}
+
 async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab) {
   let syncWarning = "";
   try {
@@ -642,8 +675,10 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
     cafe24AdminConnectionState(env)
   ]);
 
+  const e2eCourse = courses.find((course) => course.status === "system_check" && Number(course.cafe24_product_no) === 13) || null;
+  const normalCourses = courses.filter((course) => course.status !== "system_check");
   const selectedCourse = selectedCourseId
-    ? courses.find((course) => String(course.id) === String(selectedCourseId))
+    ? normalCourses.find((course) => String(course.id) === String(selectedCourseId))
     : null;
   const note = message ? "<p class=\"ok\">" + escapeHtml(message) + "</p>" : "";
   const errorNote = errorMessage ? "<p class=\"error\">" + escapeHtml(errorMessage) + "</p>" : "";
@@ -664,10 +699,10 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
 
   const content = selectedCourse
     ? courseCard(selectedCourse, creators, selectedTab || "content")
-    : newCourse +
+    : paymentE2EPanel(e2eCourse) + newCourse +
       "<div class=\"list-toolbar\"><div><h2 style=\"margin:0\">등록 강의</h2>" +
       "<p class=\"hint\">강의를 선택하면 기본 정보·콘텐츠·판매 설정을 분리해서 편집합니다.</p></div></div>" +
-      courseListTable(courses);
+      courseListTable(normalCourses);
 
   return shell(
     "강의 관리자",
@@ -890,6 +925,68 @@ async function updateCafe24CourseSales(form, env) {
   }
 
   throw new Error("잘못된 판매 상태 요청입니다.");
+}
+
+async function updatePaymentE2ETest(form, env) {
+  const action = String(form.get("action") || "").trim();
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,cafe24_product_no,status FROM courses WHERE id='system-check-paid-course' LIMIT 1"
+  ).first();
+  if (!course || course.status !== "system_check") {
+    throw new Error("결제 테스트 fixture를 찾을 수 없습니다.");
+  }
+
+  const productNo = Number(course.cafe24_product_no || 13);
+  if (productNo !== 13) throw new Error("결제 테스트 상품번호가 올바르지 않습니다.");
+
+  if (action === "start") {
+    // Apply the test price and member-only purchase policy while the product is still hidden.
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        display: "F",
+        selling: "F",
+        price: 1000,
+        buy_limit_by_product: "T",
+        buy_limit_type: "M"
+      }
+    });
+
+    const policyPayload = await cafe24AdminGet("/products/" + productNo, env, { shop_no: 1 });
+    const product = policyPayload?.product || policyPayload?.products?.[0] || policyPayload?.resource || policyPayload;
+    if (product?.buy_limit_by_product !== "T" || String(product?.buy_limit_type || "") !== "M") {
+      throw new Error("Cafe24 회원 전용 구매 설정을 확인하지 못해 테스트 판매를 시작하지 않았습니다.");
+    }
+
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        display: "T",
+        selling: "T",
+        price: 1000
+      }
+    });
+
+    await env.COURSE_DB.prepare(
+      "UPDATE courses SET price_krw=1000,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(course.id).run();
+    return "테스트 상품 #13을 1,000원 회원 전용 판매 상태로 열었습니다.";
+  }
+
+  if (action === "stop") {
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body: { shop_no: 1, display: "F", selling: "F" }
+    });
+    await env.COURSE_DB.prepare(
+      "UPDATE courses SET sales_enabled=0,cafe24_sync_status='e2e_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(course.id).run();
+    return "결제 테스트 상품을 다시 숨기고 판매 중지했습니다.";
+  }
+
+  throw new Error("잘못된 결제 테스트 요청입니다.");
 }
 
 async function createLesson(form, env) {
@@ -1427,6 +1524,16 @@ export default {
         return redirect(base + "&message=" + encodeURIComponent("Cafe24 판매 상태를 반영했습니다."));
       } catch (error) {
         return redirect(base + "&error=" + encodeURIComponent(friendlyCafe24Error(error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/e2e-test" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        const message = await updatePaymentE2ETest(await request.formData(), env);
+        return redirect("/course-admin?message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect("/course-admin?error=" + encodeURIComponent(friendlyCafe24Error(error)));
       }
     }
 
