@@ -122,23 +122,55 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
   if (!env.COURSE_DB || !memberId || !courseId) return;
   const orderId = purchase?.order?.order_id || null;
   const itemCode = purchase?.item?.order_item_code || null;
+  const existing = await env.COURSE_DB.prepare(
+    "SELECT status,source_order_id,source_order_item_code FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
 
   if (active) {
     await env.COURSE_DB.prepare(
       "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at) VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP) ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase',revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
     ).bind(memberId, courseId, Number(productNo), orderId, itemCode).run();
+
+    const changed =
+      !existing ||
+      existing.status !== "active" ||
+      String(existing.source_order_id || "") !== String(orderId || "") ||
+      String(existing.source_order_item_code || "") !== String(itemCode || "");
+    if (changed) {
+      await env.COURSE_DB.prepare(
+        "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,?,?,?,?,'system')"
+      ).bind(
+        crypto.randomUUID(),
+        memberId,
+        courseId,
+        existing && existing.status === "revoked" ? "restored" : "granted",
+        orderId,
+        itemCode,
+        existing && existing.status === "revoked" ? "재구매 또는 유효 주문 재확인" : "Cafe24 구매 확인"
+      ).run();
+    }
     return;
   }
-
-  const existing = await env.COURSE_DB.prepare(
-    "SELECT status FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
-  ).bind(memberId, courseId).first();
 
   if (!existing) return;
 
   await env.COURSE_DB.prepare(
     "UPDATE course_entitlements SET status='revoked',source_order_id=COALESCE(?,source_order_id),source_order_item_code=COALESCE(?,source_order_item_code),revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP),last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=?"
   ).bind(orderId, itemCode, memberId, courseId).run();
+
+  if (existing.status !== "revoked") {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,?,?,?,?,'system')"
+    ).bind(
+      crypto.randomUUID(),
+      memberId,
+      courseId,
+      "revoked",
+      orderId || existing.source_order_id || null,
+      itemCode || existing.source_order_item_code || null,
+      "Cafe24 주문 취소·환불 감지"
+    ).run();
+  }
 }
 
 export function getValidPaidProductNos(orders, targetProductNos) {
