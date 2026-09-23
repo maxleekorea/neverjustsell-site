@@ -496,7 +496,7 @@ async function listCourseStudents(env, course, query = "") {
   let result;
   if (course.access_type === "paid") {
     result = await env.COURSE_DB.prepare(
-      "SELECT e.member_id,e.status AS access_status,e.source_order_id,e.granted_at AS started_at,e.revoked_at,e.updated_at," +
+      "SELECT e.member_id,e.status AS access_status,e.grant_reason,e.access_expires_at,e.source_order_id,e.granted_at AS started_at,e.revoked_at,e.updated_at," +
       "COUNT(lp.lesson_id) AS touched_count,SUM(CASE WHEN lp.completed=1 THEN 1 ELSE 0 END) AS completed_count,MAX(lp.updated_at) AS last_activity " +
       "FROM course_entitlements e LEFT JOIN lesson_progress lp ON lp.member_id=e.member_id AND lp.course_id=e.course_id " +
       "WHERE e.course_id=? GROUP BY e.member_id,e.status,e.source_order_id,e.granted_at,e.revoked_at,e.updated_at " +
@@ -525,9 +525,16 @@ async function listCourseStudents(env, course, query = "") {
       completed_count: completed,
       total_lessons: totalLessons,
       progress_percent: percent,
-      access_period: "무기한",
+      access_period: course.access_type === "paid" && row.access_expires_at
+        ? "~ " + String(row.access_expires_at)
+        : "무기한",
+      access_source: course.access_type === "paid"
+        ? (row.grant_reason === "manual" ? "관리자 부여" : "Cafe24 구매")
+        : "무료 신청",
       refund_state: course.access_type === "paid"
-        ? (status === "revoked" ? "취소·환불 감지" : "없음")
+        ? (row.grant_reason === "manual"
+            ? (status === "revoked" ? "관리자 회수/만료" : "해당 없음")
+            : (status === "revoked" ? "취소·환불 감지" : "없음"))
         : "해당 없음"
     };
   });
@@ -554,9 +561,10 @@ async function loadCourseStudentDetail(env, course, memberId) {
 
   let access = null;
   let events = [];
+  let adminLogs = [];
   if (course.access_type === "paid") {
     access = await env.COURSE_DB.prepare(
-      "SELECT member_id,status,source_order_id,source_order_item_code,grant_reason,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+      "SELECT member_id,status,source_order_id,source_order_item_code,grant_reason,access_expires_at,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
     ).bind(normalized, course.id).first();
 
     const eventRows = await env.COURSE_DB.prepare(
@@ -570,6 +578,13 @@ async function loadCourseStudentDetail(env, course, memberId) {
   }
 
   if (!access) return null;
+
+  if (course.access_type === "paid") {
+    const adminLogRows = await env.COURSE_DB.prepare(
+      "SELECT action_type,reason,previous_status,new_status,previous_expires_at,new_expires_at,created_at FROM course_access_admin_log WHERE member_id=? AND course_id=? ORDER BY created_at DESC LIMIT 100"
+    ).bind(normalized, course.id).all();
+    adminLogs = Array.isArray(adminLogRows?.results) ? adminLogRows.results : [];
+  }
 
   const progressRows = await env.COURSE_DB.prepare(
     "SELECT l.id,l.title,l.sort_order,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
@@ -622,6 +637,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
     member_id: normalized,
     access,
     events,
+    admin_logs: adminLogs,
     progress,
     order,
     order_error: orderError,
@@ -689,6 +705,52 @@ function studentDetailPanel(course, detail) {
       "</div>"
     : "";
 
+  const manual = course.access_type === "paid" && detail.access.grant_reason === "manual";
+  const manualControls = course.access_type !== "paid"
+    ? ""
+    : manual
+      ? "<div class=\"student-section\"><h3>관리자 수강권 관리</h3>" +
+        (active
+          ? "<div class=\"course-settings\"><form method=\"post\" action=\"/course-admin/student-access\">" +
+            "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+            "<input type=\"hidden\" name=\"member_id\" value=\"" + escapeHtml(detail.member_id) + "\">" +
+            "<input type=\"hidden\" name=\"action\" value=\"expiry\">" +
+            "<label>수강 만료일</label><input type=\"date\" name=\"expires_at\" value=\"" + escapeHtml(detail.access.access_expires_at || "") + "\">" +
+            "<div class=\"hint\">비워두면 무기한으로 변경합니다.</div>" +
+            "<label>변경 사유</label><input name=\"reason\" required maxlength=\"200\" placeholder=\"예: 요청에 따라 30일 연장\">" +
+            "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">수강기간 저장</button></form></div>" +
+            "<div class=\"course-settings\"><form method=\"post\" action=\"/course-admin/student-access\">" +
+            "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+            "<input type=\"hidden\" name=\"member_id\" value=\"" + escapeHtml(detail.member_id) + "\">" +
+            "<input type=\"hidden\" name=\"action\" value=\"revoke\">" +
+            "<label>회수 사유</label><input name=\"reason\" required maxlength=\"200\" placeholder=\"수동 수강권 회수 사유\">" +
+            "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">수동 수강권 회수</button></form></div>"
+          : "<div class=\"course-settings\"><form method=\"post\" action=\"/course-admin/student-access\">" +
+            "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+            "<input type=\"hidden\" name=\"member_id\" value=\"" + escapeHtml(detail.member_id) + "\">" +
+            "<input type=\"hidden\" name=\"action\" value=\"grant\">" +
+            "<label>복구 후 만료일</label><input type=\"date\" name=\"expires_at\" value=\"" + escapeHtml(detail.access.access_expires_at || "") + "\">" +
+            "<label>복구 사유</label><input name=\"reason\" required maxlength=\"200\" placeholder=\"수강권 복구 사유\">" +
+            "<button type=\"submit\" style=\"margin-top:10px\">수동 수강권 복구</button></form></div>") +
+        "</div>"
+      : "<div class=\"student-section\"><h3>수강권 관리</h3><div class=\"advanced-note\">이 수강권은 Cafe24 구매로 생성됐습니다. 취소·환불 및 권한 회수는 Cafe24 주문에서 처리합니다.</div></div>";
+
+  const adminHistory = course.access_type === "paid"
+    ? "<div class=\"student-section\"><h3>관리자 변경 이력</h3>" +
+      (detail.admin_logs && detail.admin_logs.length
+        ? "<div class=\"timeline\">" + detail.admin_logs.map((log) =>
+            "<div class=\"timeline-item\"><div class=\"timeline-time\">" + escapeHtml(formatAdminDate(log.created_at)) + "</div>" +
+            "<div><div class=\"timeline-title\">" + escapeHtml(log.action_type || "변경") + "</div>" +
+            "<div class=\"timeline-sub\">" + escapeHtml(log.reason || "-") +
+            (log.previous_expires_at !== log.new_expires_at
+              ? " · 만료일 " + escapeHtml(log.previous_expires_at || "무기한") + " → " + escapeHtml(log.new_expires_at || "무기한")
+              : "") +
+            "</div></div></div>"
+          ).join("") + "</div>"
+        : "<p class=\"muted\">관리자 변경 이력이 없습니다.</p>") +
+      "</div>"
+    : "";
+
   const progressRows = detail.progress.length
     ? detail.progress.map((row, index) => {
         const state = Number(row.completed) === 1 ? "완료" : row.first_started_at ? "학습 중" : "미수강";
@@ -710,10 +772,12 @@ function studentDetailPanel(course, detail) {
     "<div class=\"student-detail-grid\">" +
     "<div class=\"student-detail-card\"><div class=\"hint\">진도율</div><strong>" + Number(detail.metrics.progress_percent || 0) + "%</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">완료 차시</div><strong>" + Number(detail.metrics.completed_lessons || 0) + " / " + Number(detail.metrics.total_lessons || 0) + "</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">수강권 출처</div><strong>" + escapeHtml(course.access_type === "paid" ? (detail.access.grant_reason === "manual" ? "관리자 부여" : "Cafe24 구매") : "무료 신청") + "</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">수강기간</div><strong>" + escapeHtml(detail.access.access_expires_at ? "~ " + detail.access.access_expires_at : "무기한") + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">마지막 학습</div><strong>" + escapeHtml(formatAdminDate(detail.metrics.last_activity)) + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">수강 시작</div><strong>" + escapeHtml(formatAdminDate(detail.access.granted_at || detail.access.enrolled_at)) + "</strong></div>" +
     "</div>" +
-    orderSection + history +
+    orderSection + history + manualControls + adminHistory +
     "<div class=\"student-section\"><h3>차시별 학습 진도</h3><div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
     "<th>차시</th><th>상태</th><th>마지막 위치</th><th>첫 학습</th><th>완료</th><th>최근 변경</th>" +
     "</tr></thead><tbody>" + progressRows + "</tbody></table></div></div>" +
@@ -734,6 +798,17 @@ function studentManagementPanel(course, rows, query = "") {
     "<div class=\"student-metric\"><div class=\"hint\">학습 중</div><div class=\"value\">" + learning + "</div></div>" +
     "</div>";
 
+  const manualGrant = course.access_type === "paid"
+    ? "<details class=\"course-settings\" style=\"margin-bottom:14px\"><summary style=\"cursor:pointer;font-weight:800\">+ 수동 수강권 부여</summary>" +
+      "<form method=\"post\" action=\"/course-admin/student-access\" style=\"margin-top:12px\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<input type=\"hidden\" name=\"action\" value=\"grant\">" +
+      "<label>Cafe24 회원 ID</label><input name=\"member_id\" required placeholder=\"회원 아이디\">" +
+      "<div class=\"row\"><div><label>만료일</label><input type=\"date\" name=\"expires_at\"><div class=\"hint\">비워두면 무기한입니다.</div></div>" +
+      "<div><label>사유</label><input name=\"reason\" required maxlength=\"200\" placeholder=\"예: 저자 초청, 이벤트 제공\"></div></div>" +
+      "<button type=\"submit\" style=\"margin-top:12px\">수동 수강권 부여</button></form></details>"
+    : "";
+
   const search =
     "<form class=\"student-search\" method=\"get\" action=\"/course-admin\">" +
     "<input type=\"hidden\" name=\"course\" value=\"" + escapeHtml(course.id) + "\">" +
@@ -748,6 +823,7 @@ function studentManagementPanel(course, rows, query = "") {
         return "<tr>" +
           "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=students&student=" + encodeURIComponent(row.member_id || "") + "\"><strong>" + escapeHtml(row.member_id || "-") + "</strong></a></td>" +
           "<td class=\"nowrap\">" + escapeHtml(row.source_order_id || "-") + "</td>" +
+          "<td>" + escapeHtml(row.access_source || "-") + "</td>" +
           "<td><span class=\"" + statusClass + "\">" + statusLabel + "</span></td>" +
           "<td>" + escapeHtml(row.refund_state) + "</td>" +
           "<td><div class=\"progress-mini\"><div class=\"progress-mini-track\"><span style=\"width:" + Number(row.progress_percent || 0) + "%\"></span></div><span>" + Number(row.progress_percent || 0) + "%</span></div>" +
@@ -757,13 +833,13 @@ function studentManagementPanel(course, rows, query = "") {
           "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.started_at)) + "</td>" +
           "</tr>";
       }).join("")
-    : "<tr><td colspan=\"8\" class=\"muted\">조건에 맞는 수강생이 없습니다.</td></tr>";
+    : "<tr><td colspan=\"9\" class=\"muted\">조건에 맞는 수강생이 없습니다.</td></tr>";
 
   return "<div class=\"panel\"><div class=\"sectionhead\"><div><h3>수강생 관리</h3>" +
     "<p class=\"hint\">D1 수강권/수강신청과 학습 진도를 기준으로 최대 200명까지 표시합니다.</p></div></div>" +
-    summary + search +
+    summary + manualGrant + search +
     "<div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
-    "<th>회원</th><th>주문번호</th><th>수강권</th><th>취소·환불</th><th>진도</th><th>수강기간</th><th>마지막 학습</th><th>수강 시작</th>" +
+    "<th>회원</th><th>주문번호</th><th>출처</th><th>수강권</th><th>취소·환불</th><th>진도</th><th>수강기간</th><th>마지막 학습</th><th>수강 시작</th>" +
     "</tr></thead><tbody>" + body + "</tbody></table></div>" +
     "<p class=\"hint\" style=\"margin-top:10px\">수동 수강권 부여·회수는 운영자 변경 이력 기능과 함께 추가합니다.</p></div>";
 }
@@ -1078,9 +1154,9 @@ async function health(env) {
     return json({ ok: false, connected: false, error: "course_db_missing" }, { status: 503 });
   }
   try {
-    const expected = ["course_entitlement_events", "course_entitlements", "course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
+    const expected = ["course_access_admin_log", "course_entitlement_events", "course_entitlements", "course_enrollments", "course_modules", "courses", "lesson_progress", "lessons", "user_roles", "video_uploads"];
     const result = await env.COURSE_DB.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_entitlement_events','course_entitlements','course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('course_access_admin_log','course_entitlement_events','course_entitlements','course_enrollments','course_modules','courses','lesson_progress','lessons','user_roles','video_uploads') ORDER BY name"
     ).all();
     const tables = Array.isArray(result.results)
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
@@ -1286,6 +1362,135 @@ async function updateCafe24CourseSales(form, env) {
   }
 
   throw new Error("잘못된 판매 상태 요청입니다.");
+}
+
+function kstToday() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function normalizeManualExpiry(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) throw new Error("만료일 형식이 올바르지 않습니다.");
+  if (raw < kstToday()) throw new Error("만료일은 오늘 이후 날짜여야 합니다.");
+  return raw;
+}
+
+async function logCourseAccessAdminAction(env, data) {
+  await env.COURSE_DB.prepare(
+    "INSERT INTO course_access_admin_log (id,member_id,course_id,action_type,reason,previous_status,new_status,previous_expires_at,new_expires_at) VALUES (?,?,?,?,?,?,?,?,?)"
+  ).bind(
+    crypto.randomUUID(),
+    data.memberId,
+    data.courseId,
+    data.actionType,
+    data.reason,
+    data.previousStatus || null,
+    data.newStatus || null,
+    data.previousExpiry || null,
+    data.newExpiry || null
+  ).run();
+}
+
+async function updateManualCourseAccess(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  const memberId = String(form.get("member_id") || "").trim();
+  const action = String(form.get("action") || "").trim();
+  const reason = String(form.get("reason") || "").trim();
+  const expiry = normalizeManualExpiry(form.get("expires_at"));
+
+  if (!courseId || !memberId) throw new Error("강의와 회원 ID가 필요합니다.");
+  if (memberId.length > 255) throw new Error("회원 ID가 너무 깁니다.");
+  if (!reason) throw new Error("관리자 변경 사유를 입력해 주세요.");
+
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,title,access_type,cafe24_product_no FROM courses WHERE id=? LIMIT 1"
+  ).bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  if (course.access_type !== "paid") throw new Error("수동 수강권 관리는 유료 강의에서만 사용합니다.");
+
+  const existing = await env.COURSE_DB.prepare(
+    "SELECT member_id,status,grant_reason,access_expires_at,source_order_id FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
+
+  if (action === "grant") {
+    if (existing?.grant_reason === "purchase" && existing?.status === "active") {
+      throw new Error("이미 Cafe24 구매 수강권이 활성화된 회원입니다.");
+    }
+    if (existing?.grant_reason === "manual" && existing?.status === "active") {
+      throw new Error("이미 수동 수강권이 활성화된 회원입니다. 수강기간 변경 기능을 사용해 주세요.");
+    }
+
+    const productNo = Number(course.cafe24_product_no || 0);
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlements (member_id,course_id,product_no,status,grant_reason,access_expires_at,granted_at,revoked_at,last_verified_at,updated_at) VALUES (?,?,?,'active','manual',?,CURRENT_TIMESTAMP,NULL,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP) " +
+      "ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,status='active',grant_reason='manual',access_expires_at=excluded.access_expires_at,granted_at=CURRENT_TIMESTAMP,revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
+    ).bind(memberId, courseId, productNo, expiry).run();
+
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,'manual_grant',NULL,NULL,?,'admin')"
+    ).bind(crypto.randomUUID(), memberId, courseId, reason).run();
+
+    await logCourseAccessAdminAction(env, {
+      memberId,
+      courseId,
+      actionType: existing ? "수동 수강권 복구" : "수동 수강권 부여",
+      reason,
+      previousStatus: existing?.status || null,
+      newStatus: "active",
+      previousExpiry: existing?.access_expires_at || null,
+      newExpiry: expiry
+    });
+    return { courseId, memberId, message: "수동 수강권을 부여했습니다." };
+  }
+
+  if (!existing) throw new Error("수강권 정보를 찾을 수 없습니다.");
+  if (existing.grant_reason !== "manual") {
+    throw new Error("Cafe24 구매 수강권은 주문 취소·환불로 관리해 주세요.");
+  }
+
+  if (action === "revoke") {
+    if (existing.status !== "active") throw new Error("이미 회수된 수동 수강권입니다.");
+    await env.COURSE_DB.prepare(
+      "UPDATE course_entitlements SET status='revoked',revoked_at=CURRENT_TIMESTAMP,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=? AND grant_reason='manual'"
+    ).bind(memberId, courseId).run();
+
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,'manual_revoke',NULL,NULL,?,'admin')"
+    ).bind(crypto.randomUUID(), memberId, courseId, reason).run();
+
+    await logCourseAccessAdminAction(env, {
+      memberId,
+      courseId,
+      actionType: "수동 수강권 회수",
+      reason,
+      previousStatus: existing.status,
+      newStatus: "revoked",
+      previousExpiry: existing.access_expires_at || null,
+      newExpiry: existing.access_expires_at || null
+    });
+    return { courseId, memberId, message: "수동 수강권을 회수했습니다." };
+  }
+
+  if (action === "expiry") {
+    await env.COURSE_DB.prepare(
+      "UPDATE course_entitlements SET access_expires_at=?,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=? AND grant_reason='manual'"
+    ).bind(expiry, memberId, courseId).run();
+
+    await logCourseAccessAdminAction(env, {
+      memberId,
+      courseId,
+      actionType: expiry ? "수강기간 설정·연장" : "수강기간 무기한 전환",
+      reason,
+      previousStatus: existing.status,
+      newStatus: existing.status,
+      previousExpiry: existing.access_expires_at || null,
+      newExpiry: expiry
+    });
+    return { courseId, memberId, message: expiry ? "수강기간을 저장했습니다." : "수강기간을 무기한으로 변경했습니다." };
+  }
+
+  throw new Error("잘못된 수강권 관리 요청입니다.");
 }
 
 async function updatePaymentE2ETest(form, env) {
@@ -1889,6 +2094,21 @@ export default {
         return redirect(base + "&message=" + encodeURIComponent("Cafe24 판매 상태를 반영했습니다."));
       } catch (error) {
         return redirect(base + "&error=" + encodeURIComponent(friendlyCafe24Error(error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/student-access" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData();
+      const courseId = String(form.get("course_id") || "").trim();
+      const memberId = String(form.get("member_id") || "").trim();
+      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=students" +
+        (memberId ? "&student=" + encodeURIComponent(memberId) : "");
+      try {
+        const result = await updateManualCourseAccess(form, env);
+        return redirect(base + "&message=" + encodeURIComponent(result.message));
+      } catch (error) {
+        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
