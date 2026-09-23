@@ -39,6 +39,8 @@ jobs:
         run: node tests/access-contract.mjs
       - name: Verify roles and course ownership contract
         run: node tests/role-contract.mjs
+      - name: Verify paid course commerce contract
+        run: node tests/paid-course-commerce-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
