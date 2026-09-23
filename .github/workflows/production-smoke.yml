@@ -37,6 +37,8 @@ jobs:
         run: node tests/worker-contract.mjs
       - name: Verify purchase and entitlement contract
         run: node tests/access-contract.mjs
+      - name: Verify roles and course ownership contract
+        run: node tests/role-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
