@@ -34,6 +34,12 @@ assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
 assert(admin.includes("repurchase_restriction"), "duplicate purchase restriction missing");
 assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
+const adminApi = await readFile(
+  new URL("../worker/src/session-orders.js", import.meta.url),
+  "utf8"
+);
+assert(adminApi.includes("Request parameter"), "Cafe24 write request wrapper fallback missing");
+assert(adminApi.includes("send({ request: init.body })"), "Cafe24 request wrapper retry missing");
 
 const access = await readFile(
   new URL("../worker/src/access.js", import.meta.url),
