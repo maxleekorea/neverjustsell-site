@@ -444,7 +444,7 @@ function commercePanel(course) {
   if (course.access_type !== "paid") return "";
 
   const productNo = Number(course.cafe24_product_no || 0);
-  const price = Number(course.price_krw || 0);
+  const price = Number(course.price_krw || 1000);
 
   if (!productNo) {
     const create = price > 0
@@ -654,7 +654,7 @@ function paymentE2EPanel(course) {
       ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
         "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
         "<a class=\"action-link\" href=\"/classroom?course=paid-course\" target=\"_blank\">테스트 강의 열기 →</a></div>"
-      : "<p class=\"hint\">시작하면 테스트 상품만 0원 주문 가능 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
+      : "<p class=\"hint\">시작하면 테스트 상품만 1,000원 무통장입금 테스트 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
     "<form method=\"post\" action=\"/course-admin/e2e-test\" style=\"margin-top:12px\">" +
     "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
     "<button class=\"" + actionClass + "\" type=\"submit\">" + buttonLabel + "</button></form></section>";
@@ -947,7 +947,7 @@ async function updatePaymentE2ETest(form, env) {
         shop_no: 1,
         display: "F",
         selling: "F",
-        price: 0,
+        price: 1000,
         buy_limit_by_product: "T",
         buy_limit_type: "M"
       }
@@ -965,14 +965,14 @@ async function updatePaymentE2ETest(form, env) {
         shop_no: 1,
         display: "T",
         selling: "T",
-        price: 0
+        price: 1000
       }
     });
 
     await env.COURSE_DB.prepare(
-      "UPDATE courses SET price_krw=0,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+      "UPDATE courses SET price_krw=1000,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id=?"
     ).bind(course.id).run();
-    return "테스트 상품 #13을 0원 회원 전용 주문 상태로 열었습니다.";
+    return "테스트 상품 #13을 1,000원 회원 전용 판매 상태로 열었습니다.";
   }
 
   if (action === "stop") {
