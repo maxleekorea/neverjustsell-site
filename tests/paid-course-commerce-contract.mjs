@@ -34,6 +34,7 @@ assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
 assert(admin.includes("repurchase_restriction"), "duplicate purchase restriction missing");
 assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
+assert(!admin.includes('use_naverpay: "F"'), "course product must not force Naver Pay setting");
 const adminApi = await readFile(
   new URL("../worker/src/session-orders.js", import.meta.url),
   "utf8"
