@@ -25,6 +25,9 @@ const admin = await readFile(
   "utf8"
 );
 assert(admin.includes("Cafe24 상품 생성 · 연결"), "Cafe24 product creation action missing");
+assert(admin.includes("createCafe24CourseProductById(id, env)"), "paid course creation must auto-create hidden Cafe24 product");
+assert(admin.includes("Cafe24 관리자 권한 재연결이 필요합니다."), "Cafe24 write-scope recovery guidance missing");
+assert(admin.includes("고급 · 기존 Cafe24 상품 연결"), "existing product link must remain recovery-only");
 assert(admin.includes("linked_hidden"), "new course products must start hidden");
 assert(admin.includes('display: "F"'), "new Cafe24 course product must start undisplayed");
 assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not selling");
