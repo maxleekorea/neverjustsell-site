@@ -634,7 +634,7 @@ function paymentE2EPanel(course) {
 
   const active = Number(course.sales_enabled) === 1;
   const productNo = Number(course.cafe24_product_no || 13);
-  const price = Number(course.price_krw || 1000);
+  const price = Number(course.price_krw || 0);
   const action = active ? "stop" : "start";
   const buttonLabel = active ? "테스트 판매 종료" : "테스트 판매 시작";
   const actionClass = active ? "secondary" : "";
@@ -643,7 +643,7 @@ function paymentE2EPanel(course) {
     : "<span class=\"pill\">테스트 대기</span>";
 
   return "<section class=\"card\"><div class=\"sectionhead\"><div><h2>결제 E2E 테스트</h2>" +
-    "<p class=\"hint\">실제 강의와 분리된 product_no=13 테스트 fixture입니다. 테스트 결제 금액은 " + price.toLocaleString("ko-KR") + "원입니다.</p></div>" +
+    "<p class=\"hint\">실제 강의와 분리된 product_no=13 테스트 fixture입니다. 테스트 주문 금액은 " + price.toLocaleString("ko-KR") + "원입니다.</p></div>" +
     state + "</div>" +
     "<div class=\"readiness\">" +
     "<div class=\"ready-row\"><span>Cafe24 테스트 상품</span><span class=\"ready-ok\">#" + productNo + "</span></div>" +
@@ -654,7 +654,7 @@ function paymentE2EPanel(course) {
       ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
         "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
         "<a class=\"action-link\" href=\"/classroom?course=paid-course\" target=\"_blank\">테스트 강의 열기 →</a></div>"
-      : "<p class=\"hint\">시작하면 테스트 상품만 1,000원으로 판매 가능 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
+      : "<p class=\"hint\">시작하면 테스트 상품만 0원 주문 가능 상태가 됩니다. 실강의 상품에는 영향을 주지 않습니다.</p>") +
     "<form method=\"post\" action=\"/course-admin/e2e-test\" style=\"margin-top:12px\">" +
     "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
     "<button class=\"" + actionClass + "\" type=\"submit\">" + buttonLabel + "</button></form></section>";
@@ -947,7 +947,7 @@ async function updatePaymentE2ETest(form, env) {
         shop_no: 1,
         display: "F",
         selling: "F",
-        price: 1000,
+        price: 0,
         buy_limit_by_product: "T",
         buy_limit_type: "M"
       }
@@ -965,14 +965,14 @@ async function updatePaymentE2ETest(form, env) {
         shop_no: 1,
         display: "T",
         selling: "T",
-        price: 1000
+        price: 0
       }
     });
 
     await env.COURSE_DB.prepare(
-      "UPDATE courses SET price_krw=1000,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+      "UPDATE courses SET price_krw=0,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id=?"
     ).bind(course.id).run();
-    return "테스트 상품 #13을 1,000원 회원 전용 판매 상태로 열었습니다.";
+    return "테스트 상품 #13을 0원 회원 전용 주문 상태로 열었습니다.";
   }
 
   if (action === "stop") {
