@@ -32,7 +32,9 @@ assert(admin.includes("linked_hidden"), "new course products must start hidden")
 assert(admin.includes('display: "F"'), "new Cafe24 course product must start undisplayed");
 assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not selling");
 assert(admin.includes("판매 시작"), "paid course sales activation control missing");
-assert(admin.includes("repurchase_restriction"), "duplicate purchase restriction missing");
+assert(!admin.includes('buy_limit_by_product: "T"'), "hidden product creation must not force customer-level purchase restriction");
+assert(!admin.includes('buy_limit_type: "M"'), "hidden product creation must not force customer-level purchase type");
+assert(!admin.includes('repurchase_restriction: "T"'), "hidden product creation must not force repurchase restriction before customer policy is resolved");
 assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
 assert(!admin.includes('use_naverpay: "F"'), "course product must not force Naver Pay setting");
 const adminApi = await readFile(
