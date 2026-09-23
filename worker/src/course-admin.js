@@ -498,7 +498,7 @@ function courseCard(course, creators, activeTab = "content") {
     const down = index < course.lessons.length - 1
       ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\">순서 내리기</button></form>"
       : "";
-    return "<details class=\"lessoncard\" open>" +
+    return "<details class=\"lessoncard\">" +
       "<summary><span><strong>" + (index + 1) + ". " + escapeHtml(lesson.title) + "</strong><div class=\"lessonmeta\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div></span><span class=\"pill\">차시 편집</span></summary>" +
       "<div class=\"lessonbody\"><form method=\"post\" action=\"/course-admin/lesson-update\">" +
       "<input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\">" +
