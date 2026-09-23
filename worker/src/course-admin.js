@@ -345,7 +345,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -567,6 +567,8 @@ function courseCard(course, creators, activeTab = "content") {
       "<option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option>" +
       "<option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div>" +
       "<div><label>기준 가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
+      "<label class=\"preview\" style=\"margin-top:14px\"><input type=\"checkbox\" name=\"catalog_visible\" value=\"1\"" + (Number(course.catalog_visible) === 1 ? " checked" : "") + ">강의 찾기에 표시</label>" +
+      "<div class=\"hint\">콘텐츠 게시 여부와 별개입니다. 체크하면 수강권이 없는 사용자도 강의 소개를 볼 수 있습니다.</div>" +
       "<button type=\"submit\" style=\"margin-top:14px\">저장</button></form></div></div>";
   } else if (tab === "sales") {
     panel =
@@ -759,6 +761,7 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
     "<div class=\"row\"><div><label>수강 방식</label><select name=\"access_type\">" +
     "<option value=\"public\">무료 · 회원 로그인 필요</option><option value=\"paid\">유료 · 구매 확인 필요</option></select></div>" +
     "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
+    "<label class=\"preview\" style=\"margin-top:14px\"><input type=\"checkbox\" name=\"catalog_visible\" value=\"1\" checked>강의 찾기에 표시</label>" +
     "<button type=\"submit\" style=\"margin-top:14px\">강의 만들기</button></form></details>";
 
   const content = selectedCourse
@@ -816,14 +819,15 @@ async function createCourse(form, env) {
   const accessType = form.get("access_type") === "paid" ? "paid" : "public";
   const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
   const ownerMemberId = String(form.get("owner_member_id") || "").trim() || null;
+  const catalogVisible = form.get("catalog_visible") === "1" ? 1 : 0;
   if (!title) throw new Error("강의명이 필요합니다.");
   if (!slug || !/^[a-z0-9가-힣][a-z0-9가-힣-]*$/.test(slug)) throw new Error("URL 슬러그가 올바르지 않습니다.");
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
   await assertActiveCreator(env, ownerMemberId);
   const id = crypto.randomUUID();
   await env.COURSE_DB.prepare(
-    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,?,1,'draft',0,0,'not_linked')"
-  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId).run();
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,catalog_visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,?,1,'draft',0,?,0,'not_linked')"
+  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, catalogVisible).run();
 
   if (accessType !== "paid") {
     return { course_id: id, product_no: null, cafe24_error: null };
@@ -1078,12 +1082,13 @@ async function updateCourse(form, env) {
   const accessType = form.get("access_type") === "paid" ? "paid" : "public";
   const priceKrw = Math.max(0, Number(form.get("price_krw") || 0) || 0);
   const ownerMemberId = String(form.get("owner_member_id") || "").trim() || null;
+  const catalogVisible = form.get("catalog_visible") === "1" ? 1 : 0;
   if (!courseId || !title) throw new Error("강의 정보가 올바르지 않습니다.");
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
   await assertActiveCreator(env, ownerMemberId);
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, courseId).run();
+    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,catalog_visible=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, catalogVisible, courseId).run();
 }
 
 
