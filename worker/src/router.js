@@ -219,7 +219,12 @@ async function renderCourseLanding(request, env, slug) {
   const lessonCount = playerCourse.lessons.length;
   let paidAccess = false;
   if (memberId && course.access_type === "paid" && Number(course.cafe24_product_no) > 0) {
-    const decision = await getCourseAccessDecision(request, env, Number(course.cafe24_product_no));
+    const decision = await getCourseAccessDecision(
+      request,
+      env,
+      Number(course.cafe24_product_no),
+      course.id
+    );
     paidAccess = Boolean(decision.body.access);
   }
 
@@ -359,7 +364,7 @@ async function renderPublishedD1Course(request, env, url, course) {
     if (!Number.isInteger(productNo) || productNo <= 0) {
       return renderClassroomError(course.title);
     }
-    const decision = await getCourseAccessDecision(request, env, productNo);
+    const decision = await getCourseAccessDecision(request, env, productNo, course.id);
     if (decision.status >= 500) return renderClassroomError(course.title);
     if (!decision.body.access) {
       return html(classroomShell(course.title, `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a></section>`), { status: 403 });
