@@ -58,6 +58,12 @@ assert(admin.includes("loadCourseStudentDetail"), "student detail loader missing
 assert(admin.includes("studentDetailPanel"), "student detail UI missing");
 assert(admin.includes("course_entitlement_events"), "student detail must expose entitlement history");
 assert(admin.includes("차시별 학습 진도"), "student detail progress table missing");
+assert(admin.includes("수동 수강권 부여"), "manual grant UI missing");
+assert(admin.includes("수동 수강권 회수"), "manual revoke UI missing");
+assert(admin.includes("수강기간 저장"), "manual access expiry control missing");
+assert(admin.includes("course_access_admin_log"), "manual access admin log missing");
+assert(admin.includes("Cafe24 구매 수강권은 주문 취소·환불로 관리해 주세요."), "purchase entitlements must not be manually revoked");
+assert(admin.includes("updateManualCourseAccess"), "manual access handler missing");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
@@ -85,6 +91,11 @@ assert(access.includes("status='revoked'"), "paid entitlement revocation persist
 assert(access.includes("course_entitlement_events"), "entitlement changes must be recorded");
 assert(access.includes('"restored"'), "restored entitlement event missing");
 assert(access.includes('"revoked"'), "revoked entitlement event missing");
+assert(access.includes("manualAccessDecision"), "manual entitlement access decision missing");
+assert(access.includes("access_expires_at"), "manual entitlement expiry check missing");
+assert(access.includes('"manual_entitlement"'), "manual entitlement access reason missing");
+assert(access.includes("expireManualEntitlement"), "expired manual entitlement revocation missing");
+assert(access.includes("manualProductNos"), "manual entitlements must be included in My Courses");
 
 const entitlementEvents = await readFile(
   new URL("../worker/migrations/0015_course_entitlement_events.sql", import.meta.url),
@@ -93,5 +104,14 @@ const entitlementEvents = await readFile(
 assert(entitlementEvents.includes("CREATE TABLE IF NOT EXISTS course_entitlement_events"), "entitlement event migration missing");
 assert(entitlementEvents.includes("backfill-granted"), "existing entitlement grant history must be backfilled");
 assert(entitlementEvents.includes("backfill-revoked"), "existing revoked history must be backfilled");
+
+const manualAccessMigration = await readFile(
+  new URL("../worker/migrations/0016_manual_course_access.sql", import.meta.url),
+  "utf8"
+);
+assert(manualAccessMigration.includes("ALTER TABLE course_entitlements ADD COLUMN access_expires_at"), "manual access expiry migration missing");
+assert(manualAccessMigration.includes("CREATE TABLE IF NOT EXISTS course_access_admin_log"), "manual access admin log migration missing");
+assert(manualAccessMigration.includes("previous_expires_at"), "manual access audit must preserve previous expiry");
+assert(manualAccessMigration.includes("new_expires_at"), "manual access audit must preserve new expiry");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
