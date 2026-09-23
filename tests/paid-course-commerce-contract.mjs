@@ -48,6 +48,12 @@ assert(admin.includes("inspectPaymentE2EOrder"), "order-level E2E inspector miss
 assert(admin.includes("source_order_id=?"), "E2E inspector must join D1 entitlement by source order");
 assert(admin.includes("주문번호 검증"), "E2E order verification UI missing");
 assert(admin.includes("catalog_visible"), "course admin must manage catalog visibility separately from publishing");
+assert(admin.includes('tabLink("students", "수강생")'), "course admin student tab missing");
+assert(admin.includes("listCourseStudents"), "student list query missing");
+assert(admin.includes("studentManagementPanel"), "student management UI missing");
+assert(admin.includes("source_order_id"), "student management must expose source order");
+assert(admin.includes("progress_percent"), "student management must calculate learning progress");
+assert(admin.includes("취소·환불"), "student management must show cancellation/refund state");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
 assert(admin.includes("display: \"F\""), "payment E2E must configure policy while hidden");
