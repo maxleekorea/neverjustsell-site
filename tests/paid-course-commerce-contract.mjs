@@ -54,6 +54,11 @@ assert(admin.includes("studentManagementPanel"), "student management UI missing"
 assert(admin.includes("source_order_id"), "student management must expose source order");
 assert(admin.includes("progress_percent"), "student management must calculate learning progress");
 assert(admin.includes("취소·환불"), "student management must show cancellation/refund state");
+assert(admin.includes("loadCourseStudentDetail"), "student detail loader missing");
+assert(admin.includes("studentDetailPanel"), "student detail UI missing");
+assert(admin.includes("course_entitlement_events"), "student detail must expose entitlement history");
+assert(admin.includes("차시별 학습 진도"), "student detail progress table missing");
+assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
 assert(admin.includes("display: \"F\""), "payment E2E must configure policy while hidden");
@@ -77,5 +82,16 @@ const access = await readFile(
 );
 assert(access.includes("persistEntitlement"), "paid entitlement persistence missing");
 assert(access.includes("status='revoked'"), "paid entitlement revocation persistence missing");
+assert(access.includes("course_entitlement_events"), "entitlement changes must be recorded");
+assert(access.includes('"restored"'), "restored entitlement event missing");
+assert(access.includes('"revoked"'), "revoked entitlement event missing");
+
+const entitlementEvents = await readFile(
+  new URL("../worker/migrations/0015_course_entitlement_events.sql", import.meta.url),
+  "utf8"
+);
+assert(entitlementEvents.includes("CREATE TABLE IF NOT EXISTS course_entitlement_events"), "entitlement event migration missing");
+assert(entitlementEvents.includes("backfill-granted"), "existing entitlement grant history must be backfilled");
+assert(entitlementEvents.includes("backfill-revoked"), "existing revoked history must be backfilled");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
