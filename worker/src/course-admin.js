@@ -421,6 +421,9 @@ function cafe24ConnectionNotice(state) {
 
 function friendlyCafe24Error(error) {
   const message = String(error && error.message ? error.message : error);
+  if (/Customer level/i.test(message)) {
+    return "Cafe24 회원등급을 요구하는 구매제한 설정 때문에 상품 생성이 중단됐습니다. 테스트 상품 생성 단계에서는 구매제한을 강제로 넣지 않도록 수정했습니다. 다시 시도해 주세요.";
+  }
   if (/NAVER Pay/i.test(message)) {
     return "Cafe24 상점에서 네이버페이 기능을 사용할 수 없어 상품 생성이 중단됐습니다. 강의 상품에서는 네이버페이 설정을 별도로 보내지 않도록 수정했습니다. 다시 시도해 주세요.";
   }
@@ -771,9 +774,6 @@ async function createCafe24CourseProductById(courseId, env) {
       shipping_fee_by_product: "T",
       shipping_method: "09",
       shipping_fee_type: "T",
-      buy_limit_by_product: "T",
-      buy_limit_type: "M",
-      repurchase_restriction: "T",
     }
   });
 
