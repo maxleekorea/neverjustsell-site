@@ -151,12 +151,17 @@ async function getAdminToken(env) {
   return token;
 }
 
-async function fetchAdminGet(apiUrl, accessToken) {
+async function fetchAdminRequest(apiUrl, accessToken, init = {}) {
   const response = await fetch(apiUrl.toString(), {
+    method: init.method || "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json"
-    }
+      "Content-Type": "application/json",
+      ...(init.headers || {})
+    },
+    body: init.body === undefined
+      ? undefined
+      : (typeof init.body === "string" ? init.body : JSON.stringify(init.body))
   });
   const payload = await response.json().catch(() => ({}));
   return { response, payload };
@@ -172,7 +177,7 @@ export async function cafe24AdminGet(path, env, params = {}) {
     }
   }
 
-  let result = await fetchAdminGet(apiUrl, token.access_token);
+  let result = await fetchAdminRequest(apiUrl, token.access_token);
 
   if (result.response.status === 401) {
     const latestRaw = await env.CAFE24_AUTH.get(ADMIN_TOKEN_KEY);
@@ -184,7 +189,46 @@ export async function cafe24AdminGet(path, env, params = {}) {
       token = await saveRefreshedAdminToken(latest?.refresh_token || token.refresh_token, env);
     }
 
-    result = await fetchAdminGet(apiUrl, token.access_token);
+    result = await fetchAdminRequest(apiUrl, token.access_token);
+  }
+
+  if (!result.response.ok) {
+    throw new Error(
+      `Cafe24 Admin API failed (${result.response.status}): ${JSON.stringify(result.payload)}`
+    );
+  }
+
+  return result.payload;
+}
+
+export async function cafe24AdminRequest(path, env, init = {}) {
+  let token = await getAdminToken(env);
+  const apiUrl = new URL(`${CAFE24_ADMIN_ORIGIN}/api/v2/admin${path}`);
+
+  for (const [key, value] of Object.entries(init.params || {})) {
+    if (value !== undefined && value !== null && value !== "") {
+      apiUrl.searchParams.set(key, String(value));
+    }
+  }
+
+  const requestInit = {
+    method: init.method || "GET",
+    body: init.body
+  };
+
+  let result = await fetchAdminRequest(apiUrl, token.access_token, requestInit);
+
+  if (result.response.status === 401) {
+    const latestRaw = await env.CAFE24_AUTH.get(ADMIN_TOKEN_KEY);
+    const latest = latestRaw ? JSON.parse(latestRaw) : token;
+
+    if (latest?.access_token && latest.access_token !== token.access_token) {
+      token = latest;
+    } else {
+      token = await saveRefreshedAdminToken(latest?.refresh_token || token.refresh_token, env);
+    }
+
+    result = await fetchAdminRequest(apiUrl, token.access_token, requestInit);
   }
 
   if (!result.response.ok) {
