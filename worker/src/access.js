@@ -118,6 +118,47 @@ async function courseIdForProduct(env, productNo) {
   return row?.id || null;
 }
 
+async function getManualEntitlement(env, memberId, courseId) {
+  if (!env.COURSE_DB || !memberId || !courseId) return null;
+  return env.COURSE_DB.prepare(
+    "SELECT member_id,course_id,product_no,status,grant_reason,access_expires_at,granted_at,revoked_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? AND grant_reason='manual' LIMIT 1"
+  ).bind(memberId, courseId).first();
+}
+
+async function expireManualEntitlement(env, row) {
+  if (!env.COURSE_DB || !row || row.status !== "active" || row.grant_reason !== "manual") return false;
+  const result = await env.COURSE_DB.prepare(
+    "UPDATE course_entitlements SET status='revoked',revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP),last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=? AND grant_reason='manual' AND status='active'"
+  ).bind(row.member_id, row.course_id).run();
+
+  const changed = Number(result?.meta?.changes || 0) > 0;
+  if (changed) {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,?,NULL,NULL,?,'system')"
+    ).bind(
+      crypto.randomUUID(),
+      row.member_id,
+      row.course_id,
+      "expired",
+      "수강기간 만료"
+    ).run();
+  }
+  return changed;
+}
+
+async function manualAccessDecision(env, memberId, courseId) {
+  const row = await getManualEntitlement(env, memberId, courseId);
+  if (!row || row.status !== "active") return { active: false, row };
+
+  const expiry = String(row.access_expires_at || "").trim();
+  if (expiry && expiry < todayDate()) {
+    await expireManualEntitlement(env, row);
+    return { active: false, row: { ...row, status: "revoked" }, expired: true };
+  }
+
+  return { active: true, row, expired: false };
+}
+
 async function persistEntitlement(env, memberId, courseId, productNo, purchase, active) {
   if (!env.COURSE_DB || !memberId || !courseId) return;
   const orderId = purchase?.order?.order_id || null;
@@ -128,7 +169,7 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
 
   if (active) {
     await env.COURSE_DB.prepare(
-      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at) VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP) ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase',revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
+      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at) VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP) ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase',access_expires_at=NULL,revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
     ).bind(memberId, courseId, Number(productNo), orderId, itemCode).run();
 
     const changed =
@@ -187,19 +228,6 @@ export function getValidPaidProductNos(orders, targetProductNos) {
 }
 
 export async function getCourseAccessDecision(request, env, productNo, courseId = null) {
-  if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
-    return {
-      status: 503,
-      body: {
-        ok: false,
-        authenticated: false,
-        access: false,
-        entitlement: "course",
-        error: "cafe24_not_configured"
-      }
-    };
-  }
-
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) {
     return {
@@ -211,6 +239,41 @@ export async function getCourseAccessDecision(request, env, productNo, courseId 
         entitlement: "course",
         reason: "login_required",
         auth_url: "/oauth/cafe24/customer/start"
+      }
+    };
+  }
+
+  const resolvedCourseId = courseId || await courseIdForProduct(env, productNo);
+  const manual = await manualAccessDecision(
+    env,
+    session.record.member_id,
+    resolvedCourseId
+  );
+  if (manual.active) {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        authenticated: true,
+        access: true,
+        entitlement: "course",
+        reason: "manual_entitlement",
+        product_no: Number(productNo),
+        access_expires_at: manual.row?.access_expires_at || null,
+        verified_at: new Date().toISOString()
+      }
+    };
+  }
+
+  if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
+    return {
+      status: 503,
+      body: {
+        ok: false,
+        authenticated: true,
+        access: false,
+        entitlement: "course",
+        error: "cafe24_not_configured"
       }
     };
   }
@@ -243,7 +306,6 @@ export async function getCourseAccessDecision(request, env, productNo, courseId 
     if (!revokedPurchase) revokedPurchase = findRevokedCoursePurchase(orders, productNo);
   }
 
-  const resolvedCourseId = courseId || await courseIdForProduct(env, productNo);
   if (access && validPurchase) {
     await persistEntitlement(
       env,
@@ -290,7 +352,36 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
   }
 
   const targets = [...new Set(productNos.map(Number).filter(Number.isFinite))];
+  const targetSet = new Set(targets);
   const accessible = new Set();
+  const manualProductNos = new Set();
+
+  if (env.COURSE_DB && targets.length > 0) {
+    const manualRows = await env.COURSE_DB.prepare(
+      "SELECT member_id,course_id,product_no,status,grant_reason,access_expires_at FROM course_entitlements WHERE member_id=? AND grant_reason='manual'"
+    ).bind(session.record.member_id).all();
+    const rows = Array.isArray(manualRows?.results) ? manualRows.results : [];
+    for (const row of rows) {
+      const productNo = Number(row.product_no);
+      if (!targetSet.has(productNo) || row.status !== "active") continue;
+      const expiry = String(row.access_expires_at || "").trim();
+      if (expiry && expiry < todayDate()) {
+        await expireManualEntitlement(env, row);
+        continue;
+      }
+      manualProductNos.add(productNo);
+      accessible.add(productNo);
+    }
+  }
+
+  if (accessible.size === targets.length) {
+    return { authenticated: true, productNos: accessible };
+  }
+
+  if (!env.CAFE24_CLIENT_ID || !env.CAFE24_CLIENT_SECRET || !env.CAFE24_AUTH) {
+    return { authenticated: true, productNos: accessible };
+  }
+
   const allOrders = [];
   const endDate = todayDate();
   const windows = buildOrderWindows(ENTITLEMENT_START_DATE, endDate);
@@ -306,13 +397,15 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
     });
 
     allOrders.push(...orders);
-    const validThisWindow = getValidPaidProductNos(orders, targets);
+    const commerceTargets = targets.filter((productNo) => !manualProductNos.has(productNo));
+    const validThisWindow = getValidPaidProductNos(orders, commerceTargets);
     for (const productNo of validThisWindow) accessible.add(productNo);
     if (accessible.size === targets.length) break;
   }
 
   if (env.COURSE_DB) {
     for (const productNo of targets) {
+      if (manualProductNos.has(productNo)) continue;
       const courseId = await courseIdForProduct(env, productNo);
       if (!courseId) continue;
       const valid = findValidCoursePurchase(allOrders, productNo);
