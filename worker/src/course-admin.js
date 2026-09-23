@@ -226,6 +226,7 @@ function shell(title, body) {
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
     ".error{color:#ff9696}.ok{color:#a8e6a8}.course-settings{padding:14px;background:#101010;border:1px solid #262626;border-radius:12px;margin:12px 0 18px}.lessoncard{border:1px solid #2a2a2a;border-radius:12px;margin:10px 0;background:#101010;overflow:hidden}.lessoncard summary{cursor:pointer;padding:13px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.lessoncard summary::-webkit-details-marker{display:none}.lessonbody{padding:0 14px 14px;border-top:1px solid #242424}.lessonmeta{font-size:11px;color:#777}.fieldgrid{display:grid;grid-template-columns:1fr 180px;gap:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar form{margin:0}.toolbar button{padding:8px 10px}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;margin-top:10px}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row,.fieldgrid{grid-template-columns:1fr}}" +
+    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -470,7 +471,7 @@ function commercePanel(course) {
     "<button class=\"" + (selling ? "secondary" : "") + "\" type=\"submit\">" + actionLabel + "</button></form></div>";
 }
 
-function courseCard(course, creators) {
+function courseCard(course, creators, activeTab = "content") {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
   const moduleOptions = ['<option value="">섹션 없음</option>']
@@ -510,37 +511,106 @@ function courseCard(course, creators) {
   }).join("");
   const published = course.status === "published" && Number(course.visible) === 1;
   const statusForm =
-    "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:12px 0\">" +
+    "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:0\">" +
     "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
     "<input type=\"hidden\" name=\"action\" value=\"" + (published ? "unpublish" : "publish") + "\">" +
     "<button class=\"secondary\" type=\"submit\">" + (published ? "게시 중지" : "강의 게시") + "</button></form>";
-  return "<section class=\"card\">" +
-    "<h3>" + escapeHtml(course.title) + "</h3>" +
-    "<div><span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
-    (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") + "</div>" +
-    statusForm +
-    "<div class=\"course-settings\"><strong>강의 기본정보</strong>" +
-    "<form method=\"post\" action=\"/course-admin/course-update\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-    "<label>강의명</label><input name=\"title\" value=\"" + escapeHtml(course.title) + "\" required>" +
-    "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"수강 대상과 강의에서 얻을 수 있는 것을 간단히 설명하세요.\">" + escapeHtml(course.summary || "") + "</textarea>" +
-    "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators, course.owner_member_id || "") + "</select><div class=\"hint\">승인된 creator 계정만 지정할 수 있습니다. 게시 권한은 관리자에게 유지됩니다.</div>" +
-    "<div class=\"fieldgrid\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option><option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div><div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
-    "<button type=\"submit\" style=\"margin-top:12px\">기본정보 저장</button></form></div>" +
-    commercePanel(course) +
-    "<div class=\"editor\"><div class=\"sectionhead\"><div><h3>커리큘럼</h3><p class=\"hint\">영상 1개가 차시 1개입니다. 제목과 설명을 작성하고 필요할 때만 섹션으로 묶으세요.</p></div></div>" +
-    lessonHtml +
-    "<div class=\"sectionhead\"><div><h3>섹션</h3><p class=\"hint\">선택 기능입니다. 강의가 길 때 ‘기초’, ‘실전’처럼 차시를 묶는 용도입니다.</p></div></div>" +
-    "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\"><input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\"><input name=\"title\" placeholder=\"예: 1부. 온라인 유통의 구조\"><button class=\"secondary\" type=\"submit\">섹션 추가</button></form></div>" +
-    "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
-    "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
-    "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
-    "<form method=\"post\" action=\"/course-admin/lessons\">" +
-    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-    "<label>차시 추가</label><div class=\"row\"><input name=\"title\" required placeholder=\"차시명\">" +
-    "<button type=\"submit\">차시 추가</button></div></form></section>";
+
+  const tab = ["basic", "content", "sales", "advanced"].includes(activeTab) ? activeTab : "content";
+  const base = "/course-admin?course=" + encodeURIComponent(course.id);
+  const tabLink = function (key, label) {
+    return "<a class=\"" + (tab === key ? "active" : "") + "\" href=\"" + base + "&tab=" + key + "\">" + label + "</a>";
+  };
+
+  const header =
+    "<div class=\"editor-head\"><div><a class=\"backlink\" href=\"/course-admin\">← 강의 목록</a>" +
+    "<h2>" + escapeHtml(course.title) + "</h2><div class=\"course-meta\">" +
+    "<span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
+    (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") +
+    "</div></div>" + statusForm + "</div>" +
+    "<nav class=\"admin-tabs\">" +
+    tabLink("basic", "기본 정보") +
+    tabLink("content", "콘텐츠") +
+    tabLink("sales", "판매 설정") +
+    tabLink("advanced", "고급 설정") +
+    "</nav>";
+
+  let panel = "";
+
+  if (tab === "basic") {
+    panel =
+      "<div class=\"panel narrow\"><div class=\"course-settings\"><h3>기본 정보</h3>" +
+      "<form method=\"post\" action=\"/course-admin/course-update\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<label>강의명</label><input name=\"title\" value=\"" + escapeHtml(course.title) + "\" required>" +
+      "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"누구를 위한 강의인지, 무엇을 배우는지 간단히 입력하세요.\">" + escapeHtml(course.summary || "") + "</textarea>" +
+      "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators, course.owner_member_id || "") + "</select>" +
+      "<div class=\"fieldgrid\"><div><label>수강 방식</label><select name=\"access_type\">" +
+      "<option value=\"public\"" + (course.access_type === "public" ? " selected" : "") + ">무료 · 회원 로그인 필요</option>" +
+      "<option value=\"paid\"" + (course.access_type === "paid" ? " selected" : "") + ">유료 · 구매 확인 필요</option></select></div>" +
+      "<div><label>기준 가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"" + Number(course.price_krw || 0) + "\"></div></div>" +
+      "<button type=\"submit\" style=\"margin-top:14px\">저장</button></form></div></div>";
+  } else if (tab === "sales") {
+    panel =
+      "<div class=\"sales-summary\"><div class=\"panel\"><div class=\"sectionhead\"><div><h3>판매 설정</h3>" +
+      "<p class=\"hint\">강의와 Cafe24 상품의 연결 및 판매 상태를 관리합니다.</p></div></div>" +
+      commercePanel(course) + "</div>" +
+      "<aside class=\"sales-preview\"><div class=\"hint\">판매 정보 미리보기</div><p><strong>" +
+      (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</strong></p><p class=\"muted\">" +
+      (Number(course.cafe24_product_no || 0) > 0 ? "Cafe24 상품 #" + Number(course.cafe24_product_no) : "Cafe24 상품 미연결") +
+      "</p><span class=\"pill\">" + (Number(course.sales_enabled) === 1 ? "판매 중" : "판매 중지") + "</span></aside></div>";
+  } else if (tab === "advanced") {
+    panel =
+      "<div class=\"panel narrow\"><div class=\"course-settings\"><h3>고급 설정</h3>" +
+      "<div class=\"advanced-note\"><p><strong>Course ID</strong><br><span class=\"muted\">" + escapeHtml(course.id) + "</span></p>" +
+      "<p><strong>URL slug</strong><br><span class=\"muted\">" + escapeHtml(course.slug) + "</span></p>" +
+      "<p><strong>Cafe24 sync</strong><br><span class=\"muted\">" + escapeHtml(course.cafe24_sync_status || "not_linked") + "</span></p>" +
+      "<p class=\"hint\">일반적인 강의 등록·수정에서는 이 화면을 사용할 필요가 없습니다.</p></div></div></div>";
+  } else {
+    panel =
+      "<div class=\"panel\"><div class=\"sectionhead\"><div><h3>콘텐츠</h3>" +
+      "<p class=\"hint\">차시는 필요할 때 펼쳐 편집합니다. 섹션으로 여러 차시를 묶을 수 있습니다.</p></div></div>" +
+      "<div class=\"editor\">" + lessonHtml +
+      "<div class=\"sectionhead\"><div><h3>섹션</h3><p class=\"hint\">예: 기초, 검색, 상품기획처럼 여러 차시를 묶는 단위입니다.</p></div></div>" +
+      "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<input name=\"title\" placeholder=\"예: 1부. 온라인 유통의 구조\"><button class=\"secondary\" type=\"submit\">섹션 추가</button></form>" +
+      "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
+      "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
+      "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
+      "<form method=\"post\" action=\"/course-admin/lessons\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<label>차시 추가</label><div class=\"row\"><input name=\"title\" required placeholder=\"차시명\"><button type=\"submit\">차시 추가</button></div></form></div></div>";
+  }
+
+  return "<section class=\"content-shell\">" + header + panel + "</section>";
 }
 
-async function dashboardPage(env, message, errorMessage) {
+function courseListTable(courses) {
+  if (!courses.length) {
+    return "<section class=\"card\"><p class=\"muted\">아직 등록된 강의가 없습니다.</p></section>";
+  }
+  const rows = courses.map(function (course) {
+    const price = Number(course.price_krw || 0);
+    const productNo = Number(course.cafe24_product_no || 0);
+    const lessons = Array.isArray(course.lessons) ? course.lessons.length : 0;
+    const live = course.status === "published" && Number(course.visible) === 1;
+    return "<tr>" +
+      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">" + escapeHtml(course.title) + "</a>" +
+      "<div class=\"sub\">" + escapeHtml(course.slug) + "</div></td>" +
+      "<td>" + (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</td>" +
+      "<td>" + lessons + "개</td>" +
+      "<td><span class=\"status-dot" + (live ? " live" : "") + "\"></span>" + (live ? "게시 중" : "초안") + "</td>" +
+      "<td>" + (productNo ? "상품 #" + productNo : "미연결") +
+      "<div class=\"sub\">" + escapeHtml(course.cafe24_sync_status || "not_linked") + "</div></td>" +
+      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">관리 →</a></td></tr>";
+  }).join("");
+  return "<section class=\"card\"><table class=\"course-list\"><thead><tr>" +
+    "<th>강의</th><th>가격</th><th>콘텐츠</th><th>공개 상태</th><th>Cafe24</th><th></th>" +
+    "</tr></thead><tbody>" + rows + "</tbody></table></section>";
+}
+
+async function dashboardPage(env, message, errorMessage, selectedCourseId, selectedTab) {
   let syncWarning = "";
   try {
     await syncOnlineCommerceBasics(env);
@@ -548,33 +618,45 @@ async function dashboardPage(env, message, errorMessage) {
     syncWarning = "강의 정보 자동 동기화 중 오류가 발생했습니다: " +
       String(error && error.message ? error.message : error);
   }
+
   const [courses, creators, cafe24State] = await Promise.all([
     listCourses(env),
     listActiveCreators(env),
     cafe24AdminConnectionState(env)
   ]);
-  const cards = courses.length
-    ? courses.map((course) => courseCard(course, creators)).join("")
-    : "<div class=\"card\"><p class=\"muted\">아직 등록된 강의가 없습니다.</p></div>";
+
+  const selectedCourse = selectedCourseId
+    ? courses.find((course) => String(course.id) === String(selectedCourseId))
+    : null;
   const note = message ? "<p class=\"ok\">" + escapeHtml(message) + "</p>" : "";
   const errorNote = errorMessage ? "<p class=\"error\">" + escapeHtml(errorMessage) + "</p>" : "";
   const warning = syncWarning ? "<p class=\"error\">" + escapeHtml(syncWarning) + "</p>" : "";
   const cafe24Notice = cafe24ConnectionNotice(cafe24State);
+
+  const newCourse =
+    "<details class=\"card new-course\"><summary>+ 새 강의 만들기</summary>" +
+    "<form method=\"post\" action=\"/course-admin/courses\" style=\"margin-top:14px\">" +
+    "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
+    "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
+    "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"누구를 위한 강의인지, 무엇을 배우는지 간단히 입력하세요.\"></textarea>" +
+    "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators) + "</select>" +
+    "<div class=\"row\"><div><label>수강 방식</label><select name=\"access_type\">" +
+    "<option value=\"public\">무료 · 회원 로그인 필요</option><option value=\"paid\">유료 · 구매 확인 필요</option></select></div>" +
+    "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
+    "<button type=\"submit\" style=\"margin-top:14px\">강의 만들기</button></form></details>";
+
+  const content = selectedCourse
+    ? courseCard(selectedCourse, creators, selectedTab || "content")
+    : newCourse +
+      "<div class=\"list-toolbar\"><div><h2 style=\"margin:0\">등록 강의</h2>" +
+      "<p class=\"hint\">강의를 선택하면 기본 정보·콘텐츠·판매 설정을 분리해서 편집합니다.</p></div></div>" +
+      courseListTable(courses);
+
   return shell(
     "강의 관리자",
     "<div class=\"top\"><div><div class=\"brand\">NEVER JUST SELL · COURSE ADMIN</div><h1>강의 관리</h1></div>" +
       "<form method=\"post\" action=\"/course-admin/logout\"><button class=\"secondary\" type=\"submit\">로그아웃</button></form></div>" +
-      note + errorNote + warning + cafe24Notice +
-      "<div class=\"grid\"><section class=\"card\"><h2>새 강의</h2>" +
-      "<form method=\"post\" action=\"/course-admin/courses\">" +
-      "<label>강의명</label><input name=\"title\" required placeholder=\"네이버 쇼핑 - 키워드 전략\">" +
-      "<label>URL 슬러그</label><input name=\"slug\" required placeholder=\"naver-keyword-strategy\">" +
-      "<label>강의 소개</label><textarea name=\"summary\" placeholder=\"누구를 위한 강의인지, 무엇을 배우는지 간단히 입력하세요.\"></textarea>" +
-      "<label>콘텐츠 공급자</label><select name=\"owner_member_id\">" + creatorOptions(creators) + "</select>" +
-      "<div class=\"row\"><div><label>수강 방식</label><select name=\"access_type\"><option value=\"public\">무료 · 회원 로그인 필요</option><option value=\"paid\">유료 · 구매 확인 필요</option></select></div>" +
-      "<div><label>가격(원)</label><input name=\"price_krw\" type=\"number\" min=\"0\" step=\"1000\" value=\"0\"></div></div>" +
-      "<button type=\"submit\" style=\"width:100%;margin-top:14px\">강의 만들기</button></form></section>" +
-      "<section><h2>등록 강의</h2>" + cards + "</section></div>" +
+      note + errorNote + warning + cafe24Notice + content +
       "<script src=\"/course-admin/app.js\" defer></script>"
   );
 }
@@ -1215,7 +1297,9 @@ export default {
       return html(await dashboardPage(
         env,
         url.searchParams.get("message") || "",
-        url.searchParams.get("error") || ""
+        url.searchParams.get("error") || "",
+        url.searchParams.get("course") || "",
+        url.searchParams.get("tab") || "content"
       ));
     }
 
