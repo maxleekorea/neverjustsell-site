@@ -97,9 +97,18 @@ expect(
 );
 
 r = await request("https://www.neverjustsell.com/login");
+let publicLoginTarget = null;
+try {
+  publicLoginTarget = new URL(r.response.headers.get("location") || "");
+} catch {
+  publicLoginTarget = null;
+}
 expect(
-  "public site does not own customer auth session",
-  r.response.status === 302 && r.response.headers.get("location") === "https://neverjustsell.cafe24.com/member/login.html",
+  "public site delegates customer auth to classroom OAuth",
+  r.response.status === 302 &&
+    publicLoginTarget?.origin === "https://classroom.neverjustsell.com" &&
+    publicLoginTarget?.pathname === "/oauth/cafe24/customer/start" &&
+    publicLoginTarget?.searchParams.get("return_to") === "https://www.neverjustsell.com/",
   `status=${r.response.status} location=${r.response.headers.get("location")}`
 );
 
