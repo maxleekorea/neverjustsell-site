@@ -204,13 +204,15 @@ function presaleScheduleText(course) {
   return "오픈 예정 " + formatPresaleOpenKst(course.presale_opens_at);
 }
 
-function isPublicPreviewLesson(course, lesson) {
+function isPublicPreviewLesson(course, lesson, lessonIndex = -1) {
+  const mandatoryFirstLesson = Number(lessonIndex) === 0;
+  const additionalPreview = Boolean(lesson?.isPreview);
   return Boolean(
     course &&
     course.access_type === "paid" &&
     course.status === "published" &&
     lesson &&
-    lesson.isPreview &&
+    (mandatoryFirstLesson || additionalPreview) &&
     lesson.vimeoId &&
     ["ready", "published"].includes(String(lesson.status || ""))
   );
@@ -221,12 +223,21 @@ function resolvePublicPreview(course, url) {
   const lessons = playerCourse.lessons;
   const raw = url?.searchParams.get("preview");
   if (raw === null || raw === "") {
-    return { requested: false, valid: true, allowed: false, lessonNumber: null, lesson: null, lessons };
+    const firstLesson = lessons[0] || null;
+    const allowed = Boolean(firstLesson) && isPublicPreviewLesson(course, firstLesson, 0);
+    return {
+      requested: allowed,
+      valid: true,
+      allowed,
+      lessonNumber: allowed ? 1 : null,
+      lesson: allowed ? firstLesson : null,
+      lessons
+    };
   }
   const lessonNumber = Number(raw);
   const valid = Number.isInteger(lessonNumber) && lessonNumber >= 1 && lessonNumber <= lessons.length;
   const lesson = valid ? lessons[lessonNumber - 1] : null;
-  const allowed = valid && isPublicPreviewLesson(course, lesson);
+  const allowed = valid && isPublicPreviewLesson(course, lesson, lessonNumber - 1);
   return { requested: true, valid, allowed, lessonNumber, lesson, lessons };
 }
 
@@ -240,7 +251,9 @@ function renderPublicPreview(course, preview) {
       escapeHtml(preview.lesson?.title || "미리보기") +
       '</h2><p class="note">이 차시는 공개 미리보기가 아닙니다. 구매 후 강의실에서 수강할 수 있습니다.</p></div>';
   }
-  return '<div id="preview" class="preview-panel"><div class="eyebrow">FREE PREVIEW</div><h2>' +
+  return '<div id="preview" class="preview-panel"><div class="eyebrow">' +
+    (preview.lessonNumber === 1 ? 'FIRST LESSON · FREE PREVIEW' : 'FREE PREVIEW') +
+    '</div><h2>' +
     escapeHtml(preview.lesson.title) + '</h2>' +
     (preview.lesson.description ? '<p class="desc">' + escapeHtml(preview.lesson.description) + '</p>' : '') +
     '<div class="video"><iframe src="https://player.vimeo.com/video/' +
@@ -286,13 +299,13 @@ function renderCourseOutline(course, options = {}) {
           '</a><span class="badge">수강 가능</span></div>';
       }
 
-      if (isPublicPreviewLesson(course, lesson)) {
+      if (isPublicPreviewLesson(course, lesson, index - 1)) {
         return '<div class="lesson-row"><a class="lesson-link" href="/courses/' +
           encodeURIComponent(course.slug) + '?preview=' + index + '#preview">' + label +
-          '</a><span class="badge preview-badge">미리보기</span></div>';
+          '</a><span class="badge preview-badge">' + (index === 1 ? '첫 차시 무료' : '추가 미리보기') + '</span></div>';
       }
 
-      const previewPending = lesson.isPreview && !isPublicPreviewLesson(course, lesson);
+      const previewPending = (index === 1 || lesson.isPreview) && !isPublicPreviewLesson(course, lesson, index - 1);
       return '<div class="lesson-row"><span class="lesson-link locked">' + label +
         '</span><span class="badge lock-badge">' + (previewPending ? '미리보기 준비 중' : '잠김') + '</span></div>';
     }).join('');
@@ -381,7 +394,7 @@ async function renderCourseLanding(request, env, slug) {
   const contentPublished = course.status === "published" && Number(course.visible) === 1;
   const url = new URL(request.url);
   const preview = resolvePublicPreview(course, url);
-  const previewCount = playerCourse.lessons.filter((lesson) => isPublicPreviewLesson(course, lesson)).length;
+  const previewCount = playerCourse.lessons.filter((lesson, index) => isPublicPreviewLesson(course, lesson, index)).length;
   let paidAccess = false;
   if (memberId && course.access_type === "paid" && Number(course.cafe24_product_no) > 0) {
     const decision = await getCourseAccessDecision(
