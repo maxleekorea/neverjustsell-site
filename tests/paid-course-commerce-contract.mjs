@@ -300,6 +300,19 @@ assert(realCurriculaMigration.includes("방법보다 방향이 먼저인 이유"
 assert(realCurriculaMigration.includes("키워드를 보는 관점과 황금 키워드의 함정"), "keyword-strategy free first lesson shell missing");
 
 
+const realSalesPageMigration = await readFile(
+  new URL("../worker/migrations/0025_seed_real_paid_course_sales_pages.sql", import.meta.url),
+  "utf8"
+);
+assert(realSalesPageMigration.includes("NULLIF(TRIM(instructor_name),'')"), "real sales-page seed must preserve manual instructor edits");
+assert(realSalesPageMigration.includes("NULLIF(TRIM(target_audience),'')"), "real sales-page seed must preserve manual audience edits");
+assert(realSalesPageMigration.includes("paid-naver-search-algorithm"), "search-algorithm sales-page seed missing");
+assert(realSalesPageMigration.includes("paid-naver-keyword-strategy"), "keyword-strategy sales-page seed missing");
+assert(realSalesPageMigration.includes("맥작가"), "real paid course instructor seed missing");
+assert(realSalesPageMigration.includes("검색·콘텐츠·브랜드가 선순환"), "search-algorithm learning outcome seed missing");
+assert(realSalesPageMigration.includes("브랜드 자산으로 확장"), "keyword-strategy learning outcome seed missing");
+
+
 const productionWorker = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
   "utf8"
