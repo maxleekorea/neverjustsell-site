@@ -879,7 +879,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
     }).join("");
     const preview = course.access_type === "paid"
-      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">무료 미리보기 차시로 지정</label>"
+      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">비구매자에게 무료 미리보기 공개</label><div class="hint">강의가 게시된 상태에서만 공개 재생됩니다.</div>"
       : "";
     const up = index > 0
       ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">위로</button></form>"
