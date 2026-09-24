@@ -41,7 +41,7 @@ export async function promoteScheduledPresales(env) {
 export async function listCatalogD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE catalog_visible=1 AND status!='system_check' ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE catalog_visible=1 AND status!='system_check' ORDER BY sort_order,created_at"
   ).all();
   return Array.isArray(result?.results) ? result.results : [];
 }
@@ -49,7 +49,7 @@ export async function listCatalogD1Courses(env) {
 export async function getCatalogD1Course(env, slug) {
   if (!env.COURSE_DB || !slug) return null;
   const course = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE slug=? AND catalog_visible=1 AND status!='system_check' LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE slug=? AND catalog_visible=1 AND status!='system_check' LIMIT 1"
   ).bind(slug).first();
   if (!course) return null;
 
@@ -70,7 +70,7 @@ export async function getCatalogD1Course(env, slug) {
 export async function listPublishedD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE visible=1 AND status='published' ORDER BY sort_order,created_at"
   ).all();
   return Array.isArray(result?.results) ? result.results : [];
 }
@@ -78,7 +78,7 @@ export async function listPublishedD1Courses(env) {
 export async function getPublishedD1Course(env, slug) {
   if (!env.COURSE_DB || !slug) return null;
   const course = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_url,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text FROM courses WHERE slug=? AND visible=1 AND status='published' LIMIT 1"
   ).bind(slug).first();
   if (!course) return null;
 
@@ -103,6 +103,16 @@ export async function touchLessonProgress(env, memberId, courseId, lessonId) {
   ).bind(memberId, courseId, lessonId).run();
 }
 
+export async function recordLessonWatch(env, memberId, courseId, lessonId, positionSeconds, watchedDeltaSeconds) {
+  if (!env.COURSE_DB || !memberId || !courseId || !lessonId) return;
+  const position = Math.max(0, Math.floor(Number(positionSeconds) || 0));
+  const delta = Math.max(0, Math.min(30, Math.floor(Number(watchedDeltaSeconds) || 0)));
+  await env.COURSE_DB.prepare(
+    "INSERT INTO lesson_progress (member_id,course_id,lesson_id,completed,last_position_seconds,watched_seconds) VALUES (?,?,?,0,?,?) " +
+    "ON CONFLICT(member_id,lesson_id) DO UPDATE SET last_position_seconds=excluded.last_position_seconds,watched_seconds=lesson_progress.watched_seconds+excluded.watched_seconds,updated_at=CURRENT_TIMESTAMP"
+  ).bind(memberId, courseId, lessonId, position, delta).run();
+}
+
 export async function completeLesson(env, memberId, courseId, lessonId) {
   if (!env.COURSE_DB || !memberId || !courseId || !lessonId) return;
   await env.COURSE_DB.prepare(
@@ -114,11 +124,11 @@ export async function getCourseProgress(env, memberId, course) {
   const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
   const total = lessons.length;
   if (!env.COURSE_DB || !memberId || !course?.id || total === 0) {
-    return { total, completed: 0, percent: 0, completedIds: new Set(), continueLessonId: lessons[0]?.id || null, lastActivity: null };
+    return { total, completed: 0, percent: 0, completedIds: new Set(), continueLessonId: lessons[0]?.id || null, lastActivity: null, watchedSeconds: 0 };
   }
 
   const result = await env.COURSE_DB.prepare(
-    "SELECT lesson_id,completed,updated_at FROM lesson_progress WHERE member_id=? AND course_id=? ORDER BY updated_at DESC"
+    "SELECT lesson_id,completed,last_position_seconds,watched_seconds,updated_at FROM lesson_progress WHERE member_id=? AND course_id=? ORDER BY updated_at DESC"
   ).bind(memberId, course.id).all();
   const rows = Array.isArray(result?.results) ? result.results : [];
   const completedIds = new Set(rows.filter((row) => Number(row.completed) === 1).map((row) => row.lesson_id));
@@ -136,7 +146,8 @@ export async function getCourseProgress(env, memberId, course) {
     percent: total > 0 ? Math.round((completed / total) * 100) : 0,
     completedIds,
     continueLessonId,
-    lastActivity: rows[0]?.updated_at || null
+    lastActivity: rows[0]?.updated_at || null,
+    watchedSeconds: rows.reduce((sum, row) => sum + Number(row.watched_seconds || 0), 0)
   };
 }
 
