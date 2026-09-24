@@ -108,8 +108,8 @@ assert(admin.includes("Math.min(duration, watched)"), "refund usage must cap rep
 assert(admin.includes("index > 0 && Number(row.is_preview || 0) !== 1"), "mandatory and additional previews must be excluded from refund usage");
 assert(admin.includes("최소 한 개의 유료 차시가 필요합니다."), "paid course must retain paid content after mandatory preview");
 assert(admin.includes("DEFAULT_PAID_ACCESS_DAYS = 180"), "new paid VOD default duration must be 180 days");
-assert(admin.includes("COALESCE(access_duration_days,?)"), "free-to-paid conversion must auto-apply the standard duration");
-assert(admin.includes("DEFAULT_REFUND_POLICY_TEXT"), "free-to-paid conversion must auto-apply the standard refund policy");
+assert(admin.includes("access_duration_days=CASE WHEN ?='paid' THEN ?"), "paid courses must always use the standard duration");
+assert(admin.includes("DEFAULT_REFUND_POLICY_TEXT"), "paid courses must always use the standard refund policy");
 assert(admin.includes('"fair-trust-v1.0"'), "new paid VOD policy version default missing");
 assert(!admin.includes("|| items[0] || null"), "student detail must not infer an unrelated order item");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
