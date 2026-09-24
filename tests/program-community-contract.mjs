@@ -12,6 +12,10 @@ const operations = await readFile(
   new URL("../worker/migrations/0028_program_operations.sql", import.meta.url),
   "utf8"
 );
+const paymentFixture = await readFile(
+  new URL("../worker/migrations/0029_program_payment_e2e_fixture.sql", import.meta.url),
+  "utf8"
+);
 const community = await readFile(
   new URL("../community/migrations/0002_program_spaces.sql", import.meta.url),
   "utf8"
@@ -48,6 +52,18 @@ const workerDeploy = await readFile(
   new URL("../worker/deploy.mjs", import.meta.url),
   "utf8"
 );
+const programAccess = await readFile(
+  new URL("../worker/src/program-access.js", import.meta.url),
+  "utf8"
+);
+const ticketRuntime = await readFile(
+  new URL("../worker/src/runtime.js", import.meta.url),
+  "utf8"
+);
+const communityAccess = await readFile(
+  new URL("../community/src/program-access.js", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -72,6 +88,12 @@ assert(operations.includes("'host_review'"), "creator-reviewed missions missing"
 assert(operations.includes("'njs-readalong-w3-action'"), "pilot action mission template missing");
 assert(operations.includes("'njs-readalong-kickoff'"), "pilot kickoff event template missing");
 assert(operations.includes("'njs-readalong-closing'"), "pilot closing event template missing");
+
+assert(paymentFixture.includes("'system-check-payment-program'"), "program payment E2E fixture missing");
+assert(paymentFixture.includes("'system-check-payment-program-run'"), "program payment E2E run missing");
+assert(paymentFixture.includes("cafe24_product_no=13"), "program payment E2E must reuse hidden Cafe24 product 13");
+assert(paymentFixture.includes("price_krw=1000"), "program payment E2E price must remain 1,000 KRW");
+assert(paymentFixture.includes("'private'"), "program payment E2E fixture must remain private");
 
 assert(community.includes("CREATE TABLE IF NOT EXISTS program_run_projections"), "community program projection missing");
 assert(community.includes("CREATE TABLE IF NOT EXISTS spaces"), "community spaces missing");
@@ -110,6 +132,22 @@ assert(programSchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime p
 assert(programSchema.includes("PRAGMA table_info"), "runtime program reconciler must detect existing columns");
 assert(production.includes("ensureProgramSchema"), "migration health must reconcile program schema");
 assert(host.includes("ensureProgramSchema"), "program host must self-heal schema before access");
+
+assert(programSchema.includes("0029_program_payment_e2e_fixture.sql"), "runtime reconciler must apply program payment fixture");
+assert(programAccess.includes("reconcilePurchasedProgramEnrollments"), "Cafe24 program enrollment sync missing");
+assert(programAccess.includes("findValidCoursePurchase"), "program enrollment must reuse confirmed purchase rules");
+assert(programAccess.includes("findRevokedCoursePurchase"), "program enrollment must react to refund/cancellation");
+assert(programAccess.includes("status='withdrawn'"), "revoked purchase must withdraw program enrollment");
+assert(programAccess.includes("getProgramCommunityProjection"), "canonical community program projection missing");
+assert(ticketRuntime.includes("getProgramCommunityProjection"), "community ticket redemption must include canonical program access");
+
+assert(communityAccess.includes("syncMemberProgramSpaces"), "community program space projection missing");
+assert(communityAccess.includes("'program_run'"), "program discussion spaces must be run-scoped");
+assert(communityAccess.includes("program_participant"), "run spaces must be participant gated");
+assert(communityAccess.includes("program_completed"), "alumni space must require completion");
+assert(communityAccess.includes("access_status='revoked'"), "stale projected space access must be revoked");
+assert(communityAccess.includes("moderation_role"), "creator/moderator projection missing");
+assert(communityRuntime.includes("syncMemberProgramSpaces"), "community login must sync program space access");
 
 assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community migration tracking missing");
 assert(communitySchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime community migration must be recorded for Wrangler compatibility");
