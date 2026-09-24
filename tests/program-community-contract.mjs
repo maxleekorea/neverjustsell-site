@@ -48,6 +48,9 @@ const communityRuntime = await readFile(
   new URL("../community/src/index.js", import.meta.url),
   "utf8"
 );
+const communityProductionConfig = JSON.parse(
+  await readFile(new URL("../community/wrangler.production.jsonc", import.meta.url), "utf8")
+);
 const workerDeploy = await readFile(
   new URL("../worker/deploy.mjs", import.meta.url),
   "utf8"
@@ -161,6 +164,11 @@ assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community m
 assert(communitySchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime community migration must be recorded for Wrangler compatibility");
 assert(communitySchema.includes("PRAGMA table_info"), "community schema reconciler must detect existing post columns");
 assert(communityRuntime.includes("ensureCommunityProgramSchema"), "community DB health must reconcile program spaces");
+assert(communityProductionConfig.workers_dev === false, "production community workers.dev route must stay disabled");
+assert(
+  communityProductionConfig.routes?.some((route) => route.pattern === "community.neverjustsell.com" && route.custom_domain === true),
+  "production community must use the canonical custom domain"
+);
 
 assert(workerDeploy.includes("migration-health"), "course deploy must reconcile schema through runtime binding");
 assert(!workerDeploy.includes('"migrations",\n    "apply"'), "course deploy must not depend on D1 management API");
