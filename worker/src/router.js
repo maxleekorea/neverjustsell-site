@@ -16,7 +16,8 @@ import {
   d1CourseToPlayerCourse,
   isCourseEnrolled,
   enrollFreeCourse,
-  getEnrolledCourseIds
+  getEnrolledCourseIds,
+  promoteScheduledPresales
 } from "./course-store.js";
 
 import { getCustomerSession } from "./session-orders.js";
@@ -186,6 +187,23 @@ function courseSalesLabel(course) {
   }[courseSalesState(course)] || "판매 준비 중";
 }
 
+function formatPresaleOpenKst(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return "";
+  const local = new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  return local.slice(0, 10).replaceAll("-", ".") + " " + local.slice(11, 16) + " KST";
+}
+
+function presaleScheduleText(course) {
+  if (courseSalesState(course) !== "presale" || !course?.presale_opens_at) return "";
+  const opens = new Date(course.presale_opens_at);
+  if (!Number.isFinite(opens.getTime())) return "";
+  if (opens.getTime() <= Date.now() && course.status !== "published") return "오픈 준비 중";
+  return "오픈 예정 " + formatPresaleOpenKst(course.presale_opens_at);
+}
+
 function isPublicPreviewLesson(course, lesson) {
   return Boolean(
     course &&
@@ -314,6 +332,7 @@ function renderInstructorSection(course) {
 }
 
 async function renderCourseCatalog(request, env) {
+  await promoteScheduledPresales(env);
   const courses = await listCatalogD1Courses(env);
   const session = await getCustomerSession(request, env);
   const memberId = session?.record?.member_id || null;
@@ -322,10 +341,17 @@ async function renderCourseCatalog(request, env) {
 
   const cards = courses.map((course) => {
     const enrolled = accessibleIds.has(course.id);
+    const salesState = courseSalesState(course);
     const label = enrolled
       ? "수강 중"
-      : (course.access_type === "paid" ? formatPrice(course) : "무료");
-    const cta = enrolled ? "계속 수강" : (course.access_type === "paid" ? "강의 보기" : "무료 수강 신청");
+      : (course.access_type === "paid"
+          ? formatPrice(course) + " · " + courseSalesLabel(course)
+          : "무료");
+    const cta = enrolled
+      ? "계속 수강"
+      : (course.access_type === "paid"
+          ? (salesState === "presale" ? "사전판매 보기" : "강의 보기")
+          : "무료 수강 신청");
     return '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
       '<div class="eyebrow">' + escapeHtml(label) + '</div>' +
       '<h2>' + escapeHtml(course.title) + '</h2>' +
@@ -341,6 +367,7 @@ async function renderCourseCatalog(request, env) {
 }
 
 async function renderCourseLanding(request, env, slug) {
+  await promoteScheduledPresales(env);
   const course = await getCatalogD1Course(env, slug);
   if (!course) {
     return html(classroomShell("강의를 찾을 수 없습니다", '<section class="card"><h1 class="title">강의를 찾을 수 없습니다.</h1><a class="action" href="/courses">강의 찾기로</a></section>'), { status: 404 });
@@ -398,7 +425,8 @@ async function renderCourseLanding(request, env, slug) {
   const metaText = lessonCount + '개 차시 · ' +
     (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
     (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '') +
-    (course.access_type === "paid" ? ' · ' + courseSalesLabel(course) : '');
+    (course.access_type === "paid" ? ' · ' + courseSalesLabel(course) : '') +
+    (presaleScheduleText(course) ? ' · ' + presaleScheduleText(course) : '');
 
   const previewBlock = renderPublicPreview(course, preview);
   const audienceSection = renderSalesListSection("이런 분께 추천합니다", course.target_audience);
@@ -421,7 +449,7 @@ async function renderCourseLanding(request, env, slug) {
   const sideNote = course.access_type === "paid"
     ? ({
         preparing: '현재 신규 구매는 준비 중입니다.',
-        presale: '사전판매 중입니다. 결제 후 수강권은 생성되며, 강의 게시 전에는 ‘수강 준비 중’으로 표시됩니다.',
+        presale: '사전판매 중입니다.' + (presaleScheduleText(course) ? ' ' + presaleScheduleText(course) + '.' : '') + ' 결제 후 수강권은 생성되며, 강의 게시 전에는 ‘수강 준비 중’으로 표시됩니다.',
         selling: 'Cafe24 회원으로 구매 후 수강권을 확인하고 게시된 강의를 바로 수강할 수 있습니다.',
         paused: '현재 신규 구매가 중단되어 있습니다. 기존 수강생의 수강권은 유지됩니다.'
       }[courseSalesState(course)] || '현재 신규 구매는 준비 중입니다.')
