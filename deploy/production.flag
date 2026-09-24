@@ -1,3 +1,3 @@
-deploy_at=2026-09-24
-reason=program-community-foundation-and-program-host
-expected_head=f20197aa39e5e37f7fcb28173c9e6a0043fafb74
+deploy_at=2026-09-24T19:41:00+09:00
+reason=runtime-d1-reconcile-v2
+expected_head=a246dfd121d6787b5c5e09a4905f4c681ae2e957
