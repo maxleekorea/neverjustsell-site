@@ -430,8 +430,12 @@ async function renderCourseLanding(request, env, slug) {
   const audienceSection = renderSalesListSection("이런 분께 추천합니다", course.target_audience);
   const outcomeSection = renderSalesListSection("이 강의에서 배우는 내용", course.learning_outcomes);
   const instructorSection = renderInstructorSection(course);
-  const accessSection = renderSalesTextSection("수강 이용 안내", course.access_info);
-  const refundSection = renderSalesTextSection("환불 안내", course.refund_policy_text);
+  const accessSection = course.access_type === "paid"
+    ? renderSalesTextSection("수강 이용 안내", course.access_info)
+    : "";
+  const refundSection = course.access_type === "paid"
+    ? renderSalesTextSection("환불 안내", course.refund_policy_text)
+    : "";
   const curriculumSection =
     '<section class="sales-section"><h2>커리큘럼</h2>' +
     renderCourseOutline(course, {
