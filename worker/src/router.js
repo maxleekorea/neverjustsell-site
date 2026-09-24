@@ -85,7 +85,7 @@ function classroomShell(title, content) {
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${escapeHtml(title)} | NEVER JUST SELL</title>
 <style>
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.lesson-link.locked{opacity:.52;cursor:not-allowed}.preview-badge{color:#a8e6a8;border-color:#31513a}.lock-badge{color:#777}.preview-panel{margin-top:24px;padding-top:22px;border-top:1px solid #292929}.preview-panel h2{font-size:22px;margin:0 0 8px}.preview-panel .video{margin-top:16px}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.dashboard-section{margin-top:34px}.dashboard-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.dashboard-head h2{font-size:22px;margin:0}.dashboard-head p{margin:0;color:#777;font-size:13px}.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.badge{display:inline-block;padding:4px 8px;border:1px solid #343434;border-radius:999px;font-size:11px;color:#aaa}.course-cta{margin-top:14px;font-size:13px;font-weight:700;color:#ddd}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.lesson-link.locked{opacity:.52;cursor:not-allowed}.preview-badge{color:#a8e6a8;border-color:#31513a}.lock-badge{color:#777}.preview-panel{margin-top:24px;padding-top:22px;border-top:1px solid #292929}.preview-panel h2{font-size:22px;margin:0 0 8px}.preview-panel .video{margin-top:16px}.sales-hero{padding:34px}.sales-hero .title{max-width:800px}.sales-hero .desc{max-width:760px}.sales-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;margin-top:20px;align-items:start}.sales-main{display:grid;gap:16px}.sales-section{background:#151515;border:1px solid #292929;border-radius:18px;padding:26px}.sales-section h2{font-size:22px;margin:0 0 14px}.sales-section h3{font-size:17px;margin:0 0 8px}.sales-section p{color:#aaa;line-height:1.75;white-space:pre-line}.sales-list{margin:0;padding-left:20px;color:#ddd}.sales-list li{margin:9px 0;line-height:1.55}.sales-side{position:sticky;top:20px;background:#151515;border:1px solid #292929;border-radius:18px;padding:22px}.sales-price{font-size:28px;font-weight:800;margin:6px 0 4px}.sales-side .action{width:100%;text-align:center;margin-top:16px}.sales-bottom-cta{text-align:center;padding:28px}.sales-bottom-cta .action{min-width:220px}.sales-note{font-size:12px;color:#777;line-height:1.6;margin-top:10px}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.dashboard-section{margin-top:34px}.dashboard-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.dashboard-head h2{font-size:22px;margin:0}.dashboard-head p{margin:0;color:#777;font-size:13px}.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.badge{display:inline-block;padding:4px 8px;border:1px solid #343434;border-radius:999px;font-size:11px;color:#aaa}.course-cta{margin-top:14px;font-size:13px;font-weight:700;color:#ddd}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:760px){.sales-layout{grid-template-columns:1fr}.sales-side{position:static}.sales-hero{padding:22px}.sales-section{padding:20px}}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
 <body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/classroom">학습 홈</a><a class="home" href="/library">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
@@ -266,6 +266,37 @@ function renderCourseOutline(course, options = {}) {
   return rows + '</div>';
 }
 
+function salesLines(value) {
+  return String(value || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function renderSalesListSection(title, value) {
+  const lines = salesLines(value);
+  if (lines.length === 0) return "";
+  return '<section class="sales-section"><h2>' + escapeHtml(title) + '</h2><ul class="sales-list">' +
+    lines.map((line) => '<li>' + escapeHtml(line) + '</li>').join('') +
+    '</ul></section>';
+}
+
+function renderSalesTextSection(title, value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  return '<section class="sales-section"><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(text) + '</p></section>';
+}
+
+function renderInstructorSection(course) {
+  const name = String(course?.instructor_name || "").trim();
+  const bio = String(course?.instructor_bio || "").trim();
+  if (!name && !bio) return "";
+  return '<section class="sales-section"><div class="eyebrow">INSTRUCTOR</div><h2>강사 소개</h2>' +
+    (name ? '<h3>' + escapeHtml(name) + '</h3>' : '') +
+    (bio ? '<p>' + escapeHtml(bio) + '</p>' : '') +
+    '</section>';
+}
+
 async function renderCourseCatalog(request, env) {
   const courses = await listCatalogD1Courses(env);
   const session = await getCustomerSession(request, env);
@@ -341,15 +372,47 @@ async function renderCourseLanding(request, env, slug) {
       : '<span class="action secondary">판매 준비 중</span>';
   }
 
+  const metaText = lessonCount + '개 차시 · ' +
+    (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
+    (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '');
+
+  const previewBlock = renderPublicPreview(course, preview);
+  const audienceSection = renderSalesListSection("이런 분께 추천합니다", course.target_audience);
+  const outcomeSection = renderSalesListSection("이 강의에서 배우는 내용", course.learning_outcomes);
+  const instructorSection = renderInstructorSection(course);
+  const accessSection = renderSalesTextSection("수강 이용 안내", course.access_info);
+  const refundSection = renderSalesTextSection("환불 안내", course.refund_policy_text);
+  const curriculumSection =
+    '<section class="sales-section"><h2>커리큘럼</h2>' +
+    renderCourseOutline(course, {
+      paidAccess: paidAccess && contentPublished,
+      enrolled: enrolled && contentPublished
+    }) + '</section>';
+
+  const previewSection = previewBlock
+    ? '<section class="sales-section">' + previewBlock + '</section>'
+    : '';
+
+  const sideNote = course.access_type === "paid"
+    ? (Number(course.sales_enabled) === 1 ? 'Cafe24 회원으로 구매 후 바로 수강권을 확인합니다.' : '현재 신규 구매는 준비 중입니다.')
+    : 'Cafe24 회원 로그인 후 무료 수강 신청할 수 있습니다.';
+
   return html(classroomShell(
     course.title,
-    '<section class="card"><div class="eyebrow">' + escapeHtml(formatPrice(course)) + '</div>' +
+    '<section class="card sales-hero"><div class="eyebrow">' + escapeHtml(formatPrice(course)) + '</div>' +
     '<h1 class="title">' + escapeHtml(course.title) + '</h1>' +
     '<p class="desc">' + escapeHtml(course.summary || "") + '</p>' +
-    '<p class="note">' + lessonCount + '개 차시 · ' + (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
-    (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '') + '</p>' +
-    cta + renderPublicPreview(course, preview) +
-    renderCourseOutline(course, { paidAccess: paidAccess && contentPublished, enrolled: enrolled && contentPublished }) + '</section>'
+    '<p class="note">' + escapeHtml(metaText) + '</p>' +
+    cta + '</section>' +
+    '<div class="sales-layout"><main class="sales-main">' +
+    audienceSection + outcomeSection + previewSection + curriculumSection +
+    instructorSection + accessSection + refundSection +
+    '<section class="sales-section sales-bottom-cta"><h2>수강을 시작하시겠습니까?</h2>' +
+    '<p class="note">' + escapeHtml(formatPrice(course)) + ' · ' + escapeHtml(metaText) + '</p>' +
+    cta + '</section></main>' +
+    '<aside class="sales-side"><div class="eyebrow">COURSE</div><div class="sales-price">' +
+    escapeHtml(formatPrice(course)) + '</div><div class="note">' + escapeHtml(metaText) + '</div>' +
+    cta + '<div class="sales-note">' + escapeHtml(sideNote) + '</div></aside></div>'
   ));
 }
 
