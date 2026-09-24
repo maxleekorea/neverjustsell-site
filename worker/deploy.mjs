@@ -39,7 +39,7 @@ async function runWrangler(args) {
 }
 
 try {
-  await runWrangler(["deploy", "--secrets-file", secretsPath]);
+  await runWrangler(["deploy", "--config", "wrangler.production.jsonc", "--secrets-file", secretsPath]);
 
   const response = await fetch("https://classroom.neverjustsell.com/migration-health");
   const payload = await response.json().catch(() => null);
