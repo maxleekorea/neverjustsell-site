@@ -235,9 +235,8 @@ expect(
 
 r = await request("https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom");
 expect(
-  "legacy classroom hostname canonicalizes",
-  r.response.status === 302 &&
-    r.response.headers.get("location") === "https://classroom.neverjustsell.com/classroom",
+  "legacy classroom workers.dev route stays disabled",
+  r.response.status === 404 && !r.response.headers.get("location"),
   `status=${r.response.status} location=${r.response.headers.get("location")}`
 );
 
