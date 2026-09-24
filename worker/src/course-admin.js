@@ -937,11 +937,8 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       ? "<span class=\"mini-badge " + (processing ? "warn" : "ok") + "\">" + (processing ? "영상 처리 중" : "영상 연결됨") + "</span>"
       : "<span class=\"mini-badge warn\">영상 없음</span>";
     const previewBadge = course.access_type === "paid"
-      ? (mandatoryPreview
-          ? "<span class=\"mini-badge preview-badge mandatory-preview-badge\">1차시 무료</span>"
-          : (Number(lesson.is_preview) === 1
-              ? "<span class=\"mini-badge preview-badge additional-preview-badge\">추가 미리보기</span>"
-              : "<span class=\"mini-badge preview-badge additional-preview-badge\" style=\"display:none\">추가 미리보기</span>"))
+      ? "<span class=\"mini-badge preview-badge mandatory-preview-badge\" style=\"" + (mandatoryPreview ? "" : "display:none") + "\">1차시 무료</span>" +
+        "<span class=\"mini-badge preview-badge additional-preview-badge\" style=\"" + (!mandatoryPreview && Number(lesson.is_preview) === 1 ? "" : "display:none") + "\">추가 미리보기</span>"
       : "";
     const statusBadge = "<span class=\"mini-badge\">" + escapeHtml(lesson.status || "draft") + "</span>";
     const upload = hasVideo ? "" :
@@ -954,9 +951,9 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
     }).join("");
     const preview = course.access_type === "paid"
-      ? (mandatoryPreview
-          ? "<label class=\"preview\"><input type=\"checkbox\" checked disabled>1차시는 의무 무료 미리보기</label><input type=\"hidden\" name=\"is_preview\" value=\"0\"><div class=\"hint\">1차시는 자동 공개됩니다. OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요.</div>"
-          : "<label class=\"preview\"><input class=\"additional-preview-toggle\" type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">이 차시도 추가 무료 미리보기로 공개</label><div class=\"hint\">강의가 게시된 상태에서만 공개 재생됩니다.</div>")
+      ? "<label class=\"preview mandatory-preview-control\" style=\"" + (mandatoryPreview ? "" : "display:none") + "\"><input type=\"checkbox\" checked disabled>1차시는 의무 무료 미리보기</label>" +
+        "<label class=\"preview additional-preview-control\" style=\"" + (mandatoryPreview ? "display:none" : "") + "\"><input class=\"additional-preview-toggle\" type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + (mandatoryPreview ? " disabled" : "") + ">이 차시도 추가 무료 미리보기로 공개</label>" +
+        "<div class=\"hint preview-rule-hint\">" + (mandatoryPreview ? "1차시는 자동 공개됩니다. OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요." : "강의가 게시된 상태에서만 공개 재생됩니다.") + "</div>"
       : "";
     const up = index > 0
       ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">위로</button></form>"
@@ -2065,9 +2062,9 @@ function adminClientScript() {
     "    const moduleId=group.dataset.moduleId||'';const rows=Array.from(group.querySelectorAll(':scope > .lesson-dropzone > .curriculum-lesson'));",
     "    const count=group.querySelector('.curriculum-count');if(count)count.textContent=rows.length+'개 차시';",
     "    rows.forEach(function(row){const current=number++;const n=row.querySelector('.lesson-number');if(n)n.textContent=current+'.';const select=row.querySelector('select[name=module_id]');if(select)select.value=moduleId;",
-    "      const mandatory=row.querySelector('.mandatory-preview-badge');const additional=row.querySelector('.additional-preview-badge');const toggle=row.querySelector('.additional-preview-toggle');",
-    "      if(current===1){if(mandatory)mandatory.style.display='inline-flex';if(additional)additional.style.display='none';if(toggle){toggle.disabled=true;toggle.closest('label').style.display='none';}}",
-    "      else{if(mandatory)mandatory.style.display='none';if(additional)additional.style.display=toggle&&toggle.checked?'inline-flex':'none';if(toggle){toggle.disabled=false;toggle.closest('label').style.display='';}}",
+    "      const mandatory=row.querySelector('.mandatory-preview-badge');const additional=row.querySelector('.additional-preview-badge');const toggle=row.querySelector('.additional-preview-toggle');const mandatoryControl=row.querySelector('.mandatory-preview-control');const additionalControl=row.querySelector('.additional-preview-control');const hint=row.querySelector('.preview-rule-hint');",
+    "      if(current===1){if(mandatory)mandatory.style.display='inline-flex';if(additional)additional.style.display='none';if(mandatoryControl)mandatoryControl.style.display='';if(additionalControl)additionalControl.style.display='none';if(toggle)toggle.disabled=true;if(hint)hint.textContent='1차시는 자동 공개됩니다. OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요.';}",
+    "      else{if(mandatory)mandatory.style.display='none';if(additional)additional.style.display=toggle&&toggle.checked?'inline-flex':'none';if(mandatoryControl)mandatoryControl.style.display='none';if(additionalControl)additionalControl.style.display='';if(toggle)toggle.disabled=false;if(hint)hint.textContent='강의가 게시된 상태에서만 공개 재생됩니다.';}",
     "    });",
     "  });",
     "}",
