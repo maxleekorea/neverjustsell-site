@@ -24,6 +24,14 @@ const communityDeploy = await readFile(
   new URL("../community/deploy.mjs", import.meta.url),
   "utf8"
 );
+const host = await readFile(
+  new URL("../worker/src/program-host.js", import.meta.url),
+  "utf8"
+);
+const production = await readFile(
+  new URL("../worker/src/production.js", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -65,6 +73,20 @@ assert(roles.includes("canModerateSpace"), "space moderation permission helper m
 assert(roles.includes("PLATFORM_ROLES.STAFF_OPERATOR"), "staff operator must be able to perform operating work");
 assert(roles.includes('SCOPED_ROLES.PROGRAM_HOST, "program"'), "program-scoped host check missing");
 assert(roles.includes('SCOPED_ROLES.PROGRAM_MODERATOR, "program_run"'), "run-scoped moderator check missing");
+
+assert(host.includes("getCustomerSession"), "program host workspace must use member login");
+assert(host.includes("listManagedPrograms"), "program host workspace must scope visible programs");
+assert(host.includes("program_host"), "program host scoped permission missing");
+assert(host.includes("program_moderator"), "program moderator scoped permission missing");
+assert(host.includes("/program-host/run-create"), "creator run creation route missing");
+assert(host.includes("program_mission_templates"), "run creation must clone mission templates");
+assert(host.includes("program_event_templates"), "run creation must clone event templates");
+assert(host.includes("relative_open_day"), "mission dates must be relative to run start");
+assert(host.includes("relative_day"), "event dates must be relative to run start");
+assert(host.includes("새 회차 만들기"), "creator host run creation UX missing");
+assert(host.includes("모더레이션 권한만 있습니다"), "moderator/host authority distinction missing");
+assert(production.includes('import programHostApp from "./program-host.js"'), "production program host import missing");
+assert(production.includes('url.pathname === "/program-host"'), "production program host route missing");
 
 assert(communityDeploy.includes('"d1"'), "community deploy must apply D1 migrations");
 assert(communityDeploy.includes('"neverjustsell-community"'), "community deploy must target community D1");
