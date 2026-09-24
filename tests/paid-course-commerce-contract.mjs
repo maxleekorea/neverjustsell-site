@@ -94,6 +94,13 @@ assert(admin.includes("강사 소개"), "course sales page instructor editor mis
 assert(admin.includes("이런 분께 추천합니다"), "course sales page audience editor missing");
 assert(admin.includes("이 강의에서 배우는 내용"), "course sales page outcomes editor missing");
 assert(admin.includes("환불 기준은 자동 생성하지 않습니다."), "refund policy must not be auto-generated");
+assert(admin.includes("course-access-policy"), "structured course access policy route missing");
+assert(admin.includes("access_duration_days"), "structured course access duration setting missing");
+assert(admin.includes("refund_policy_version"), "refund policy version setting missing");
+assert(admin.includes("watched_seconds"), "student detail watched seconds missing");
+assert(admin.includes("누적 시청"), "student detail watch-time summary missing");
+assert(admin.includes("구매 당시 조건"), "purchase snapshot admin section missing");
+assert(!admin.includes("|| items[0] || null"), "student detail must not infer an unrelated order item");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
@@ -145,6 +152,13 @@ assert(router.includes("수강 이용 안내"), "sales page access information m
 assert(router.includes("환불 안내"), "sales page refund information missing");
 assert(router.includes("수강을 시작하시겠습니까?"), "sales page bottom CTA missing");
 assert(router.includes("showTitle: false"), "sales page curriculum heading should not be duplicated");
+assert(router.includes("formatAccessDuration"), "sales page structured access duration missing");
+assert(router.includes("수강기간 "), "sales page access duration label missing");
+assert(router.includes("learning-player"), "authenticated Vimeo player tracking hook missing");
+assert(router.includes("player-tracking.js"), "learning player tracker route missing");
+assert(router.includes("/classroom/progress/watch"), "watch progress endpoint missing");
+assert(router.includes("watched_delta_seconds"), "watch-time delta payload missing");
+assert(router.includes("step>0&&step<=3"), "watch tracker must ignore large seek jumps");
 
 
 const access = await readFile(
@@ -161,6 +175,13 @@ assert(access.includes("access_expires_at"), "manual entitlement expiry check mi
 assert(access.includes('"manual_entitlement"'), "manual entitlement access reason missing");
 assert(access.includes("expireManualEntitlement"), "expired manual entitlement revocation missing");
 assert(access.includes("manualProductNos"), "manual entitlements must be included in My Courses");
+assert(access.includes("coursePurchaseSnapshot"), "purchase policy snapshot lookup missing");
+assert(access.includes("purchase_price_krw"), "purchase price snapshot persistence missing");
+assert(access.includes("purchased_at"), "purchase date snapshot persistence missing");
+assert(access.includes("policy_version"), "policy version snapshot persistence missing");
+assert(access.includes("refund_policy_snapshot"), "refund policy text snapshot persistence missing");
+assert(access.includes("access_duration_days_snapshot"), "access duration snapshot persistence missing");
+assert(access.includes("payment_amount"), "Cafe24 item payment amount snapshot source missing");
 
 const entitlementEvents = await readFile(
   new URL("../worker/migrations/0015_course_entitlement_events.sql", import.meta.url),
@@ -201,6 +222,11 @@ assert(courseStore.includes("promoteScheduledPresales"), "scheduled presale prom
 assert(courseStore.includes("status='published'"), "scheduled presale promotion must require published content");
 assert(courseStore.includes("visible=1"), "scheduled presale promotion must require visible published content");
 assert(courseStore.includes("julianday(presale_opens_at) <= julianday('now')"), "scheduled presale promotion time gate missing");
+assert(courseStore.includes("recordLessonWatch"), "lesson watch-time persistence function missing");
+assert(courseStore.includes("watched_seconds=lesson_progress.watched_seconds+excluded.watched_seconds"), "watch-time accumulation missing");
+assert(courseStore.includes("Math.min(30"), "watch-time server delta cap missing");
+assert(courseStore.includes("access_duration_days"), "course store must expose structured access duration");
+assert(courseStore.includes("refund_policy_version"), "course store must expose policy version");
 
 const salesStateMigration = await readFile(
   new URL("../worker/migrations/0018_course_sales_state.sql", import.meta.url),
@@ -215,6 +241,22 @@ const presaleScheduleMigration = await readFile(
   "utf8"
 );
 assert(presaleScheduleMigration.includes("presale_opens_at"), "presale opening schedule migration missing");
+
+const learningPolicyMigration = await readFile(
+  new URL("../worker/migrations/0020_learning_policy_foundation.sql", import.meta.url),
+  "utf8"
+);
+assert(learningPolicyMigration.includes("access_duration_days"), "course access duration migration missing");
+assert(learningPolicyMigration.includes("refund_policy_version"), "refund policy version migration missing");
+assert(learningPolicyMigration.includes("purchase_price_krw"), "purchase snapshot price migration missing");
+assert(learningPolicyMigration.includes("refund_policy_snapshot"), "refund policy snapshot migration missing");
+assert(learningPolicyMigration.includes("watched_seconds"), "watch-time migration missing");
+
+const entitlementDurationMigration = await readFile(
+  new URL("../worker/migrations/0021_entitlement_duration_snapshot.sql", import.meta.url),
+  "utf8"
+);
+assert(entitlementDurationMigration.includes("access_duration_days_snapshot"), "entitlement duration snapshot migration missing");
 
 const productionWorker = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
