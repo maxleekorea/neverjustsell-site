@@ -1822,10 +1822,10 @@ async function updateCourse(form, env) {
   await assertActiveCreator(env, ownerMemberId);
   await env.COURSE_DB.prepare(
     "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,catalog_visible=?," +
-    "access_duration_days=CASE WHEN ?='paid' THEN COALESCE(access_duration_days,?) ELSE access_duration_days END," +
-    "refund_policy_version=CASE WHEN ?='paid' THEN COALESCE(NULLIF(refund_policy_version,''),?) ELSE refund_policy_version END," +
-    "access_info=CASE WHEN ?='paid' THEN COALESCE(NULLIF(access_info,''),?) ELSE access_info END," +
-    "refund_policy_text=CASE WHEN ?='paid' THEN COALESCE(NULLIF(refund_policy_text,''),?) ELSE refund_policy_text END," +
+    "access_duration_days=CASE WHEN ?='paid' THEN ? ELSE access_duration_days END," +
+    "refund_policy_version=CASE WHEN ?='paid' THEN ? ELSE refund_policy_version END," +
+    "access_info=CASE WHEN ?='paid' THEN ? ELSE access_info END," +
+    "refund_policy_text=CASE WHEN ?='paid' THEN ? ELSE refund_policy_text END," +
     "updated_at=CURRENT_TIMESTAMP WHERE id=?"
   ).bind(
     title,
