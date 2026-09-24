@@ -39,17 +39,15 @@ async function runWrangler(args) {
 }
 
 try {
-  await runWrangler([
-    "d1",
-    "migrations",
-    "apply",
-    "neverjustsell-courses",
-    "--remote",
-    "--config",
-    "wrangler.jsonc"
-  ]);
-
   await runWrangler(["deploy", "--secrets-file", secretsPath]);
+
+  const response = await fetch("https://classroom.neverjustsell.com/migration-health");
+  const payload = await response.json().catch(() => null);
+  console.log("Program schema health:", payload);
+  if (!response.ok || payload?.ok !== true || payload?.program_schema?.ok !== true) {
+    console.error("Program schema reconciliation failed after deploy.");
+    process.exit(1);
+  }
 } finally {
   await rm(secretsPath, { force: true });
 }
