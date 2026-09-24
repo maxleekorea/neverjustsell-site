@@ -929,14 +929,19 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
 
   function renderLesson(lesson) {
     const index = Number(lessonOrder.get(String(lesson.id)) || 0);
+    const mandatoryPreview = course.access_type === "paid" && index === 0;
     const hasVideo = Boolean(lesson.vimeo_id);
     const vimeo = hasVideo ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
     const processing = ["uploading","processing"].includes(String(lesson.status || ""));
     const videoBadge = hasVideo
       ? "<span class=\"mini-badge " + (processing ? "warn" : "ok") + "\">" + (processing ? "영상 처리 중" : "영상 연결됨") + "</span>"
       : "<span class=\"mini-badge warn\">영상 없음</span>";
-    const previewBadge = course.access_type === "paid" && Number(lesson.is_preview) === 1
-      ? "<span class=\"mini-badge preview-badge\">미리보기 지정</span>"
+    const previewBadge = course.access_type === "paid"
+      ? (mandatoryPreview
+          ? "<span class=\"mini-badge preview-badge mandatory-preview-badge\">1차시 무료</span>"
+          : (Number(lesson.is_preview) === 1
+              ? "<span class=\"mini-badge preview-badge additional-preview-badge\">추가 미리보기</span>"
+              : "<span class=\"mini-badge preview-badge additional-preview-badge\" style=\"display:none\">추가 미리보기</span>"))
       : "";
     const statusBadge = "<span class=\"mini-badge\">" + escapeHtml(lesson.status || "draft") + "</span>";
     const upload = hasVideo ? "" :
@@ -949,7 +954,9 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
     }).join("");
     const preview = course.access_type === "paid"
-      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">비구매자에게 무료 미리보기 공개</label><div class=\"hint\">강의가 게시된 상태에서만 공개 재생됩니다.</div>"
+      ? (mandatoryPreview
+          ? "<label class=\"preview\"><input type=\"checkbox\" checked disabled>1차시는 의무 무료 미리보기</label><input type=\"hidden\" name=\"is_preview\" value=\"0\"><div class=\"hint\">1차시는 자동 공개됩니다. OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요.</div>"
+          : "<label class=\"preview\"><input class=\"additional-preview-toggle\" type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">이 차시도 추가 무료 미리보기로 공개</label><div class=\"hint\">강의가 게시된 상태에서만 공개 재생됩니다.</div>")
       : "";
     const up = index > 0
       ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">위로</button></form>"
@@ -1080,7 +1087,9 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
   } else {
     panel =
       "<div class=\"panel\"><div class=\"sectionhead\"><div><h3>콘텐츠</h3>" +
-      "<p class=\"hint\">섹션과 차시를 끌어서 순서와 소속을 바꿀 수 있습니다. 변경한 순서는 자동 저장됩니다.</p></div></div>" +
+      "<p class=\"hint\">섹션과 차시를 끌어서 순서와 소속을 바꿀 수 있습니다. 변경한 순서는 자동 저장됩니다.</p>" +
+      (course.access_type === "paid" ? "<p class=\"hint\"><strong>유료 강의 운영 기준:</strong> 1차시는 자동으로 무료 공개됩니다. 실제 내용을 판단할 수 있는 본강의를 1차시에 배치하세요.</p>" : "") +
+      "</div></div>" +
       "<div class=\"content-tools\"><span class=\"hint\">차시를 클릭하면 제목·설명·영상·미리보기를 편집합니다.</span><span class=\"curriculum-save\" data-curriculum-status>순서 자동 저장</span></div>" +
       "<div class=\"editor curriculum\" data-curriculum data-course-id=\"" + escapeHtml(course.id) + "\">" + curriculumHtml + "</div>" +
       "<div class=\"sectionhead\"><div><h3>콘텐츠 추가</h3><p class=\"hint\">섹션이나 차시를 추가한 뒤 위 목록에서 배치하세요.</p></div></div>" +
@@ -2055,7 +2064,11 @@ function adminClientScript() {
     "  root.querySelectorAll('.curriculum-group[data-module-id]').forEach(function(group){",
     "    const moduleId=group.dataset.moduleId||'';const rows=Array.from(group.querySelectorAll(':scope > .lesson-dropzone > .curriculum-lesson'));",
     "    const count=group.querySelector('.curriculum-count');if(count)count.textContent=rows.length+'개 차시';",
-    "    rows.forEach(function(row){const n=row.querySelector('.lesson-number');if(n)n.textContent=(number++)+'.';const select=row.querySelector('select[name=module_id]');if(select)select.value=moduleId;});",
+    "    rows.forEach(function(row){const current=number++;const n=row.querySelector('.lesson-number');if(n)n.textContent=current+'.';const select=row.querySelector('select[name=module_id]');if(select)select.value=moduleId;",
+    "      const mandatory=row.querySelector('.mandatory-preview-badge');const additional=row.querySelector('.additional-preview-badge');const toggle=row.querySelector('.additional-preview-toggle');",
+    "      if(current===1){if(mandatory)mandatory.style.display='inline-flex';if(additional)additional.style.display='none';if(toggle){toggle.disabled=true;toggle.closest('label').style.display='none';}}",
+    "      else{if(mandatory)mandatory.style.display='none';if(additional)additional.style.display=toggle&&toggle.checked?'inline-flex':'none';if(toggle){toggle.disabled=false;toggle.closest('label').style.display='';}}",
+    "    });",
     "  });",
     "}",
     "document.addEventListener('dragend',function(){",
