@@ -41,7 +41,10 @@ assert(admin.includes("고급 · 기존 Cafe24 상품 연결"), "existing produc
 assert(admin.includes("linked_hidden"), "new course products must start hidden");
 assert(admin.includes('display: "F"'), "new Cafe24 course product must start undisplayed");
 assert(admin.includes('selling: "F"'), "new Cafe24 course product must start not selling");
-assert(admin.includes("판매 시작"), "paid course sales activation control missing");
+assert(admin.includes('stateButton("presale", "사전판매")'), "paid course presale control missing");
+assert(admin.includes('stateButton("selling", "판매 중"'), "paid course selling control missing");
+assert(admin.includes('stateButton("paused", "판매 중단")'), "paid course pause control missing");
+assert(admin.includes('stateButton("preparing", "준비 중")'), "paid course preparing control missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
 assert(admin.includes("inspectPaymentE2EOrder"), "order-level E2E inspector missing");
@@ -88,7 +91,7 @@ assert(admin.includes("display: \"F\""), "payment E2E must configure policy whil
 assert(admin.includes('buy_limit_by_product: "T"'), "sales activation must enforce customer-only purchase restriction");
 assert(admin.includes('buy_limit_type: "M"'), "sales activation must require a customer account");
 assert(admin.includes("selling_member_only"), "member-only selling state must be persisted");
-assert(admin.includes("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매를 시작하지 않았습니다."), "sales activation must fail closed when member-only policy cannot be verified");
+assert(admin.includes("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매 상태를 변경하지 않았습니다."), "sales activation must fail closed when member-only policy cannot be verified");
 assert(!admin.includes('repurchase_restriction: "T"'), "repurchase restriction remains intentionally deferred until its Cafe24 prerequisites are verified");
 assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
 assert(!admin.includes('use_naverpay: "F"'), "course product must not force Naver Pay setting");
@@ -112,6 +115,10 @@ assert(router.includes("?preview="), "public preview lesson URL missing");
 assert(router.includes("이 차시는 공개 미리보기가 아닙니다."), "locked lesson direct preview guard missing");
 assert(router.includes("contentPublished"), "course entry must require published content");
 assert(router.includes("수강 준비 중"), "entitled but unpublished course state missing");
+assert(router.includes("courseSalesState"), "explicit course sales state resolver missing");
+assert(router.includes("사전판매 구매하기"), "presale purchase CTA missing");
+assert(router.includes("판매 중단"), "paused sales CTA missing");
+assert(router.includes("기존 수강생의 수강권은 유지됩니다."), "paused sales state must preserve existing access messaging");
 assert(router.includes("renderSalesListSection"), "sales page list renderer missing");
 assert(router.includes("renderInstructorSection"), "sales page instructor section missing");
 assert(router.includes("sales-layout"), "sales page layout missing");
@@ -169,5 +176,14 @@ const courseStore = await readFile(
 );
 assert(courseStore.includes("instructor_name"), "course store must expose sales page content");
 assert(courseStore.includes("refund_policy_text"), "course store must expose refund policy content");
+assert(courseStore.includes("sales_state"), "course store must expose explicit sales state");
+
+const salesStateMigration = await readFile(
+  new URL("../worker/migrations/0018_course_sales_state.sql", import.meta.url),
+  "utf8"
+);
+assert(salesStateMigration.includes("'preparing','presale','selling','paused'"), "course sales state enum migration missing");
+assert(salesStateMigration.includes("WHEN sales_enabled=1 THEN 'selling'"), "existing active sales state backfill missing");
+assert(salesStateMigration.includes("cafe24_sync_status IN ('paused_hidden','e2e_hidden')"), "paused sales state backfill missing");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
