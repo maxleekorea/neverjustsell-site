@@ -32,6 +32,22 @@ const production = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
   "utf8"
 );
+const programSchema = await readFile(
+  new URL("../worker/src/program-schema.js", import.meta.url),
+  "utf8"
+);
+const communitySchema = await readFile(
+  new URL("../community/src/program-schema.js", import.meta.url),
+  "utf8"
+);
+const communityRuntime = await readFile(
+  new URL("../community/src/index.js", import.meta.url),
+  "utf8"
+);
+const workerDeploy = await readFile(
+  new URL("../worker/deploy.mjs", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -88,11 +104,21 @@ assert(host.includes("모더레이션 권한만 있습니다"), "moderator/host 
 assert(production.includes('import programHostApp from "./program-host.js"'), "production program host import missing");
 assert(production.includes('url.pathname === "/program-host"'), "production program host route missing");
 
-assert(communityDeploy.includes('"d1"'), "community deploy must apply D1 migrations");
-assert(communityDeploy.includes('"neverjustsell-community"'), "community deploy must target community D1");
-assert(
-  communityDeploy.indexOf('"migrations"') < communityDeploy.lastIndexOf('"deploy"'),
-  "community migrations must run before Worker deploy"
-);
+assert(programSchema.includes("0027_program_community_foundation.sql"), "runtime reconciler must track program foundation migration");
+assert(programSchema.includes("0028_program_operations.sql"), "runtime reconciler must track program operations migration");
+assert(programSchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime program migrations must be recorded for Wrangler compatibility");
+assert(programSchema.includes("PRAGMA table_info"), "runtime program reconciler must detect existing columns");
+assert(production.includes("ensureProgramSchema"), "migration health must reconcile program schema");
+assert(host.includes("ensureProgramSchema"), "program host must self-heal schema before access");
+
+assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community migration tracking missing");
+assert(communitySchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime community migration must be recorded for Wrangler compatibility");
+assert(communitySchema.includes("PRAGMA table_info"), "community schema reconciler must detect existing post columns");
+assert(communityRuntime.includes("ensureCommunityProgramSchema"), "community DB health must reconcile program spaces");
+
+assert(workerDeploy.includes("migration-health"), "course deploy must reconcile schema through runtime binding");
+assert(!workerDeploy.includes('"migrations",\n    "apply"'), "course deploy must not depend on D1 management API");
+assert(communityDeploy.includes("/auth/db-health"), "community deploy must reconcile schema through runtime binding");
+assert(!communityDeploy.includes('"d1"'), "community deploy must not depend on D1 management API");
 
 console.log("PASS: creator-reader program and community operating scaffold");
