@@ -169,7 +169,7 @@ async function manualAccessDecision(env, memberId, courseId) {
 async function coursePurchaseSnapshot(env, courseId) {
   if (!env.COURSE_DB || !courseId) return null;
   return env.COURSE_DB.prepare(
-    "SELECT id,price_krw,access_duration_days,refund_policy_version,refund_policy_text,presale_opens_at FROM courses WHERE id=? LIMIT 1"
+    "SELECT id,price_krw,access_duration_days,refund_policy_version,refund_policy_text FROM courses WHERE id=? LIMIT 1"
   ).bind(courseId).first();
 }
 
