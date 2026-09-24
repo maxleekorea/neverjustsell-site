@@ -2,6 +2,7 @@ import { listActiveCreators, assertActiveCreator } from "./roles.js";
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
 import { isPaymentConfirmed, isItemRevoked } from "./access.js";
 import { COMMERCE_ORIGIN, CAFE24_ADMIN_SCOPES } from "./config.js";
+import { getProgramCommunityProjection } from "./program-access.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
 const DEFAULT_PAID_ACCESS_DAYS = 180;
@@ -1410,16 +1411,33 @@ async function inspectPaymentE2EOrder(orderId, env) {
     "SELECT member_id,status,source_order_id,source_order_item_code,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE course_id='system-check-paid-course' AND product_no=13 AND source_order_id=? ORDER BY updated_at DESC LIMIT 1"
   ).bind(normalized).first();
 
+  const memberId = order.member_id || null;
+  let programEnrollment = null;
+  let programSyncError = null;
+  if (memberId) {
+    try {
+      await getProgramCommunityProjection(env, memberId, { syncPurchases: true });
+      programEnrollment = await env.COURSE_DB.prepare(
+        "SELECT run_id,member_id,status,source,source_order_id,source_order_item_code,joined_at,started_at,completed_at,updated_at " +
+        "FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+      ).bind(String(memberId)).first();
+    } catch (error) {
+      programSyncError = String(error?.message || error);
+    }
+  }
+
   return {
     order_id: normalized,
-    member_id: order.member_id || null,
+    member_id: memberId,
     paid,
     revoked,
     order_status: item.order_status || order.order_status || "",
     payment_status: item.payment_status || order.payment_status || "",
     canceled: order.canceled || "",
     refund_status: order.refund_status || "",
-    entitlement: entitlement || null
+    entitlement: entitlement || null,
+    program_enrollment: programEnrollment || null,
+    program_sync_error: programSyncError
   };
 }
 
@@ -1444,13 +1462,15 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
       ? "2. 테스트 상품을 회원 계정으로 1,000원 결제한 뒤 주문번호를 입력하세요."
       : !inspection.paid
         ? "3. Cafe24에서 결제 완료 상태인지 확인하세요."
-        : inspection.entitlement?.status !== "active" && !inspection.revoked
-          ? "4. 테스트 강의를 열어 구매 수강권 생성을 확인하세요."
-          : !inspection.revoked
-            ? "5. 유료 차시를 재생한 뒤 Cafe24에서 주문을 취소·환불하고 다시 상태를 확인하세요."
-            : inspection.entitlement?.status === "revoked"
-              ? "6. 결제·수강권·회수 흐름 검증 완료. 테스트 판매를 종료하세요."
-              : "6. 취소·환불은 감지됐습니다. 수강권 revoked 반영을 다시 확인하세요.";
+        : inspection.program_enrollment?.status !== "active" && !inspection.revoked
+          ? "4. Program 참가권 동기화를 다시 확인하세요."
+          : inspection.entitlement?.status !== "active" && !inspection.revoked
+            ? "5. 테스트 강의를 열어 구매 수강권 생성을 확인하세요."
+            : !inspection.revoked
+              ? "6. 커뮤니티에 한 번 로그인해 회차 Space 접근권한을 생성한 뒤, 유료 차시 재생과 취소·환불까지 확인하세요."
+              : inspection.entitlement?.status === "revoked" && inspection.program_enrollment?.status === "withdrawn"
+                ? "7. 결제·강의 수강권·프로그램 참가권 회수까지 검증 완료. 테스트 판매를 종료하세요."
+                : "7. 취소·환불은 감지됐습니다. 강의 revoked와 Program withdrawn 반영을 다시 확인하세요.";
 
   return "<section class=\"card\"><div class=\"sectionhead\"><div><h2>결제 E2E 테스트</h2>" +
     "<p class=\"hint\">실제 강의와 분리된 product_no=13 테스트 fixture입니다. 테스트 주문 금액은 " + price.toLocaleString("ko-KR") + "원입니다.</p></div>" +
@@ -1460,9 +1480,10 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
     "<div class=\"ready-row\"><span>Cafe24 테스트 상품</span><span class=\"ready-ok\">#" + productNo + "</span></div>" +
     "<div class=\"ready-row\"><span>Vimeo 테스트 영상</span><span class=\"ready-ok\">2개 연결</span></div>" +
     "<div class=\"ready-row\"><span>D1 수강권 기록</span><span class=\"ready-ok\">active / revoked 검증</span></div>" +
+    "<div class=\"ready-row\"><span>Program 참가권</span><span class=\"ready-ok\">active / withdrawn 검증</span></div>"" +
     "</div>" +
     "<details class=\"advanced-note\" style=\"margin:14px 0\"><summary style=\"cursor:pointer;font-weight:700\">전체 E2E 순서 보기</summary>" +
-    "<ol class=\"hint\" style=\"line-height:1.8;margin-bottom:0\"><li>테스트 판매 시작</li><li>Cafe24 회원 계정으로 1,000원 실제 주문</li><li>주문번호 입력 후 결제 완료·D1 수강권 active 확인</li><li>강의실 진입 후 유료 차시 재생 및 진도 기록 확인</li><li>Cafe24에서 주문 취소 또는 환불 처리</li><li>같은 주문번호로 revoked 감지와 수강권 회수 확인</li><li>테스트 판매 종료</li></ol></details>" +
+    "<ol class=\"hint\" style=\"line-height:1.8;margin-bottom:0\"><li>테스트 판매 시작</li><li>Cafe24 회원 계정으로 1,000원 실제 주문</li><li>주문번호 입력 후 결제 완료·Program 참가권 active 확인</li><li>강의실 진입 후 D1 수강권 active 및 유료 차시 진도 확인</li><li>같은 회원으로 커뮤니티 로그인 후 Program Run Space 접근권한 생성</li><li>Cafe24에서 주문 취소 또는 환불 처리</li><li>같은 주문번호로 강의 revoked·Program withdrawn 확인</li><li>테스트 판매 종료</li></ol></details>" +
     (active
       ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
         "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
@@ -1482,6 +1503,8 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
         "<div class=\"ready-row\"><span>결제 확인</span><span class=\"" + (inspection.paid ? "ready-ok" : "ready-wait") + "\">" + (inspection.paid ? "완료" : "미확인") + "</span></div>" +
         "<div class=\"ready-row\"><span>취소·환불</span><span class=\"" + (inspection.revoked ? "ready-wait" : "ready-ok") + "\">" + (inspection.revoked ? "감지됨" : "없음") + "</span></div>" +
         "<div class=\"ready-row\"><span>D1 수강권</span><span class=\"" + (inspection.entitlement?.status === "active" ? "ready-ok" : inspection.entitlement?.status === "revoked" ? "ready-wait" : "") + "\">" + escapeHtml(inspection.entitlement?.status || "기록 없음") + "</span></div>" +
+        "<div class=\"ready-row\"><span>Program 참가권</span><span class=\"" + (inspection.program_enrollment?.status === "active" ? "ready-ok" : inspection.program_enrollment?.status === "withdrawn" ? "ready-wait" : "") + "\">" + escapeHtml(inspection.program_enrollment?.status || "기록 없음") + "</span></div>" +
+        (inspection.program_sync_error ? "<div class=\"ready-row\"><span>Program 동기화</span><span class=\"ready-wait\">" + escapeHtml(inspection.program_sync_error) + "</span></div>" : "") +
         "<div class=\"ready-row\"><span>주문 상태</span><span>" + escapeHtml(inspection.order_status || "-") + "</span></div>" +
         "<div class=\"ready-row\"><span>결제 상태</span><span>" + escapeHtml(inspection.payment_status || "-") + "</span></div>" +
         "</div>"
