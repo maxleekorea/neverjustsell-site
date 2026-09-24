@@ -272,6 +272,37 @@ async function listAllVimeoVideos(env) {
   })).filter((video) => video.vimeo_id);
 }
 
+async function syncCourseVimeoMetadata(env, courseId) {
+  if (!env.VIMEO_ACCESS_TOKEN || !courseId) return { synced: 0, missing: [] };
+  const result = await env.COURSE_DB.prepare(
+    "SELECT id,vimeo_id,status FROM lessons WHERE course_id=? AND status!='archived' AND vimeo_id IS NOT NULL"
+  ).bind(courseId).all();
+  const lessons = Array.isArray(result.results) ? result.results : [];
+  if (!lessons.length) return { synced: 0, missing: [] };
+
+  const library = await listAllVimeoVideos(env);
+  const byId = new Map(library.map((video) => [String(video.vimeo_id), video]));
+  const statements = [];
+  const missing = [];
+  for (const lesson of lessons) {
+    const video = byId.get(String(lesson.vimeo_id));
+    if (!video) {
+      missing.push(String(lesson.vimeo_id));
+      continue;
+    }
+    const status = video.status === "complete"
+      ? (String(lesson.status) === "published" ? "published" : "ready")
+      : "processing";
+    statements.push(
+      env.COURSE_DB.prepare(
+        "UPDATE lessons SET duration_seconds=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+      ).bind(video.duration_seconds || null, status, lesson.id)
+    );
+  }
+  if (statements.length) await env.COURSE_DB.batch(statements);
+  return { synced: statements.length, missing };
+}
+
 function basicVideoNumber(name) {
   const match = String(name || "").match(/^유통기본_(\d{2})_/);
   return match ? Number(match[1]) : null;
@@ -460,6 +491,91 @@ function salesStateLabel(value) {
     paused: "판매 중단"
   };
   return labels[String(value || "")] || "준비 중";
+}
+
+function courseReadiness(course) {
+  const lessons = Array.isArray(course?.lessons) ? course.lessons : [];
+  const paid = course?.access_type === "paid";
+  const paidLessons = lessons.filter((lesson, index) => index > 0 && Number(lesson.is_preview || 0) !== 1);
+  const allVideosLinked = lessons.length > 0 && lessons.every((lesson) => Boolean(lesson.vimeo_id));
+  const allVideosReady = allVideosLinked && lessons.every((lesson) =>
+    ["ready", "published"].includes(String(lesson.status || ""))
+  );
+  const allDurationsKnown = allVideosLinked && lessons.every((lesson) => Number(lesson.duration_seconds || 0) > 0);
+  const basicReady = Boolean(String(course?.title || "").trim()) &&
+    Boolean(String(course?.summary || "").trim()) &&
+    Boolean(String(course?.owner_member_id || "").trim());
+  const priceReady = !paid || Number(course?.price_krw || 0) > 0;
+  const salesPageReady = !paid || [
+    course?.instructor_name,
+    course?.instructor_bio,
+    course?.target_audience,
+    course?.learning_outcomes
+  ].every((value) => Boolean(String(value || "").trim()));
+  const policyReady = !paid || (
+    Number(course?.access_duration_days || 0) > 0 &&
+    Boolean(String(course?.refund_policy_version || "").trim()) &&
+    Boolean(String(course?.access_info || "").trim()) &&
+    Boolean(String(course?.refund_policy_text || "").trim())
+  );
+  const cafe24Ready = !paid || Number(course?.cafe24_product_no || 0) > 0;
+  const curriculumReady = lessons.length > 0 && (!paid || paidLessons.length > 0);
+  const previewReady = !paid || (
+    lessons.length > 0 &&
+    Boolean(lessons[0]?.vimeo_id) &&
+    ["ready", "published"].includes(String(lessons[0]?.status || ""))
+  );
+
+  const items = [
+    { key: "basic", label: "기본 정보", ok: basicReady, required: true, tab: "basic" },
+    { key: "price", label: "판매가", ok: priceReady, required: paid, tab: "basic" },
+    { key: "curriculum", label: paid ? "무료 1차시 + 유료 차시" : "커리큘럼", ok: curriculumReady, required: true, tab: "content" },
+    { key: "videos", label: "모든 차시 영상 연결", ok: allVideosLinked, required: true, tab: "content" },
+    { key: "processing", label: "Vimeo 처리 완료", ok: allVideosReady, required: true, tab: "content" },
+    { key: "duration", label: "영상 길이 확인", ok: allDurationsKnown, required: paid, tab: "content" },
+    { key: "preview", label: "첫 차시 무료 미리보기 준비", ok: previewReady, required: paid, tab: "content" },
+    { key: "landing", label: "판매 페이지", ok: salesPageReady, required: paid, tab: "landing" },
+    { key: "policy", label: "수강·환불 안내", ok: policyReady, required: paid, tab: "sales" },
+    { key: "cafe24", label: "Cafe24 상품 연결", ok: cafe24Ready, required: paid, tab: "sales" }
+  ];
+
+  const publishBlockers = items.filter((item) => item.required && !item.ok);
+  const presaleBlockers = items.filter((item) =>
+    item.required &&
+    !item.ok &&
+    ["basic", "price", "landing", "policy", "cafe24"].includes(item.key)
+  );
+  return { items, publishBlockers, presaleBlockers };
+}
+
+function renderCourseReadiness(course) {
+  const readiness = courseReadiness(course);
+  const base = "/course-admin?course=" + encodeURIComponent(course.id);
+  const rows = readiness.items
+    .filter((item) => item.required)
+    .map((item) =>
+      "<div class=\"ready-row\"><span>" + escapeHtml(item.label) + "</span>" +
+      (item.ok
+        ? "<span class=\"ready-ok\">완료</span>"
+        : "<a class=\"ready-wait\" href=\"" + base + "&tab=" + item.tab + "\">확인 필요 →</a>") +
+      "</div>"
+    ).join("");
+  const summary = readiness.publishBlockers.length === 0
+    ? "<p class=\"ok\"><strong>게시 준비 완료</strong> · 정식 판매 전 수강생 관점 미리보기만 확인하면 됩니다.</p>"
+    : "<p class=\"hint\"><strong>게시 전 점검</strong> · 아래 " + readiness.publishBlockers.length + "개 항목을 완료하면 게시할 수 있습니다.</p>";
+  return "<div class=\"course-settings\"><h3>출시 점검</h3>" + summary +
+    "<div class=\"readiness\">" + rows + "</div></div>";
+}
+
+async function loadCourseForReadiness(env, courseId) {
+  const course = await env.COURSE_DB.prepare(
+    "SELECT id,slug,title,summary,access_type,price_krw,owner_member_id,cafe24_product_no,access_duration_days,refund_policy_version,access_info,refund_policy_text,instructor_name,instructor_bio,target_audience,learning_outcomes,status FROM courses WHERE id=? LIMIT 1"
+  ).bind(courseId).first();
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  const result = await env.COURSE_DB.prepare(
+    "SELECT id,vimeo_id,duration_seconds,status,is_preview,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+  ).bind(courseId).all();
+  return { ...course, lessons: Array.isArray(result.results) ? result.results : [] };
 }
 
 function commercePanel(course) {
@@ -1041,11 +1157,13 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
     modules.map(renderGroup).join("");
 
   const published = course.status === "published" && Number(course.visible) === 1;
+  const readiness = courseReadiness(course);
   const statusForm =
     "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:0\">" +
     "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
     "<input type=\"hidden\" name=\"action\" value=\"" + (published ? "unpublish" : "publish") + "\">" +
-    "<button class=\"secondary\" type=\"submit\">" + (published ? "게시 중지" : "강의 게시") + "</button></form>";
+    "<button class=\"secondary\" type=\"submit\"" + (!published && readiness.publishBlockers.length ? " disabled title=\"출시 점검 항목을 먼저 완료하세요.\"" : "") + ">" +
+    (published ? "게시 중지" : "강의 게시") + "</button></form>";
 
   const tab = ["basic", "content", "landing", "sales", "students", "advanced"].includes(activeTab) ? activeTab : "basic";
   const base = "/course-admin?course=" + encodeURIComponent(course.id);
@@ -1054,15 +1172,11 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
   };
 
   const missingVideo = lessons.some((lesson) => !lesson.vimeo_id);
-  const basicReady = Boolean(String(course.summary || "").trim()) &&
-    Boolean(String(course.owner_member_id || "").trim()) &&
-    (course.access_type !== "paid" || price > 0);
-  const salesPageReady = course.access_type !== "paid" || [
-    course.instructor_name,
-    course.instructor_bio,
-    course.target_audience,
-    course.learning_outcomes
-  ].every((value) => Boolean(String(value || "").trim()));
+  const basicReady = readiness.items.find((item) => item.key === "basic")?.ok &&
+    readiness.items.find((item) => item.key === "price")?.ok;
+  const salesPageReady = readiness.items.find((item) => item.key === "landing")?.ok !== false;
+  const videoProcessingReady = readiness.items.find((item) => item.key === "processing")?.ok !== false;
+  const durationReady = readiness.items.find((item) => item.key === "duration")?.ok !== false;
   const salesState = normalizedSalesState(course);
   let nextTab = "basic";
   let nextLabel = "기본 정보를 확인하세요";
@@ -1077,6 +1191,12 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
   } else if (missingVideo) {
     nextTab = "content";
     nextLabel = "영상이 없는 차시를 연결하세요";
+  } else if (!videoProcessingReady) {
+    nextTab = "content";
+    nextLabel = "Vimeo 영상 처리가 끝났는지 확인하세요";
+  } else if (course.access_type === "paid" && !durationReady) {
+    nextTab = "content";
+    nextLabel = "영상 길이 정보를 확인하세요";
   } else if (course.access_type === "paid" && !salesPageReady) {
     nextTab = "landing";
     nextLabel = "판매 페이지를 작성하세요";
@@ -1154,6 +1274,7 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
     panel =
       "<div class=\"sales-summary\"><div class=\"panel\"><div class=\"sectionhead\"><div><h3>판매 설정</h3>" +
       "<p class=\"hint\">강의와 Cafe24 상품의 연결 및 판매 상태만 관리합니다.</p></div></div>" +
+      renderCourseReadiness(course) +
       (course.access_type === "paid"
         ? "<div class=\"course-settings\"><strong>기본 수강 정책</strong><div class=\"readiness\">" +
           "<div class=\"ready-row\"><span>수강기간</span><strong>결제일 기준 180일</strong></div>" +
@@ -1318,6 +1439,16 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
   } catch (error) {
     syncWarning = "강의 정보 자동 동기화 중 오류가 발생했습니다: " +
       String(error && error.message ? error.message : error);
+  }
+
+  if (selectedCourseId) {
+    try {
+      await syncCourseVimeoMetadata(env, selectedCourseId);
+    } catch (error) {
+      syncWarning += (syncWarning ? " " : "") +
+        "Vimeo 메타데이터 확인 중 오류가 발생했습니다: " +
+        String(error && error.message ? error.message : error);
+    }
   }
 
   const [courses, creators, cafe24State] = await Promise.all([
@@ -1569,6 +1700,15 @@ async function updateCafe24CourseSales(form, env) {
   if (["presale","selling"].includes(desiredState)) {
     const price = Number(course.price_krw || 0);
     if (!Number.isFinite(price) || price <= 0) throw new Error("판매가가 올바르지 않습니다.");
+
+    if (desiredState === "selling") await syncCourseVimeoMetadata(env, courseId);
+    const fullCourse = await loadCourseForReadiness(env, courseId);
+    const readiness = courseReadiness(fullCourse);
+    const blockers = desiredState === "presale" ? readiness.presaleBlockers : readiness.publishBlockers;
+    if (blockers.length) {
+      throw new Error((desiredState === "presale" ? "사전판매" : "정식 판매") +
+        " 전 확인이 필요합니다: " + blockers.map((item) => item.label).join(", "));
+    }
     if (desiredState === "selling" && course.status !== "published") {
       throw new Error("정식 판매는 강의를 먼저 게시한 뒤 시작할 수 있습니다.");
     }
@@ -2015,10 +2155,8 @@ async function reorderCurriculum(body, env) {
 async function setCourseStatus(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
   const action = String(form.get("action") || "").trim();
-  const course = await env.COURSE_DB.prepare(
-    "SELECT id,title,access_type,cafe24_product_no FROM courses WHERE id=?"
-  ).bind(courseId).first();
-  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  const existing = await env.COURSE_DB.prepare("SELECT id FROM courses WHERE id=?").bind(courseId).first();
+  if (!existing) throw new Error("강의를 찾을 수 없습니다.");
 
   if (action === "unpublish") {
     await env.COURSE_DB.prepare(
@@ -2029,27 +2167,13 @@ async function setCourseStatus(form, env) {
 
   if (action !== "publish") throw new Error("잘못된 게시 요청입니다.");
 
-  const lessons = await env.COURSE_DB.prepare(
-    "SELECT id,vimeo_id,status,is_preview FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
-  ).bind(courseId).all();
-  const rows = Array.isArray(lessons.results) ? lessons.results : [];
-  if (rows.length === 0) throw new Error("게시하려면 차시가 하나 이상 필요합니다.");
-  if (rows.some((lesson) => !lesson.vimeo_id)) {
-    throw new Error("모든 차시에 영상을 연결한 뒤 게시해 주세요.");
-  }
-  if (course.access_type === "paid") {
-    if (!(Number(course.cafe24_product_no) > 0)) {
-      throw new Error("유료 강의는 Cafe24 상품 연결 후 게시할 수 있습니다.");
-    }
-    const paidLessons = rows.filter((lesson, index) => index > 0 && Number(lesson.is_preview || 0) !== 1);
-    if (paidLessons.length === 0) {
-      throw new Error("유료 강의는 의무 무료 1차시 외에 최소 한 개의 유료 차시가 필요합니다.");
-    }
+  await syncCourseVimeoMetadata(env, courseId);
+  const course = await loadCourseForReadiness(env, courseId);
+  const readiness = courseReadiness(course);
+  if (readiness.publishBlockers.length) {
+    throw new Error("게시 전 확인이 필요합니다: " + readiness.publishBlockers.map((item) => item.label).join(", "));
   }
 
-  await env.COURSE_DB.prepare(
-    "UPDATE lessons SET status=CASE WHEN status IN ('draft','uploading','processing') THEN 'ready' ELSE status END,updated_at=CURRENT_TIMESTAMP WHERE course_id=? AND vimeo_id IS NOT NULL"
-  ).bind(courseId).run();
   await env.COURSE_DB.prepare(
     "UPDATE courses SET visible=1,status='published',updated_at=CURRENT_TIMESTAMP WHERE id=?"
   ).bind(courseId).run();
