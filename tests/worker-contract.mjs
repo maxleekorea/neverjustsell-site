@@ -31,7 +31,7 @@ assert(r.headers.get("location") === "https://classroom.neverjustsell.com/classr
 
 r = await get("https://classroom.neverjustsell.com/migration-health");
 let body = await r.json();
-assert(r.status === 200 && body.route_owner === "production-dispatch-v2", "production dispatcher health missing");
+assert(r.status === 200 && body.route_owner === "production-dispatch-v3", "production dispatcher health missing");
 assert(body.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/callback", "callback must be canonical");
 assert(body.admin_scopes.includes("mall.write_product"), "Cafe24 product write scope must be requested");
 assert(body.admin_scopes.includes("mall.write_order"), "Cafe24 order write scope must be requested");
