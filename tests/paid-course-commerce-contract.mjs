@@ -71,7 +71,7 @@ assert(admin.includes("module-drag"), "module drag handle missing");
 assert(admin.includes("data-curriculum-status"), "curriculum autosave status missing");
 assert(admin.includes("/course-admin/api/curriculum/reorder"), "curriculum reorder API route missing");
 assert(admin.includes("refreshCurriculumDisplay"), "curriculum display refresh missing");
-assert(admin.includes("무료 미리보기"), "preview status badge missing");
+assert(admin.includes("미리보기 지정"), "preview designation status badge missing");
 assert(admin.includes("영상 연결됨"), "video connection status badge missing");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
