@@ -6,7 +6,6 @@ import sessionOrdersApp from "./session-orders.js";
 import baseApp from "./index.js";
 import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
-import { promoteScheduledPresales } from "./course-store.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -132,9 +131,5 @@ export default {
     }
 
     return json({ ok: false, error: "not_found" }, { status: 404 });
-  },
-
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(promoteScheduledPresales(env));
   }
 };
