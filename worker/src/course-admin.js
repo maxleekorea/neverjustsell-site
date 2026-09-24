@@ -345,7 +345,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -441,11 +441,28 @@ function friendlyCafe24Error(error) {
   return message.length > 500 ? message.slice(0, 500) + "…" : message;
 }
 
+function normalizedSalesState(course) {
+  const state = String(course?.sales_state || "").trim();
+  if (["preparing","presale","selling","paused"].includes(state)) return state;
+  return Number(course?.sales_enabled) === 1 ? "selling" : "preparing";
+}
+
+function salesStateLabel(value) {
+  const labels = {
+    preparing: "준비 중",
+    presale: "사전판매",
+    selling: "판매 중",
+    paused: "판매 중단"
+  };
+  return labels[String(value || "")] || "준비 중";
+}
+
 function commercePanel(course) {
   if (course.access_type !== "paid") return "";
 
   const productNo = Number(course.cafe24_product_no || 0);
   const price = Number(course.price_krw || 1000);
+  const state = normalizedSalesState(course);
 
   if (!productNo) {
     const create = price > 0
@@ -455,7 +472,8 @@ function commercePanel(course) {
       : "<p class=\"hint\">판매가를 먼저 확정해 저장하면 Cafe24 상품을 생성할 수 있습니다.</p>";
 
     return "<div class=\"course-settings\"><strong>Cafe24 판매 연결</strong>" +
-      "<p class=\"hint\">상품은 처음에는 진열안함·판매안함으로 생성합니다. 강의 게시 후 판매 시작을 별도로 승인합니다.</p>" +
+      "<p><span class=\"pill\">준비 중</span></p>" +
+      "<p class=\"hint\">상품은 처음에는 진열안함·판매안함으로 생성됩니다. 연결 후 사전판매 또는 정식 판매로 전환할 수 있습니다.</p>" +
       create +
       "<details style=\"margin-top:14px\"><summary class=\"hint\" style=\"cursor:pointer\">고급 · 기존 Cafe24 상품 연결</summary>" +
       "<form method=\"post\" action=\"/course-admin/cafe24-product-link\" style=\"margin-top:10px\">" +
@@ -464,29 +482,46 @@ function commercePanel(course) {
       "<button class=\"secondary\" type=\"submit\">연결</button></div></form></details></div>";
   }
 
-  const selling = Number(course.sales_enabled) === 1;
-  const action = selling ? "pause" : "start";
-  const actionLabel = selling ? "판매 중지 · 숨김" : "판매 시작";
   const publishedReady = course.status === "published";
-  const disabledHint = !selling && !publishedReady
-    ? "<p class=\"hint\">강의를 게시하면 판매를 시작할 수 있습니다.</p>"
-    : "";
+  const stateDescription = {
+    preparing: "신규 구매를 받지 않습니다. 판매 준비 단계입니다.",
+    presale: "결제는 받지만 강의가 게시되기 전에는 구매자에게 ‘수강 준비 중’으로 표시됩니다.",
+    selling: "신규 구매와 게시된 강의 수강이 모두 가능합니다.",
+    paused: "신규 구매만 중단합니다. 기존 구매자의 수강권은 유지됩니다."
+  }[state];
+
   const readiness =
     "<div class=\"readiness\">" +
     "<div class=\"ready-row\"><span>Cafe24 상품 연결</span><span class=\"ready-ok\">완료</span></div>" +
-    "<div class=\"ready-row\"><span>강의 게시</span><span class=\"" + (publishedReady ? "ready-ok" : "ready-wait") + "\">" + (publishedReady ? "완료" : "대기") + "</span></div>" +
-    "<div class=\"ready-row\"><span>회원 전용 구매</span><span class=\"ready-ok\">판매 시작 시 자동 적용</span></div>" +
+    "<div class=\"ready-row\"><span>강의 게시</span><span class=\"" + (publishedReady ? "ready-ok" : "ready-wait") + "\">" +
+      (publishedReady ? "완료 · 정식 판매 가능" : "대기 · 사전판매만 가능") + "</span></div>" +
+    "<div class=\"ready-row\"><span>회원 전용 구매</span><span class=\"ready-ok\">구매 가능 전환 시 자동 검증</span></div>" +
+    "<div class=\"ready-row\"><span>기존 수강권</span><span class=\"ready-ok\">판매 중단과 무관하게 유지</span></div>" +
     "</div>";
 
-  return "<div class=\"course-settings\"><strong>Cafe24 판매 연결</strong>" +
-    "<p><span class=\"pill\">상품 #" + productNo + "</span><span class=\"pill\">" +
-    escapeHtml(course.cafe24_sync_status || "linked") + "</span></p>" +
+  const stateButton = function (desired, label, disabled = false) {
+    const current = state === desired;
+    return "<button class=\"" + (desired === "presale" || desired === "selling" ? "" : "secondary") +
+      "\" type=\"submit\" name=\"desired_state\" value=\"" + desired + "\"" +
+      (current || disabled ? " disabled" : "") + ">" +
+      (current ? "현재 · " : "") + label + "</button>";
+  };
+
+  return "<div class=\"course-settings\"><strong>판매 상태</strong>" +
+    "<p><span class=\"pill\">" + escapeHtml(salesStateLabel(state)) + "</span><span class=\"pill\">상품 #" + productNo + "</span></p>" +
+    "<p class=\"hint\">" + escapeHtml(stateDescription) + "</p>" +
     "<a href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">Cafe24 상품 확인 →</a>" +
-    readiness + disabledHint +
-    "<form method=\"post\" action=\"/course-admin/cafe24-product-sales\" style=\"margin-top:12px\">" +
+    readiness +
+    "<form method=\"post\" action=\"/course-admin/cafe24-product-sales\" style=\"margin-top:14px\">" +
     "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-    "<input type=\"hidden\" name=\"action\" value=\"" + action + "\">" +
-    "<button class=\"" + (selling ? "secondary" : "") + "\" type=\"submit\"" + (!selling && !publishedReady ? " disabled" : "") + ">" + actionLabel + "</button></form></div>";
+    "<div class=\"toolbar\">" +
+    stateButton("preparing", "준비 중") +
+    stateButton("presale", "사전판매") +
+    stateButton("selling", "판매 중", !publishedReady) +
+    stateButton("paused", "판매 중단") +
+    "</div></form>" +
+    (!publishedReady ? "<p class=\"hint\">정식 판매는 강의를 게시한 뒤 선택할 수 있습니다. 사전판매는 게시 전에도 가능합니다.</p>" : "") +
+    "</div>";
 }
 
 async function listCourseStudents(env, course, query = "") {
@@ -995,7 +1030,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       "<aside class=\"sales-preview\"><div class=\"hint\">판매 정보 미리보기</div><p><strong>" +
       (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</strong></p><p class=\"muted\">" +
       (Number(course.cafe24_product_no || 0) > 0 ? "Cafe24 상품 #" + Number(course.cafe24_product_no) : "Cafe24 상품 미연결") +
-      "</p><span class=\"pill\">" + (Number(course.sales_enabled) === 1 ? "판매 중" : "판매 중지") + "</span></aside></div>";
+      "</p><span class=\"pill\">" + escapeHtml(salesStateLabel(normalizedSalesState(course))) + "</span></aside></div>";
   } else if (tab === "students") {
     panel = studentMemberId
       ? studentDetailPanel(course, studentDetail)
@@ -1044,7 +1079,7 @@ function courseListTable(courses) {
       "<td>" + lessons + "개</td>" +
       "<td><span class=\"status-dot" + (live ? " live" : "") + "\"></span>" + (live ? "게시 중" : "초안") + "</td>" +
       "<td>" + (productNo ? "상품 #" + productNo : "미연결") +
-      "<div class=\"sub\">" + escapeHtml(course.cafe24_sync_status || "not_linked") + "</div></td>" +
+      "<div class=\"sub\">" + escapeHtml(salesStateLabel(normalizedSalesState(course))) + " · " + escapeHtml(course.cafe24_sync_status || "not_linked") + "</div></td>" +
       "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">관리 →</a></td></tr>";
   }).join("");
   return "<section class=\"card\"><table class=\"course-list\"><thead><tr>" +
@@ -1284,7 +1319,7 @@ function cafe24ProductNumber(payload) {
 
 async function getAdminCourse(env, courseId) {
   return env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,status FROM courses WHERE id=? LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,sales_state,status FROM courses WHERE id=? LIMIT 1"
   ).bind(courseId).first();
 }
 
@@ -1325,7 +1360,7 @@ async function createCafe24CourseProductById(courseId, env) {
 
   const salesUrl = cafe24ProductDetailUrl(productNo);
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=0,cafe24_sync_status='linked_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=0,sales_state='preparing',cafe24_sync_status='linked_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
   ).bind(productNo, salesUrl, course.id).run();
 
   return productNo;
@@ -1349,31 +1384,45 @@ async function linkExistingCafe24CourseProduct(form, env) {
   const remote = payload?.product || payload?.products?.[0] || payload?.resource || payload;
   if (Number(remote?.product_no || 0) !== productNo) throw new Error("Cafe24 상품을 확인하지 못했습니다.");
 
+  const remoteSelling = remote?.selling === "T";
+  const initialSalesState = remoteSelling
+    ? (course.status === "published" ? "selling" : "presale")
+    : "preparing";
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=?,cafe24_sync_status='linked_existing',updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    "UPDATE courses SET cafe24_product_no=?,sales_url=?,sales_enabled=?,sales_state=?,cafe24_sync_status='linked_existing',updated_at=CURRENT_TIMESTAMP WHERE id=?"
   ).bind(
     productNo,
     cafe24ProductDetailUrl(productNo),
-    remote?.selling === "T" ? 1 : 0,
+    remoteSelling ? 1 : 0,
+    initialSalesState,
     course.id
   ).run();
 }
 
 async function updateCafe24CourseSales(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
-  const action = String(form.get("action") || "").trim();
+  const legacyAction = String(form.get("action") || "").trim();
+  const requested = String(form.get("desired_state") || "").trim();
+  const desiredState = requested || (legacyAction === "start" ? "selling" : legacyAction === "pause" ? "paused" : "");
+  if (!["preparing","presale","selling","paused"].includes(desiredState)) {
+    throw new Error("잘못된 판매 상태 요청입니다.");
+  }
+
   const course = await getAdminCourse(env, courseId);
   if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  if (course.access_type !== "paid") throw new Error("유료 강의만 판매 상태를 변경할 수 있습니다.");
 
   const productNo = Number(course.cafe24_product_no || 0);
   if (!Number.isInteger(productNo) || productNo <= 0) throw new Error("Cafe24 상품 연결이 필요합니다.");
 
-  if (action === "start") {
-    if (course.status !== "published") throw new Error("강의를 먼저 게시한 뒤 판매를 시작해 주세요.");
+  if (["presale","selling"].includes(desiredState)) {
     const price = Number(course.price_krw || 0);
     if (!Number.isFinite(price) || price <= 0) throw new Error("판매가가 올바르지 않습니다.");
+    if (desiredState === "selling" && course.status !== "published") {
+      throw new Error("정식 판매는 강의를 먼저 게시한 뒤 시작할 수 있습니다.");
+    }
 
-    // Keep the product hidden while the member-only policy is applied.
+    // Never expose the product until member-only purchase policy has been applied and verified.
     await cafe24AdminRequest("/products/" + productNo, env, {
       method: "PUT",
       body: {
@@ -1395,35 +1444,30 @@ async function updateCafe24CourseSales(form, env) {
       policyProduct?.buy_limit_by_product !== "T" ||
       !["M", "N"].includes(String(policyProduct?.buy_limit_type || ""))
     ) {
-      throw new Error("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매를 시작하지 않았습니다.");
+      throw new Error("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매 상태를 변경하지 않았습니다.");
     }
 
     await cafe24AdminRequest("/products/" + productNo, env, {
       method: "PUT",
-      body: {
-        shop_no: 1,
-        display: "T",
-        selling: "T"
-      }
+      body: { shop_no: 1, display: "T", selling: "T" }
     });
+
+    const syncStatus = desiredState === "presale" ? "presale_member_only" : "selling_member_only";
     await env.COURSE_DB.prepare(
-      "UPDATE courses SET sales_enabled=1,cafe24_sync_status='selling_member_only',sales_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-    ).bind(cafe24ProductDetailUrl(productNo), course.id).run();
-    return;
+      "UPDATE courses SET sales_enabled=1,sales_state=?,cafe24_sync_status=?,sales_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    ).bind(desiredState, syncStatus, cafe24ProductDetailUrl(productNo), course.id).run();
+    return salesStateLabel(desiredState);
   }
 
-  if (action === "pause") {
-    await cafe24AdminRequest("/products/" + productNo, env, {
-      method: "PUT",
-      body: { shop_no: 1, display: "F", selling: "F" }
-    });
-    await env.COURSE_DB.prepare(
-      "UPDATE courses SET sales_enabled=0,cafe24_sync_status='paused_hidden',updated_at=CURRENT_TIMESTAMP WHERE id=?"
-    ).bind(course.id).run();
-    return;
-  }
-
-  throw new Error("잘못된 판매 상태 요청입니다.");
+  await cafe24AdminRequest("/products/" + productNo, env, {
+    method: "PUT",
+    body: { shop_no: 1, display: "F", selling: "F" }
+  });
+  const syncStatus = desiredState === "paused" ? "paused_hidden" : "preparing_hidden";
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET sales_enabled=0,sales_state=?,cafe24_sync_status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(desiredState, syncStatus, course.id).run();
+  return salesStateLabel(desiredState);
 }
 
 function kstToday() {
@@ -2298,8 +2342,8 @@ export default {
       const courseId = String(form.get("course_id") || "").trim();
       const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=sales";
       try {
-        await updateCafe24CourseSales(form, env);
-        return redirect(base + "&message=" + encodeURIComponent("Cafe24 판매 상태를 반영했습니다."));
+        const stateLabel = await updateCafe24CourseSales(form, env);
+        return redirect(base + "&message=" + encodeURIComponent("판매 상태를 ‘" + stateLabel + "’으로 변경했습니다."));
       } catch (error) {
         return redirect(base + "&error=" + encodeURIComponent(friendlyCafe24Error(error)));
       }
