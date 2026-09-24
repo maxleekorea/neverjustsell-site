@@ -80,7 +80,7 @@ function html(body, init = {}) {
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https:; frame-src https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   );
   return new Response(body, { ...init, headers });
 }
@@ -573,9 +573,47 @@ async function loadCourseForReadiness(env, courseId) {
   ).bind(courseId).first();
   if (!course) throw new Error("강의를 찾을 수 없습니다.");
   const result = await env.COURSE_DB.prepare(
-    "SELECT id,vimeo_id,duration_seconds,status,is_preview,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    "SELECT id,title,description,vimeo_id,duration_seconds,status,is_preview,sort_order FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
   ).bind(courseId).all();
   return { ...course, lessons: Array.isArray(result.results) ? result.results : [] };
+}
+
+function adminStudentPreviewPage(course, lessonNumber = 1) {
+  const lessons = Array.isArray(course.lessons) ? course.lessons : [];
+  const requested = Number(lessonNumber || 1);
+  const index = Number.isInteger(requested) && requested >= 1 && requested <= lessons.length ? requested - 1 : 0;
+  const lesson = lessons[index] || null;
+  const price = Number(course.price_krw || 0);
+  const rows = lessons.map((item, lessonIndex) => {
+    const selected = lessonIndex === index;
+    const preview = course.access_type === "paid" && lessonIndex === 0;
+    return "<a href=\"/course-admin/preview?course=" + encodeURIComponent(course.id) + "&lesson=" + (lessonIndex + 1) +
+      "\" style=\"display:block;padding:12px 14px;border:1px solid " + (selected ? "#f5f5f5" : "#333") +
+      ";border-radius:10px;text-decoration:none;color:" + (selected ? "#111" : "#ddd") +
+      ";background:" + (selected ? "#f5f5f5" : "#151515") + "\"><strong>" + (lessonIndex + 1) + ". " +
+      escapeHtml(item.title || "차시") + "</strong><div style=\"font-size:12px;margin-top:5px;opacity:.7\">" +
+      (preview ? "첫 차시 무료 미리보기" : (course.access_type === "paid" ? "유료 차시" : "무료 차시")) +
+      " · " + escapeHtml(item.status || "draft") + "</div></a>";
+  }).join("");
+
+  const video = lesson && lesson.vimeo_id
+    ? "<div style=\"position:relative;aspect-ratio:16/9;background:#000;border-radius:14px;overflow:hidden;margin-top:18px\"><iframe src=\"https://player.vimeo.com/video/" +
+      encodeURIComponent(lesson.vimeo_id) + "?dnt=1\" style=\"position:absolute;inset:0;width:100%;height:100%;border:0\" allow=\"autoplay; fullscreen; picture-in-picture\" allowfullscreen></iframe></div>"
+    : "<div style=\"padding:50px 20px;margin-top:18px;border:1px dashed #444;border-radius:14px;color:#999;text-align:center\">영상이 연결되지 않았습니다.</div>";
+
+  return "<!doctype html><html lang=\"ko\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>" +
+    escapeHtml(course.title) + " · 수강생 화면 미리보기</title><style>*{box-sizing:border-box}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,'Noto Sans KR',sans-serif}a{color:inherit}.wrap{width:min(1100px,calc(100% - 28px));margin:0 auto;padding:26px 0 60px}.notice{padding:12px 14px;border:1px solid #4b5563;border-radius:10px;background:#111827;color:#d1d5db;font-size:13px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:18px 0 28px}.back{font-size:13px;color:#bbb}.meta{color:#999;font-size:13px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px}.main,.side{background:#151515;border:1px solid #292929;border-radius:16px;padding:22px}.side{display:grid;gap:9px;height:max-content}.desc{color:#aaa;line-height:1.65}.lesson-desc{color:#aaa;line-height:1.6;margin-top:8px}@media(max-width:780px){.layout{grid-template-columns:1fr}}</style></head><body><main class=\"wrap\">" +
+    "<div class=\"notice\"><strong>관리자 전용 수강생 화면 미리보기</strong> · 게시·판매 상태와 무관하게 연결된 영상을 확인합니다. 실제 구매 권한 검증은 E2E 테스트에서 별도로 확인합니다.</div>" +
+    "<div class=\"top\"><a class=\"back\" href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">← 강의 관리로</a><span class=\"meta\">" +
+    (course.access_type === "paid" ? (price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 미정") : "무료") + " · " + lessons.length + "개 차시</span></div>" +
+    "<div class=\"layout\"><section class=\"main\"><div style=\"font-size:12px;color:#888\">" + escapeHtml(course.title) + "</div><h1 style=\"margin:8px 0 10px\">" +
+    escapeHtml(lesson?.title || course.title) + "</h1>" +
+    (lesson?.description ? "<p class=\"lesson-desc\">" + escapeHtml(lesson.description) + "</p>" : "") + video +
+    "</section><aside class=\"side\"><strong>커리큘럼</strong>" + rows + "</aside></div>" +
+    "<section class=\"main\" style=\"margin-top:22px\"><h2 style=\"margin-top:0\">강의 정보</h2><p class=\"desc\">" + escapeHtml(course.summary || "") + "</p>" +
+    (course.instructor_name ? "<p class=\"desc\"><strong>강사</strong> · " + escapeHtml(course.instructor_name) + "</p>" : "") +
+    (course.access_info ? "<p class=\"desc\"><strong>수강 안내</strong> · " + escapeHtml(course.access_info) + "</p>" : "") +
+    "</section></main></body></html>";
 }
 
 function commercePanel(course) {
@@ -1259,7 +1297,8 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
     panel =
       "<div class=\"panel narrow\"><div class=\"course-settings\"><div class=\"sectionhead\"><div><h3>판매 페이지</h3>" +
       "<p class=\"hint\">강의 상세 페이지에서 구매 전 고객에게 보여줄 내용을 관리합니다. 비어 있는 항목은 공개 페이지에서 숨깁니다.</p></div>" +
-      "<a class=\"action-link\" target=\"_blank\" rel=\"noreferrer\" href=\"/courses/" + encodeURIComponent(course.slug) + "\">상세 페이지 보기 →</a></div>" +
+      "<div class=\"toolbar\"><a class=\"action-link\" target=\"_blank\" rel=\"noreferrer\" href=\"/courses/" + encodeURIComponent(course.slug) + "\">판매 페이지 보기 →</a>" +
+      "<a class=\"action-link\" target=\"_blank\" rel=\"noreferrer\" href=\"/course-admin/preview?course=" + encodeURIComponent(course.id) + "\">수강생 화면 미리보기 →</a></div></div>" +
       "<form method=\"post\" action=\"/course-admin/course-sales-page\">" +
       "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
       "<label>강사명</label><input name=\"instructor_name\" maxlength=\"120\" value=\"" + escapeHtml(course.instructor_name || "") + "\" placeholder=\"예: 맥작가\">" +
@@ -2610,6 +2649,17 @@ export default {
 
     if (!env.COURSE_DB) {
       return json({ ok: false, error: "course_db_missing" }, { status: 503 });
+    }
+
+    if (url.pathname === "/course-admin/preview" && request.method === "GET") {
+      const courseId = String(url.searchParams.get("course") || "").trim();
+      try {
+        await syncCourseVimeoMetadata(env, courseId);
+        const course = await loadCourseForReadiness(env, courseId);
+        return html(adminStudentPreviewPage(course, Number(url.searchParams.get("lesson") || 1)));
+      } catch (error) {
+        return html(loginPage(String(error && error.message ? error.message : error)), { status: 400 });
+      }
     }
 
     if (url.pathname === "/course-admin/courses" && request.method === "POST") {
