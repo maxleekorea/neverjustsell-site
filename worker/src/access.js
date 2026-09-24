@@ -85,6 +85,7 @@ export function hasValidCourseItem(order, productNo) {
 }
 
 export function findValidCoursePurchase(orders, productNo) {
+  const candidates = [];
   for (const order of orders) {
     const items = Array.isArray(order?.items) ? order.items : [];
     for (const item of items) {
@@ -93,10 +94,16 @@ export function findValidCoursePurchase(orders, productNo) {
       if (isItemRevoked(order, item)) continue;
       const status = String(item?.order_status || order?.order_status || "");
       if (status && !status.startsWith("N")) continue;
-      return { order, item };
+      candidates.push({ order, item });
     }
   }
-  return null;
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => {
+    const ad = Date.parse(String(a?.order?.order_date || a?.order?.payment_date || ""));
+    const bd = Date.parse(String(b?.order?.order_date || b?.order?.payment_date || ""));
+    return (Number.isFinite(bd) ? bd : 0) - (Number.isFinite(ad) ? ad : 0);
+  });
+  return candidates[0];
 }
 
 export function findRevokedCoursePurchase(orders, productNo) {
@@ -508,12 +515,7 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
       member_id: session.record.member_id,
       embed: "items"
     });
-
     allOrders.push(...orders);
-    const commerceTargets = targets.filter((productNo) => !manualProductNos.has(productNo));
-    const validThisWindow = getValidPaidProductNos(orders, commerceTargets);
-    for (const productNo of validThisWindow) accessible.add(productNo);
-    if (accessible.size === targets.length) break;
   }
 
   if (env.COURSE_DB) {
@@ -524,9 +526,24 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
       const valid = findValidCoursePurchase(allOrders, productNo);
       const revoked = valid ? null : findRevokedCoursePurchase(allOrders, productNo);
       if (valid) {
-        await persistEntitlement(env, session.record.member_id, courseId, productNo, valid, true);
+        const currentPurchase = await purchaseEntitlementState(
+          env,
+          session.record.member_id,
+          courseId
+        );
+        const sameOrder =
+          currentPurchase &&
+          String(currentPurchase.source_order_id || "") === String(valid?.order?.order_id || "");
+        if (sameOrder && purchaseEntitlementExpired(currentPurchase)) {
+          await expirePurchaseEntitlement(env, currentPurchase);
+          accessible.delete(productNo);
+        } else {
+          await persistEntitlement(env, session.record.member_id, courseId, productNo, valid, true);
+          accessible.add(productNo);
+        }
       } else if (revoked) {
         await persistEntitlement(env, session.record.member_id, courseId, productNo, revoked, false);
+        accessible.delete(productNo);
       }
     }
   }
