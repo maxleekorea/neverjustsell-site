@@ -144,9 +144,18 @@ let payload = JSON.parse(r.body || "{}");
 expect(
   "classroom dispatcher and callback are canonical",
   r.response.status === 200 &&
-    payload.route_owner === "production-dispatch-v2" &&
+    payload.route_owner === "production-dispatch-v3" &&
     payload.redirect_uri === "https://classroom.neverjustsell.com/oauth/cafe24/callback",
   `status=${r.response.status} route_owner=${payload.route_owner} redirect_uri=${payload.redirect_uri}`
+);
+
+expect(
+  "program schema is reconciled in production",
+  payload.program_schema?.ok === true &&
+    Number(payload.program_schema?.program_count || 0) >= 1 &&
+    Number(payload.program_schema?.mission_template_count || 0) >= 4 &&
+    Number(payload.program_schema?.event_template_count || 0) >= 2,
+  `program_schema=${JSON.stringify(payload.program_schema || null)}`
 );
 
 r = await request("https://classroom.neverjustsell.com/site-login?return_to=https%3A%2F%2Fwww.neverjustsell.com%2Fauth%2Fcomplete");
@@ -204,6 +213,17 @@ expect(
     payload.binding_present === true &&
     payload.upstream_ok === true,
   `status=${r.response.status} binding=${payload.binding_present} upstream=${payload.upstream_status}`
+);
+
+r = await request("https://community.neverjustsell.com/auth/db-health");
+payload = JSON.parse(r.body || "{}");
+expect(
+  "community program spaces are reconciled in production",
+  r.response.status === 200 &&
+    payload.ok === true &&
+    payload.program_schema?.ok === true &&
+    Number(payload.program_schema?.pilot_space_count || 0) >= 4,
+  `status=${r.response.status} program_schema=${JSON.stringify(payload.program_schema || null)} error=${payload.error || ""}`
 );
 
 r = await request("https://www.neverjustsell.com/board/index.html");
