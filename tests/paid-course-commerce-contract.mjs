@@ -89,6 +89,13 @@ assert(admin.includes("이 차시도 추가 무료 미리보기로 공개"), "ad
 assert(admin.includes("OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요."), "mandatory preview substantive-lesson guidance missing");
 assert(admin.includes("강의가 게시된 상태에서만 공개 재생됩니다."), "preview publication warning missing");
 assert(admin.includes('tabLink("landing", "판매 페이지")'), "course sales page admin tab missing");
+assert(admin.includes('activeTab = "basic"'), "course editor must default to the basic-information step");
+assert(admin.includes('selectedTab || "basic"'), "selected real course must open on the basic-information step");
+assert(admin.includes("&tab=basic"), "course list management links must start from the basic-information step");
+assert(admin.includes("가격 미정"), "paid courses with no confirmed price must not be displayed as free");
+assert(admin.includes("salesPageReady"), "five-step flow must include sales-page readiness");
+assert(admin.includes("판매 페이지를 작성하세요"), "next-action guidance must route to the sales-page step");
+assert(admin.includes("판매가를 입력하고 기본 정보를 확인하세요"), "paid course readiness must detect an unset price");
 assert(admin.includes("updateCourseSalesPage"), "course sales page save handler missing");
 assert(admin.includes("강사 소개"), "course sales page instructor editor missing");
 assert(admin.includes("이런 분께 추천합니다"), "course sales page audience editor missing");
