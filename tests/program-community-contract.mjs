@@ -51,6 +51,9 @@ const communityRuntime = await readFile(
 const communityProductionConfig = JSON.parse(
   await readFile(new URL("../community/wrangler.production.jsonc", import.meta.url), "utf8")
 );
+const communityDefaultConfig = JSON.parse(
+  await readFile(new URL("../community/wrangler.jsonc", import.meta.url), "utf8")
+);
 const workerDeploy = await readFile(
   new URL("../worker/deploy.mjs", import.meta.url),
   "utf8"
@@ -168,6 +171,11 @@ assert(communityProductionConfig.workers_dev === false, "production community wo
 assert(
   communityProductionConfig.routes?.some((route) => route.pattern === "community.neverjustsell.com" && route.custom_domain === true),
   "production community must use the canonical custom domain"
+);
+assert(communityDefaultConfig.workers_dev === false, "default community config must not re-enable workers.dev");
+assert(
+  communityDefaultConfig.routes?.some((route) => route.pattern === "community.neverjustsell.com" && route.custom_domain === true),
+  "default community config must use the canonical custom domain"
 );
 
 assert(workerDeploy.includes("migration-health"), "course deploy must reconcile schema through runtime binding");
