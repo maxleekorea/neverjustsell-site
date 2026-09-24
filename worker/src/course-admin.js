@@ -979,8 +979,12 @@ function courseCard(course, creators, activeTab = "basic", studentRows = [], stu
     const statusBadge = "<span class=\"mini-badge\">" + escapeHtml(lesson.status || "draft") + "</span>";
     const upload = hasVideo ? "" :
       "<div class=\"upload\" data-vimeo-upload data-course-id=\"" + escapeHtml(course.id) + "\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\" data-lesson-title=\"" + escapeHtml(lesson.title) + "\">" +
-      "<label>영상 파일</label><input class=\"uploadfile\" type=\"file\" accept=\"video/*\">" +
-      "<button class=\"uploadbutton\" type=\"button\">Vimeo 업로드</button>" +
+      "<div data-vimeo-link data-course-id=\"" + escapeHtml(course.id) + "\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\">" +
+      "<button class=\"secondary existingvideoload\" type=\"button\">기존 Vimeo 영상 연결</button>" +
+      "<div class=\"existingvideolist\" style=\"margin-top:8px\"></div><div class=\"uploadstatus existingvideostatus\"></div></div>" +
+      "<div style=\"margin:14px 0;border-top:1px solid #e4e4e7\"></div>" +
+      "<label>새 영상 파일</label><input class=\"uploadfile\" type=\"file\" accept=\"video/*\">" +
+      "<button class=\"uploadbutton\" type=\"button\">새 영상 Vimeo 업로드</button>" +
       "<div class=\"uploadbar\"><span></span></div><div class=\"uploadstatus\">영상 파일을 선택하세요.</div></div>";
     const selectedOptions = moduleOptions.map(function (option) {
       if (!lesson.module_id) return option;
@@ -2133,12 +2137,22 @@ function adminClientScript() {
     "  list.textContent='Vimeo 영상 목록을 불러오는 중…';actions.innerHTML='';status.textContent='';",
     "  try{",
     "    const data=await api('/course-admin/api/vimeo/library');",
-    "    if(!data.videos.length){list.textContent='연결 가능한 Vimeo 영상이 없습니다.';return;}",
-    "    list.innerHTML=data.videos.map(function(v){return '<label class=\"libraryitem\"><input type=\"checkbox\" value=\"'+v.vimeo_id+'\"><span><strong>'+escapeHtmlClient(v.name||('Vimeo '+v.vimeo_id))+'</strong><div class=\"librarymeta\">'+formatDuration(v.duration_seconds)+' · '+escapeHtmlClient(v.status||'unknown')+'</div></span><span class=\"librarymeta\">'+v.vimeo_id+'</span></label>';}).join('');",
+    "    if(!data.videos.length){list.textContent='Vimeo에 등록된 영상이 없습니다.';return;}",
+    "    list.innerHTML=data.videos.map(function(v){const uses=(v.linked_to||[]).length;return '<label class=\"libraryitem\"><input type=\"checkbox\" value=\"'+v.vimeo_id+'\"><span><strong>'+escapeHtmlClient(v.name||('Vimeo '+v.vimeo_id))+'</strong><div class=\"librarymeta\">'+formatDuration(v.duration_seconds)+' · '+escapeHtmlClient(v.status||'unknown')+(uses?' · 기존 '+uses+'곳 사용 중':'')+'</div></span><span class=\"librarymeta\">'+v.vimeo_id+'</span></label>';}).join('');",
     "    actions.innerHTML='<button class=\"libraryimport\" type=\"button\">선택 영상 차시로 연결</button>';",
     "  }catch(error){list.textContent='';status.textContent=error.message;status.classList.add('error');}",
     "}",
     "function escapeHtmlClient(value){return String(value==null?'':value).replace(/[&<>\"]/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch];});}",
+    "async function loadExistingVideos(box){",
+    "  const list=box.querySelector('.existingvideolist');const status=box.querySelector('.existingvideostatus');list.textContent='Vimeo 영상 목록을 불러오는 중…';status.textContent='';",
+    "  try{const data=await api('/course-admin/api/vimeo/library');if(!data.videos.length){list.textContent='Vimeo에 등록된 영상이 없습니다.';return;}",
+    "    list.innerHTML='<div class=\"row\"><select class=\"existingvideoselect\">'+data.videos.map(function(v){const uses=(v.linked_to||[]).length;return '<option value=\"'+v.vimeo_id+'\">'+escapeHtmlClient(v.name||('Vimeo '+v.vimeo_id))+' · '+formatDuration(v.duration_seconds)+(uses?' · 재사용':'')+'</option>';}).join('')+'</select><button class=\"existingvideolink\" type=\"button\">이 차시에 연결</button></div>';",
+    "  }catch(error){list.textContent='';status.textContent=error.message;status.classList.add('error');}",
+    "}",
+    "async function linkExistingVideo(box){",
+    "  const select=box.querySelector('.existingvideoselect');const status=box.querySelector('.existingvideostatus');if(!select)return;status.textContent='기존 Vimeo 영상을 연결하는 중…';",
+    "  try{await api('/course-admin/api/vimeo/link',{method:'POST',body:JSON.stringify({course_id:box.dataset.courseId,lesson_id:box.dataset.lessonId,vimeo_id:select.value})});status.textContent='연결 완료';setTimeout(function(){location.reload();},500);}catch(error){status.textContent=error.message;status.classList.add('error');}",
+    "}",
     "async function importLibrary(box){",
     "  const selected=Array.from(box.querySelectorAll('.librarylist input[type=checkbox]:checked')).map(function(input){return input.value;});",
     "  const status=box.querySelector('.uploadstatus');",
@@ -2192,6 +2206,10 @@ function adminClientScript() {
     "document.addEventListener('click',function(event){",
     "  const uploadButton=event.target.closest('.uploadbutton');",
     "  if(uploadButton){const box=uploadButton.closest('[data-vimeo-upload]');if(box) startUpload(box);return;}",
+    "  const existingLoad=event.target.closest('.existingvideoload');",
+    "  if(existingLoad){const box=existingLoad.closest('[data-vimeo-link]');if(box) loadExistingVideos(box);return;}",
+    "  const existingLink=event.target.closest('.existingvideolink');",
+    "  if(existingLink){const box=existingLink.closest('[data-vimeo-link]');if(box) linkExistingVideo(box);return;}",
     "  const loadButton=event.target.closest('.libraryload');",
     "  if(loadButton){const box=loadButton.closest('[data-vimeo-library]');if(box) loadLibrary(box);return;}",
     "  const importButton=event.target.closest('.libraryimport');",
@@ -2240,17 +2258,56 @@ async function listVimeoLibrary(env) {
   if (!env.VIMEO_ACCESS_TOKEN) throw new Error("Vimeo 연결이 필요합니다.");
   const videos = await listAllVimeoVideos(env);
   const linked = await env.COURSE_DB.prepare(
-    "SELECT vimeo_id FROM lessons WHERE vimeo_id IS NOT NULL"
+    "SELECT l.vimeo_id,l.id AS lesson_id,l.title AS lesson_title,c.title AS course_title " +
+    "FROM lessons l JOIN courses c ON c.id=l.course_id WHERE l.vimeo_id IS NOT NULL AND l.status!='archived'"
   ).all();
-  const linkedIds = new Set(
-    (Array.isArray(linked.results) ? linked.results : [])
-      .map((row) => String(row.vimeo_id || ""))
-      .filter(Boolean)
-  );
+  const usage = new Map();
+  for (const row of (Array.isArray(linked.results) ? linked.results : [])) {
+    const id = String(row.vimeo_id || "");
+    if (!id) continue;
+    if (!usage.has(id)) usage.set(id, []);
+    usage.get(id).push({
+      lesson_id: row.lesson_id,
+      lesson_title: row.lesson_title,
+      course_title: row.course_title
+    });
+  }
 
   return videos
-    .filter((video) => video.vimeo_id && !linkedIds.has(video.vimeo_id))
+    .filter((video) => video.vimeo_id)
+    .map((video) => ({ ...video, linked_to: usage.get(String(video.vimeo_id)) || [] }))
     .sort((a, b) => String(a.name).localeCompare(String(b.name), "ko", { numeric: true, sensitivity: "base" }));
+}
+
+async function linkExistingVimeoVideo(body, env) {
+  const courseId = String(body && body.course_id || "").trim();
+  const lessonId = String(body && body.lesson_id || "").trim();
+  const vimeoId = String(body && body.vimeo_id || "").trim();
+  if (!courseId || !lessonId || !/^\d+$/.test(vimeoId)) {
+    throw new Error("강의, 차시, Vimeo 영상 정보가 필요합니다.");
+  }
+
+  const lesson = await env.COURSE_DB.prepare(
+    "SELECT id,course_id FROM lessons WHERE id=? AND status!='archived'"
+  ).bind(lessonId).first();
+  if (!lesson || String(lesson.course_id) !== courseId) throw new Error("차시 정보가 일치하지 않습니다.");
+
+  const videos = await listAllVimeoVideos(env);
+  const video = videos.find((item) => String(item.vimeo_id || "") === vimeoId);
+  if (!video) throw new Error("현재 Vimeo 계정에서 영상을 찾을 수 없습니다.");
+
+  const status = video.status === "complete" ? "ready" : "processing";
+  await env.COURSE_DB.prepare(
+    "UPDATE lessons SET vimeo_id=?,duration_seconds=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(vimeoId, video.duration_seconds || null, status, lessonId).run();
+
+  return {
+    lesson_id: lessonId,
+    vimeo_id: vimeoId,
+    status,
+    duration_seconds: video.duration_seconds || null,
+    reused: true
+  };
 }
 
 async function importVimeoLibrary(body, env) {
@@ -2267,7 +2324,7 @@ async function importVimeoLibrary(body, env) {
   const byId = new Map(library.map((video) => [video.vimeo_id, video]));
   const selected = requestedIds.map((id) => byId.get(id)).filter(Boolean);
   if (selected.length !== requestedIds.length) {
-    throw new Error("선택한 영상 중 이미 연결됐거나 현재 계정에서 확인할 수 없는 영상이 있습니다.");
+    throw new Error("선택한 영상 중 현재 Vimeo 계정에서 확인할 수 없는 영상이 있습니다.");
   }
 
   const orderRow = await env.COURSE_DB.prepare(
@@ -2411,7 +2468,7 @@ export default {
         url.searchParams.get("message") || "",
         url.searchParams.get("error") || "",
         url.searchParams.get("course") || "",
-        url.searchParams.get("tab") || "content",
+        url.searchParams.get("tab") || "basic",
         url.searchParams.get("e2e_order") || "",
         url.searchParams.get("student_q") || "",
         url.searchParams.get("student") || ""
@@ -2602,6 +2659,15 @@ export default {
         return json({ ok: true, videos: await listVimeoLibrary(env) });
       } catch (error) {
         return json({ ok: false, error: "vimeo_library_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/vimeo/link" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        return json({ ok: true, ...(await linkExistingVimeoVideo(await readJson(request), env)) });
+      } catch (error) {
+        return json({ ok: false, error: "vimeo_link_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
       }
     }
 
