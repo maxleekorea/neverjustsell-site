@@ -106,7 +106,7 @@ assert(admin.includes("suggested_refund_krw"), "suggested refund amount calculat
 assert(admin.includes("Math.min(duration, watched)"), "refund usage must cap repeated watch time at lesson duration");
 assert(admin.includes("index > 0 && Number(row.is_preview || 0) !== 1"), "mandatory and additional previews must be excluded from refund usage");
 assert(admin.includes("최소 한 개의 유료 차시가 필요합니다."), "paid course must retain paid content after mandatory preview");
-assert(admin.includes('accessType === "paid" ? 180 : null'), "new paid VOD default duration must be 180 days");
+assert(admin.includes("DEFAULT_PAID_ACCESS_DAYS = 180"), "new paid VOD default duration must be 180 days");
 assert(admin.includes('"fair-trust-v1.0"'), "new paid VOD policy version default missing");
 assert(!admin.includes("|| items[0] || null"), "student detail must not infer an unrelated order item");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
@@ -190,6 +190,14 @@ assert(access.includes("policy_version"), "policy version snapshot persistence m
 assert(access.includes("refund_policy_snapshot"), "refund policy text snapshot persistence missing");
 assert(access.includes("access_duration_days_snapshot"), "access duration snapshot persistence missing");
 assert(access.includes("payment_amount"), "Cafe24 item payment amount snapshot source missing");
+assert(access.includes("purchaseAccessPeriod"), "purchase-date access period calculation missing");
+assert(access.includes("days - 1"), "180-day access period must be inclusive from purchase date");
+assert(access.includes("purchaseEntitlementExpired"), "purchase entitlement expiry check missing");
+assert(access.includes("expirePurchaseEntitlement"), "purchase entitlement expiry persistence missing");
+assert(access.includes('"구매 수강기간 만료"'), "purchase expiry event reason missing");
+assert(access.includes("findValidCoursePurchase"), "latest valid repurchase resolution missing");
+assert(access.includes("candidates.sort"), "valid purchases must prefer the latest order");
+
 
 const entitlementEvents = await readFile(
   new URL("../worker/migrations/0015_course_entitlement_events.sql", import.meta.url),
@@ -274,6 +282,13 @@ assert(generalVodPolicyMigration.includes("access_duration_days=180"), "real pai
 assert(generalVodPolicyMigration.includes("fair-trust-v1.0"), "real paid courses must use Fair-trust policy v1");
 assert(generalVodPolicyMigration.includes("paid-naver-search-algorithm"), "first real paid course policy migration missing");
 assert(generalVodPolicyMigration.includes("paid-naver-keyword-strategy"), "second real paid course policy migration missing");
+
+const simpleAccessMigration = await readFile(
+  new URL("../worker/migrations/0023_simple_purchase_date_access.sql", import.meta.url),
+  "utf8"
+);
+assert(simpleAccessMigration.includes("결제일 기준 180일"), "real paid courses must explain simple purchase-date access period");
+
 
 const productionWorker = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
