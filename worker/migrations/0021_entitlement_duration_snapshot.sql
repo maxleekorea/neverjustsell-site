@@ -1,0 +1,1 @@
+ALTER TABLE course_entitlements ADD COLUMN access_duration_days_snapshot INTEGER;
