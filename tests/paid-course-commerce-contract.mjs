@@ -72,6 +72,10 @@ assert(admin.includes("사전판매") && admin.includes("전 확인이 필요합
 assert(!admin.includes("status=CASE WHEN status IN ('draft','uploading','processing') THEN 'ready'"), "publishing must not force processing videos to ready");
 assert(admin.includes("짧은 사전판매가 필요하면"), "manual short-presale guidance missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
+assert(admin.includes("현재 다음 단계"), "payment E2E must guide the operator to the next action");
+assert(admin.includes("전체 E2E 순서 보기"), "payment E2E must expose the complete verification sequence");
+assert(admin.includes("유료 차시 재생 및 진도 기록 확인"), "payment E2E must verify learner progress before refund");
+assert(admin.includes("revoked 감지와 수강권 회수 확인"), "payment E2E must verify entitlement revocation after refund");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
 assert(admin.includes("inspectPaymentE2EOrder"), "order-level E2E inspector missing");
 assert(admin.includes("source_order_id=?"), "E2E inspector must join D1 entitlement by source order");
