@@ -64,6 +64,10 @@ const communityAccess = await readFile(
   new URL("../community/src/program-access.js", import.meta.url),
   "utf8"
 );
+const admin = await readFile(
+  new URL("../worker/src/course-admin.js", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -148,6 +152,10 @@ assert(communityAccess.includes("program_completed"), "alumni space must require
 assert(communityAccess.includes("access_status='revoked'"), "stale projected space access must be revoked");
 assert(communityAccess.includes("moderation_role"), "creator/moderator projection missing");
 assert(communityRuntime.includes("syncMemberProgramSpaces"), "community login must sync program space access");
+
+assert(admin.includes("program_enrollment"), "payment E2E inspection must expose Program enrollment");
+assert(admin.includes("Program 참가권"), "payment E2E admin must show Program enrollment state");
+assert(admin.includes("withdrawn"), "payment E2E must verify Program access withdrawal after refund");
 
 assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community migration tracking missing");
 assert(communitySchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime community migration must be recorded for Wrangler compatibility");
