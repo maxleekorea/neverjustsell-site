@@ -1,6 +1,7 @@
 // Dedicated Cloudflare Worker entry for the NEVER JUST SELL community.
 import { onRequest } from "../functions/[[path]].js";
 import { ensureCommunityProgramSchema } from "./program-schema.js";
+import { syncMemberProgramSpaces } from "./program-access.js";
 
 const SESSION_COOKIE = "njs_community_session";
 const SESSION_TTL_SECONDS = 2 * 60 * 60;
@@ -218,6 +219,12 @@ async function handleBoundAuthCallback(request, env) {
      VALUES(?,?,?)
      ON CONFLICT(member_id) DO UPDATE SET updated_at=CURRENT_TIMESTAMP`
   ).bind(memberId, publicId, memberId).run();
+
+  try {
+    await syncMemberProgramSpaces(env, memberId, identity);
+  } catch (error) {
+    console.error("program space projection failed", error);
+  }
 
   const sessionId = crypto.randomUUID();
   const csrf = crypto.randomUUID();
