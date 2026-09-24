@@ -173,6 +173,11 @@ function formatPrice(course) {
   return price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 준비 중";
 }
 
+function formatAccessDuration(course) {
+  const days = Number(course?.access_duration_days || 0);
+  return Number.isInteger(days) && days > 0 ? "수강기간 " + days + "일" : "수강기간 무기한";
+}
+
 function courseSalesState(course) {
   const state = String(course?.sales_state || "").trim();
   if (["preparing","presale","selling","paused"].includes(state)) return state;
@@ -439,7 +444,7 @@ async function renderCourseLanding(request, env, slug) {
   const metaText = lessonCount + '개 차시 · ' +
     (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
     (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '') +
-    (course.access_type === "paid" ? ' · ' + courseSalesLabel(course) : '') +
+    (course.access_type === "paid" ? ' · ' + courseSalesLabel(course) + ' · ' + formatAccessDuration(course) : '') +
     (presaleScheduleText(course) ? ' · ' + presaleScheduleText(course) : '');
 
   const previewBlock = renderPublicPreview(course, preview);
