@@ -230,7 +230,8 @@ function renderCourseOutline(course, options = {}) {
     grouped.get(group).push(lesson);
   });
 
-  let rows = '<div class="curriculum"><div class="module-title">커리큘럼</div>';
+  let rows = '<div class="curriculum">' +
+    (options.showTitle === false ? '' : '<div class="module-title">커리큘럼</div>');
   for (const [moduleTitle, moduleLessons] of grouped) {
     if (grouped.size > 1 || moduleTitle !== "전체 차시") {
       rows += '<div class="module-title">' + escapeHtml(moduleTitle) + '</div>';
@@ -386,7 +387,8 @@ async function renderCourseLanding(request, env, slug) {
     '<section class="sales-section"><h2>커리큘럼</h2>' +
     renderCourseOutline(course, {
       paidAccess: paidAccess && contentPublished,
-      enrolled: enrolled && contentPublished
+      enrolled: enrolled && contentPublished,
+      showTitle: false
     }) + '</section>';
 
   const previewSection = previewBlock
