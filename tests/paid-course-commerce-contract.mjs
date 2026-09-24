@@ -45,6 +45,11 @@ assert(admin.includes('stateButton("presale", "사전판매")'), "paid course pr
 assert(admin.includes('stateButton("selling", "판매 중"'), "paid course selling control missing");
 assert(admin.includes('stateButton("paused", "판매 중단")'), "paid course pause control missing");
 assert(admin.includes('stateButton("preparing", "준비 중")'), "paid course preparing control missing");
+assert(admin.includes("사전판매 오픈 예정일"), "presale opening schedule admin UI missing");
+assert(admin.includes("한국시간(KST)"), "presale schedule must clearly use KST");
+assert(admin.includes("updatePresaleSchedule"), "presale schedule save handler missing");
+assert(admin.includes("/course-admin/presale-schedule"), "presale schedule route missing");
+assert(admin.includes("presaleLocalKstToUtc"), "presale schedule KST to UTC conversion missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
 assert(admin.includes("inspectPaymentE2EOrder"), "order-level E2E inspector missing");
@@ -119,6 +124,10 @@ assert(router.includes("courseSalesState"), "explicit course sales state resolve
 assert(router.includes("사전판매 구매하기"), "presale purchase CTA missing");
 assert(router.includes("판매 중단"), "paused sales CTA missing");
 assert(router.includes("기존 수강생의 수강권은 유지됩니다."), "paused sales state must preserve existing access messaging");
+assert(router.includes("presaleScheduleText"), "presale opening schedule display missing");
+assert(router.includes("오픈 예정"), "presale opening schedule label missing");
+assert(router.includes("오픈 준비 중"), "past presale schedule with unpublished content must not promise automatic opening");
+assert(router.includes("promoteScheduledPresales"), "course routes must lazily promote matured presales");
 assert(router.includes("renderSalesListSection"), "sales page list renderer missing");
 assert(router.includes("renderInstructorSection"), "sales page instructor section missing");
 assert(router.includes("sales-layout"), "sales page layout missing");
@@ -177,6 +186,11 @@ const courseStore = await readFile(
 assert(courseStore.includes("instructor_name"), "course store must expose sales page content");
 assert(courseStore.includes("refund_policy_text"), "course store must expose refund policy content");
 assert(courseStore.includes("sales_state"), "course store must expose explicit sales state");
+assert(courseStore.includes("presale_opens_at"), "course store must expose presale opening schedule");
+assert(courseStore.includes("promoteScheduledPresales"), "scheduled presale promotion function missing");
+assert(courseStore.includes("status='published'"), "scheduled presale promotion must require published content");
+assert(courseStore.includes("visible=1"), "scheduled presale promotion must require visible published content");
+assert(courseStore.includes("julianday(presale_opens_at) <= julianday('now')"), "scheduled presale promotion time gate missing");
 
 const salesStateMigration = await readFile(
   new URL("../worker/migrations/0018_course_sales_state.sql", import.meta.url),
@@ -185,5 +199,24 @@ const salesStateMigration = await readFile(
 assert(salesStateMigration.includes("'preparing','presale','selling','paused'"), "course sales state enum migration missing");
 assert(salesStateMigration.includes("WHEN sales_enabled=1 THEN 'selling'"), "existing active sales state backfill missing");
 assert(salesStateMigration.includes("cafe24_sync_status IN ('paused_hidden','e2e_hidden')"), "paused sales state backfill missing");
+
+const presaleScheduleMigration = await readFile(
+  new URL("../worker/migrations/0019_course_presale_schedule.sql", import.meta.url),
+  "utf8"
+);
+assert(presaleScheduleMigration.includes("presale_opens_at"), "presale opening schedule migration missing");
+
+const productionWorker = await readFile(
+  new URL("../worker/src/production.js", import.meta.url),
+  "utf8"
+);
+assert(productionWorker.includes("async scheduled"), "Worker scheduled handler missing");
+assert(productionWorker.includes("promoteScheduledPresales(env)"), "Worker cron must promote matured presales");
+
+const wranglerConfig = await readFile(
+  new URL("../worker/wrangler.jsonc", import.meta.url),
+  "utf8"
+);
+assert(wranglerConfig.includes('"crons": ["* * * * *"]'), "presale promotion cron trigger missing");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
