@@ -98,6 +98,31 @@ CREATE INDEX IF NOT EXISTS idx_program_enrollments_member_status
 CREATE INDEX IF NOT EXISTS idx_program_enrollments_order
   ON program_enrollments(source_order_id, status);
 
+CREATE TABLE IF NOT EXISTS platform_role_grants (
+  member_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('platform_owner','staff_operator','creator')),
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended','revoked')),
+  granted_by TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (member_id, role)
+);
+
+CREATE INDEX IF NOT EXISTS idx_platform_role_grants_role
+  ON platform_role_grants(role, status, member_id);
+
+INSERT OR IGNORE INTO platform_role_grants (
+  member_id,role,status,granted_by
+) VALUES (
+  'maxjagga','platform_owner','active','system_seed'
+);
+
+INSERT OR IGNORE INTO platform_role_grants (
+  member_id,role,status,granted_by
+) VALUES (
+  'maxjagga','creator','active','system_seed'
+);
+
 CREATE TABLE IF NOT EXISTS scoped_role_grants (
   member_id TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('program_host','program_moderator','space_moderator')),
