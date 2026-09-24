@@ -16,17 +16,15 @@ async function runWrangler(args) {
 }
 
 await runWrangler([
-  "d1",
-  "migrations",
-  "apply",
-  "neverjustsell-community",
-  "--remote",
-  "--config",
-  "wrangler.jsonc"
-]);
-
-await runWrangler([
   "deploy",
   "--config",
   "wrangler.production.jsonc"
 ]);
+
+const response = await fetch("https://community.neverjustsell.com/auth/db-health");
+const payload = await response.json().catch(() => null);
+console.log("Community program schema health:", payload);
+if (!response.ok || payload?.ok !== true || payload?.program_schema?.ok !== true) {
+  console.error("Community program schema reconciliation failed after deploy.");
+  process.exit(1);
+}
