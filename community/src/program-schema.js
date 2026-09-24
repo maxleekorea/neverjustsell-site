@@ -149,6 +149,64 @@ INSERT OR IGNORE INTO spaces (
   );
 `;
 
+function splitSqlStatements(sql) {
+  const noLineComments = String(sql || "")
+    .split("\n")
+    .map((line) => line.trimStart().startsWith("--") ? "" : line)
+    .join("\n");
+
+  const statements = [];
+  let current = "";
+  let single = false;
+  let double = false;
+
+  for (let i = 0; i < noLineComments.length; i += 1) {
+    const ch = noLineComments[i];
+    const next = noLineComments[i + 1];
+
+    if (ch === "'" && !double) {
+      if (single && next === "'") {
+        current += "''";
+        i += 1;
+        continue;
+      }
+      single = !single;
+      current += ch;
+      continue;
+    }
+
+    if (ch === '"' && !single) {
+      if (double && next === '"') {
+        current += '""';
+        i += 1;
+        continue;
+      }
+      double = !double;
+      current += ch;
+      continue;
+    }
+
+    if (ch === ";" && !single && !double) {
+      const statement = current.trim();
+      if (statement) statements.push(statement);
+      current = "";
+      continue;
+    }
+
+    current += ch;
+  }
+
+  const tail = current.trim();
+  if (tail) statements.push(tail);
+  return statements;
+}
+
+async function executeStatements(db, sql) {
+  const statements = splitSqlStatements(sql);
+  if (!statements.length) return;
+  await db.batch(statements.map((statement) => db.prepare(statement)));
+}
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -174,7 +232,7 @@ async function ensureInternal(db) {
   const migrationName = "0002_program_spaces.sql";
   const applied = [];
   if (!(await migrationApplied(db, migrationName))) {
-    await db.exec(PRE_ALTER_SQL);
+    await executeStatements(db, PRE_ALTER_SQL);
     const cols = await columnNames(db, "posts");
     if (!cols.has("space_id")) await db.prepare("ALTER TABLE posts ADD COLUMN space_id TEXT").run();
     if (!cols.has("program_run_id")) await db.prepare("ALTER TABLE posts ADD COLUMN program_run_id TEXT").run();
@@ -187,7 +245,7 @@ async function ensureInternal(db) {
     if (!cols.has("knowledge_state")) {
       await db.prepare("ALTER TABLE posts ADD COLUMN knowledge_state TEXT NOT NULL DEFAULT 'private' CHECK (knowledge_state IN ('private','candidate','published'))").run();
     }
-    await db.exec(POST_ALTER_SQL);
+    await executeStatements(db, POST_ALTER_SQL);
     await markMigration(db, migrationName);
     applied.push(migrationName);
   }
