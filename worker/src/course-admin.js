@@ -634,7 +634,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
   let adminLogs = [];
   if (course.access_type === "paid") {
     access = await env.COURSE_DB.prepare(
-      "SELECT member_id,status,source_order_id,source_order_item_code,grant_reason,access_expires_at,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+      "SELECT member_id,status,source_order_id,source_order_item_code,grant_reason,access_expires_at,access_starts_at,access_duration_days_snapshot,purchase_price_krw,purchased_at,policy_version,refund_policy_snapshot,granted_at,revoked_at,last_verified_at,updated_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
     ).bind(normalized, course.id).first();
 
     const eventRows = await env.COURSE_DB.prepare(
@@ -657,7 +657,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
   }
 
   const progressRows = await env.COURSE_DB.prepare(
-    "SELECT l.id,l.title,l.sort_order,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
+    "SELECT l.id,l.title,l.sort_order,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,COALESCE(lp.watched_seconds,0) AS watched_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
     "FROM lessons l LEFT JOIN lesson_progress lp ON lp.lesson_id=l.id AND lp.member_id=? AND lp.course_id=l.course_id " +
     "WHERE l.course_id=? AND l.status!='archived' ORDER BY l.sort_order,l.created_at"
   ).bind(normalized, course.id).all();
@@ -676,7 +676,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
       const source = orders.find((item) => String(item?.order_id || "") === String(access.source_order_id)) || orders[0] || null;
       if (source) {
         const items = Array.isArray(source.items) ? source.items : [];
-        const item = items.find((entry) => Number(entry?.product_no) === Number(course.cafe24_product_no)) || items[0] || null;
+        const item = items.find((entry) => Number(entry?.product_no) === Number(course.cafe24_product_no)) || null;
         order = {
           order_id: source.order_id || access.source_order_id,
           paid: isPaymentConfirmed(source, item),
@@ -702,6 +702,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
     .reverse()[0] || null;
   const total = progress.length;
   const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+  const watchedSeconds = progress.reduce((sum, row) => sum + Number(row.watched_seconds || 0), 0);
 
   return {
     member_id: normalized,
@@ -716,9 +717,20 @@ async function loadCourseStudentDetail(env, course, memberId) {
       started_lessons: started,
       completed_lessons: completed,
       progress_percent: percent,
+      watched_seconds: watchedSeconds,
       last_activity: lastActivity
     }
   };
+}
+
+function formatWatchDuration(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) return hours + "시간 " + minutes + "분";
+  if (minutes > 0) return minutes + "분 " + secs + "초";
+  return secs + "초";
 }
 
 function entitlementEventLabel(type) {
@@ -829,12 +841,13 @@ function studentDetailPanel(course, detail) {
           "<td>" + (index + 1) + ". " + escapeHtml(row.title) + "</td>" +
           "<td><span class=\"" + cls + "\">" + state + "</span></td>" +
           "<td>" + Number(row.last_position_seconds || 0) + "초</td>" +
+          "<td>" + escapeHtml(formatWatchDuration(row.watched_seconds)) + "</td>" +
           "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.first_started_at)) + "</td>" +
           "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.completed_at)) + "</td>" +
           "<td class=\"nowrap\">" + escapeHtml(formatAdminDate(row.updated_at)) + "</td>" +
           "</tr>";
       }).join("")
-    : "<tr><td colspan=\"6\" class=\"muted\">등록된 차시가 없습니다.</td></tr>";
+    : "<tr><td colspan=\"7\" class=\"muted\">등록된 차시가 없습니다.</td></tr>";
 
   return "<div class=\"panel\"><a class=\"backlink\" href=\"" + back + "\">← 수강생 목록</a>" +
     "<div class=\"sectionhead\"><div><h3>" + escapeHtml(detail.member_id) + "</h3><p class=\"hint\">회원의 주문·수강권·학습 진행 상태를 확인합니다.</p></div>" +
@@ -842,14 +855,23 @@ function studentDetailPanel(course, detail) {
     "<div class=\"student-detail-grid\">" +
     "<div class=\"student-detail-card\"><div class=\"hint\">진도율</div><strong>" + Number(detail.metrics.progress_percent || 0) + "%</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">완료 차시</div><strong>" + Number(detail.metrics.completed_lessons || 0) + " / " + Number(detail.metrics.total_lessons || 0) + "</strong></div>" +
+    "<div class=\"student-detail-card\"><div class=\"hint\">누적 시청</div><strong>" + escapeHtml(formatWatchDuration(detail.metrics.watched_seconds)) + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">수강권 출처</div><strong>" + escapeHtml(course.access_type === "paid" ? (detail.access.grant_reason === "manual" ? "관리자 부여" : "Cafe24 구매") : "무료 신청") + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">수강기간</div><strong>" + escapeHtml(detail.access.access_expires_at ? "~ " + detail.access.access_expires_at : "무기한") + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">마지막 학습</div><strong>" + escapeHtml(formatAdminDate(detail.metrics.last_activity)) + "</strong></div>" +
     "<div class=\"student-detail-card\"><div class=\"hint\">수강 시작</div><strong>" + escapeHtml(formatAdminDate(detail.access.granted_at || detail.access.enrolled_at)) + "</strong></div>" +
     "</div>" +
+    (course.access_type === "paid" && detail.access.grant_reason === "purchase"
+      ? "<div class=\"student-section\"><h3>구매 당시 조건</h3><div class=\"readiness\">" +
+        "<div class=\"ready-row\"><span>실결제액 스냅샷</span><strong>" + (detail.access.purchase_price_krw != null ? Number(detail.access.purchase_price_krw).toLocaleString("ko-KR") + "원" : "확인 불가") + "</strong></div>" +
+        "<div class=\"ready-row\"><span>구매일</span><strong>" + escapeHtml(formatAdminDate(detail.access.purchased_at)) + "</strong></div>" +
+        "<div class=\"ready-row\"><span>구매 당시 수강기간</span><strong>" + (detail.access.access_duration_days_snapshot ? Number(detail.access.access_duration_days_snapshot) + "일" : "무기한") + "</strong></div>" +
+        "<div class=\"ready-row\"><span>환불정책 버전</span><strong>" + escapeHtml(detail.access.policy_version || "-") + "</strong></div>" +
+        "</div></div>"
+      : "") +
     orderSection + history + manualControls + adminHistory +
     "<div class=\"student-section\"><h3>차시별 학습 진도</h3><div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
-    "<th>차시</th><th>상태</th><th>마지막 위치</th><th>첫 학습</th><th>완료</th><th>최근 변경</th>" +
+    "<th>차시</th><th>상태</th><th>마지막 위치</th><th>시청 누적</th><th>첫 학습</th><th>완료</th><th>최근 변경</th>" +
     "</tr></thead><tbody>" + progressRows + "</tbody></table></div></div>" +
     "</div>";
 }
