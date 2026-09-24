@@ -96,8 +96,8 @@ assert(admin.includes("이 강의에서 배우는 내용"), "course sales page o
 assert(admin.includes("이용·환불 안내는 자동 적용"), "sales page must explain automatic policy content");
 assert(!admin.includes('name="access_info"'), "standard access policy must not be manually edited on sales page");
 assert(!admin.includes('name="refund_policy_text"'), "standard refund policy must not be manually edited on sales page");
-assert(admin.includes("access_duration_days"), "structured course access duration setting missing");
-assert(admin.includes("refund_policy_version"), "refund policy version setting missing");
+assert(admin.includes("access_duration_days"), "standard VOD access duration data missing");
+assert(admin.includes("refund_policy_version"), "refund policy version data missing");
 assert(admin.includes("watched_seconds"), "student detail watched seconds missing");
 assert(admin.includes("누적 시청"), "student detail watch-time summary missing");
 assert(admin.includes("구매 당시 조건"), "purchase snapshot admin section missing");
@@ -108,6 +108,8 @@ assert(admin.includes("Math.min(duration, watched)"), "refund usage must cap rep
 assert(admin.includes("index > 0 && Number(row.is_preview || 0) !== 1"), "mandatory and additional previews must be excluded from refund usage");
 assert(admin.includes("최소 한 개의 유료 차시가 필요합니다."), "paid course must retain paid content after mandatory preview");
 assert(admin.includes("DEFAULT_PAID_ACCESS_DAYS = 180"), "new paid VOD default duration must be 180 days");
+assert(admin.includes("COALESCE(access_duration_days,?)"), "free-to-paid conversion must auto-apply the standard duration");
+assert(admin.includes("DEFAULT_REFUND_POLICY_TEXT"), "free-to-paid conversion must auto-apply the standard refund policy");
 assert(admin.includes('"fair-trust-v1.0"'), "new paid VOD policy version default missing");
 assert(!admin.includes("|| items[0] || null"), "student detail must not infer an unrelated order item");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
@@ -152,7 +154,6 @@ assert(router.includes("판매 중단"), "paused sales CTA missing");
 assert(router.includes("기존 수강생의 수강권은 유지됩니다."), "paused sales state must preserve existing access messaging");
 assert(!router.includes("presaleScheduleText"), "public course pages must not depend on presale scheduling");
 assert(!router.includes("promoteScheduledPresales"), "course page requests must not mutate presale state");
-assert(router.includes("presaleScheduleText"), "presale opening schedule display missing");
 assert(router.includes("renderSalesListSection"), "sales page list renderer missing");
 assert(router.includes("renderInstructorSection"), "sales page instructor section missing");
 assert(router.includes("sales-layout"), "sales page layout missing");
@@ -161,6 +162,7 @@ assert(router.includes("환불 안내"), "sales page refund information missing"
 assert(router.includes("수강을 시작하시겠습니까?"), "sales page bottom CTA missing");
 assert(router.includes("showTitle: false"), "sales page curriculum heading should not be duplicated");
 assert(router.includes("formatAccessDuration"), "sales page structured access duration missing");
+assert(router.includes('course.access_type === "paid"'), "paid policy sections must be gated from free course pages");
 assert(router.includes("수강기간 "), "sales page access duration label missing");
 assert(router.includes("learning-player"), "authenticated Vimeo player tracking hook missing");
 assert(router.includes("player-tracking.js"), "learning player tracker route missing");
