@@ -4,6 +4,11 @@ import { isPaymentConfirmed, isItemRevoked } from "./access.js";
 import { COMMERCE_ORIGIN, CAFE24_ADMIN_SCOPES } from "./config.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
+const DEFAULT_PAID_ACCESS_DAYS = 180;
+const DEFAULT_REFUND_POLICY_VERSION = "fair-trust-v1.0";
+const DEFAULT_PAID_ACCESS_INFO = "수강기간은 결제일 기준 180일입니다.";
+const DEFAULT_REFUND_POLICY_TEXT = "첫 번째 본강의 차시는 구매 전 무료로 공개합니다. 결제 후 7일 이내 유료 차시를 이용하지 않았다면 전액 환불합니다. 유료 차시를 이용한 경우와 7일 경과 후의 중도해지는 실제 유료 콘텐츠 이용분과 적용 법령을 기준으로 환불합니다. 무료 미리보기 시청분은 유료 이용량에 포함하지 않습니다.";
+
 const ADMIN_TTL_SECONDS = 60 * 60 * 12;
 const VIMEO_API_ORIGIN = "https://api.vimeo.com";
 const TUS_VERSION = "1.0.0";
@@ -1135,7 +1140,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       "<form method=\"post\" action=\"/course-admin/course-access-policy\" style=\"margin-top:10px\">" +
       "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
       "<label>수강기간(일)</label><input name=\"access_duration_days\" type=\"number\" min=\"1\" max=\"3650\" value=\"" + escapeHtml(course.access_duration_days || "") + "\" placeholder=\"비워두면 무기한\">" +
-      "<div class=\"hint\">구매 당시 값을 수강권에 저장합니다. 나중에 강의 설정을 바꿔도 기존 구매자의 조건은 바뀌지 않습니다.</div>" +
+      "<div class=\"hint\">일반 유료 VOD는 결제일 기준 180일이 기본입니다. 구매 당시 값을 수강권에 저장하므로 이후 강의 설정을 바꿔도 기존 구매자의 조건은 바뀌지 않습니다.</div>" +
       "<label>환불정책 버전</label><input name=\"refund_policy_version\" maxlength=\"80\" value=\"" + escapeHtml(course.refund_policy_version || "fair-trust-v0.3") + "\">" +
       "<div class=\"hint\">현재 정책 문안의 버전 식별자입니다. 주문 당시 문안과 함께 스냅샷으로 보존합니다.</div>" +
       "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">수강 정책 저장</button></form></div>" +
@@ -1407,8 +1412,8 @@ async function createCourse(form, env) {
   await assertActiveCreator(env, ownerMemberId);
   const id = crypto.randomUUID();
   await env.COURSE_DB.prepare(
-    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,catalog_visible,sales_enabled,cafe24_sync_status,access_duration_days,refund_policy_version) " +
-    "VALUES (?,?,?,?,?,?,?,1,'draft',0,?,0,'not_linked',?,?)"
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,catalog_visible,sales_enabled,cafe24_sync_status,access_duration_days,refund_policy_version,access_info,refund_policy_text) " +
+    "VALUES (?,?,?,?,?,?,?,1,'draft',0,?,0,'not_linked',?,?,?,?)"
   ).bind(
     id,
     slug,
@@ -1418,8 +1423,10 @@ async function createCourse(form, env) {
     Math.trunc(priceKrw),
     ownerMemberId,
     catalogVisible,
-    accessType === "paid" ? 180 : null,
-    accessType === "paid" ? "fair-trust-v1.0" : "fair-trust-v0.3"
+    accessType === "paid" ? DEFAULT_PAID_ACCESS_DAYS : null,
+    accessType === "paid" ? DEFAULT_REFUND_POLICY_VERSION : "fair-trust-v0.3",
+    accessType === "paid" ? DEFAULT_PAID_ACCESS_INFO : null,
+    accessType === "paid" ? DEFAULT_REFUND_POLICY_TEXT : null
   ).run();
 
   if (accessType !== "paid") {
