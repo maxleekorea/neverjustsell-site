@@ -345,7 +345,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -933,7 +933,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     "<input type=\"hidden\" name=\"action\" value=\"" + (published ? "unpublish" : "publish") + "\">" +
     "<button class=\"secondary\" type=\"submit\">" + (published ? "게시 중지" : "강의 게시") + "</button></form>";
 
-  const tab = ["basic", "content", "sales", "students", "advanced"].includes(activeTab) ? activeTab : "content";
+  const tab = ["basic", "content", "landing", "sales", "students", "advanced"].includes(activeTab) ? activeTab : "content";
   const base = "/course-admin?course=" + encodeURIComponent(course.id);
   const tabLink = function (key, label) {
     return "<a class=\"" + (tab === key ? "active" : "") + "\" href=\"" + base + "&tab=" + key + "\">" + label + "</a>";
@@ -948,6 +948,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     "<nav class=\"admin-tabs\">" +
     tabLink("basic", "기본 정보") +
     tabLink("content", "콘텐츠") +
+    tabLink("landing", "판매 페이지") +
     tabLink("sales", "판매 설정") +
     tabLink("students", "수강생") +
     tabLink("advanced", "고급 설정") +
@@ -970,6 +971,22 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       "<label class=\"preview\" style=\"margin-top:14px\"><input type=\"checkbox\" name=\"catalog_visible\" value=\"1\"" + (Number(course.catalog_visible) === 1 ? " checked" : "") + ">강의 찾기에 표시</label>" +
       "<div class=\"hint\">콘텐츠 게시 여부와 별개입니다. 체크하면 수강권이 없는 사용자도 강의 소개를 볼 수 있습니다.</div>" +
       "<button type=\"submit\" style=\"margin-top:14px\">저장</button></form></div></div>";
+  } else if (tab === "landing") {
+    panel =
+      "<div class=\"panel narrow\"><div class=\"course-settings\"><div class=\"sectionhead\"><div><h3>판매 페이지</h3>" +
+      "<p class=\"hint\">강의 상세 페이지에서 구매 전 고객에게 보여줄 내용을 관리합니다. 비어 있는 항목은 공개 페이지에서 숨깁니다.</p></div>" +
+      "<a class=\"action-link\" target=\"_blank\" rel=\"noreferrer\" href=\"/courses/" + encodeURIComponent(course.slug) + "\">상세 페이지 보기 →</a></div>" +
+      "<form method=\"post\" action=\"/course-admin/course-sales-page\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<label>강사명</label><input name=\"instructor_name\" maxlength=\"120\" value=\"" + escapeHtml(course.instructor_name || "") + "\" placeholder=\"예: 맥작가\">" +
+      "<label>강사 소개</label><textarea name=\"instructor_bio\" placeholder=\"강사의 경력과 이 강의를 가르칠 이유를 간결하게 입력하세요.\">" + escapeHtml(course.instructor_bio || "") + "</textarea>" +
+      "<label>이런 분께 추천합니다</label><textarea name=\"target_audience\" placeholder=\"한 줄에 한 항목씩 입력하세요.\">" + escapeHtml(course.target_audience || "") + "</textarea>" +
+      "<div class=\"hint\">한 줄에 한 항목씩 입력하면 판매 페이지에서 목록으로 표시됩니다.</div>" +
+      "<label>이 강의에서 배우는 내용</label><textarea name=\"learning_outcomes\" placeholder=\"한 줄에 한 항목씩 입력하세요.\">" + escapeHtml(course.learning_outcomes || "") + "</textarea>" +
+      "<label>수강 이용 안내</label><textarea name=\"access_info\" placeholder=\"예: 수강기간, 이용 방식, 필요한 준비사항 등을 입력하세요.\">" + escapeHtml(course.access_info || "") + "</textarea>" +
+      "<label>환불 안내</label><textarea name=\"refund_policy_text\" placeholder=\"확정된 환불 정책만 입력하세요. 정책 확정 전에는 비워둘 수 있습니다.\">" + escapeHtml(course.refund_policy_text || "") + "</textarea>" +
+      "<div class=\"hint\">환불 기준은 자동 생성하지 않습니다. 실제 운영정책과 법적 검토가 끝난 문구만 입력하세요.</div>" +
+      "<button type=\"submit\" style=\"margin-top:14px\">판매 페이지 저장</button></form></div></div>";
   } else if (tab === "sales") {
     panel =
       "<div class=\"sales-summary\"><div class=\"panel\"><div class=\"sectionhead\"><div><h3>판매 설정</h3>" +
@@ -1634,6 +1651,32 @@ async function updateCourse(form, env) {
   ).bind(title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, catalogVisible, courseId).run();
 }
 
+async function updateCourseSalesPage(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  if (!courseId) throw new Error("강의 정보가 올바르지 않습니다.");
+
+  const instructorName = String(form.get("instructor_name") || "").trim();
+  const instructorBio = String(form.get("instructor_bio") || "").trim();
+  const targetAudience = String(form.get("target_audience") || "").trim();
+  const learningOutcomes = String(form.get("learning_outcomes") || "").trim();
+  const accessInfo = String(form.get("access_info") || "").trim();
+  const refundPolicyText = String(form.get("refund_policy_text") || "").trim();
+
+  if (instructorName.length > 120) throw new Error("강사명은 120자 이내로 입력해 주세요.");
+
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET instructor_name=?,instructor_bio=?,target_audience=?,learning_outcomes=?,access_info=?,refund_policy_text=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(
+    instructorName || null,
+    instructorBio || null,
+    targetAudience || null,
+    learningOutcomes || null,
+    accessInfo || null,
+    refundPolicyText || null,
+    courseId
+  ).run();
+}
+
 
 async function createModule(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
@@ -2202,11 +2245,27 @@ export default {
 
     if (url.pathname === "/course-admin/course-update" && request.method === "POST") {
       if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData();
+      const courseId = String(form.get("course_id") || "").trim();
+      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=basic";
       try {
-        await updateCourse(await request.formData(), env);
-        return redirect("/course-admin?message=" + encodeURIComponent("강의 기본정보를 저장했습니다."));
+        await updateCourse(form, env);
+        return redirect(base + "&message=" + encodeURIComponent("강의 기본정보를 저장했습니다."));
       } catch (error) {
-        return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/course-sales-page" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData();
+      const courseId = String(form.get("course_id") || "").trim();
+      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=landing";
+      try {
+        await updateCourseSalesPage(form, env);
+        return redirect(base + "&message=" + encodeURIComponent("판매 페이지를 저장했습니다."));
+      } catch (error) {
+        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
