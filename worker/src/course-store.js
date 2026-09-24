@@ -27,17 +27,6 @@ export async function getEnrolledCourseIds(env, memberId) {
   return new Set((Array.isArray(result?.results) ? result.results : []).map((row) => row.course_id));
 }
 
-export async function promoteScheduledPresales(env) {
-  if (!env.COURSE_DB) return 0;
-  const result = await env.COURSE_DB.prepare(
-    "UPDATE courses SET sales_state='selling',cafe24_sync_status='selling_member_only',updated_at=CURRENT_TIMESTAMP " +
-    "WHERE sales_state='presale' AND sales_enabled=1 AND status='published' AND visible=1 " +
-    "AND cafe24_product_no IS NOT NULL AND presale_opens_at IS NOT NULL " +
-    "AND julianday(presale_opens_at) <= julianday('now')"
-  ).run();
-  return Number(result?.meta?.changes || 0);
-}
-
 export async function listCatalogD1Courses(env) {
   if (!env.COURSE_DB) return [];
   const result = await env.COURSE_DB.prepare(
