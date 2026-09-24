@@ -672,8 +672,8 @@ function learningPlayerTrackingScript() {
       const delta=Math.max(0,Math.min(30,Math.floor(pending)));
       pending=0;
       lastSentAt=Date.now();
-      let position=0;
-      try{position=await player.getCurrentTime();}catch(_){}
+      let position=Number.isFinite(lastSeconds)?lastSeconds:0;
+      if(!force){try{position=await player.getCurrentTime();}catch(_){}}
       const payload={course_slug:courseSlug,lesson_id:lessonId,position_seconds:position,watched_delta_seconds:delta};
       const body=JSON.stringify(payload);
       if(force&&navigator.sendBeacon){
