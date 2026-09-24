@@ -1,5 +1,6 @@
 // Dedicated Cloudflare Worker entry for the NEVER JUST SELL community.
 import { onRequest } from "../functions/[[path]].js";
+import { ensureCommunityProgramSchema } from "./program-schema.js";
 
 const SESSION_COOKIE = "njs_community_session";
 const SESSION_TTL_SECONDS = 2 * 60 * 60;
@@ -128,8 +129,10 @@ async function handleDbHealth(request, env) {
   let memberInserted = false;
   let sessionInserted = false;
   let readBack = false;
+  let programSchema = null;
 
   try {
+    programSchema = await ensureCommunityProgramSchema(env);
     await env.DB.prepare(
       `INSERT INTO members(member_id,public_id,display_name) VALUES(?,?,?)`
     ).bind(memberId, publicId, "Auth Self Test").run();
@@ -146,12 +149,13 @@ async function handleDbHealth(request, env) {
     readBack = Boolean(row?.session_id === sessionId && row?.member_id === memberId);
 
     return json({
-      ok: memberInserted && sessionInserted && readBack,
+      ok: memberInserted && sessionInserted && readBack && programSchema?.ok === true,
       db_present: true,
       member_insert: memberInserted,
       session_insert: sessionInserted,
-      read_back: readBack
-    }, memberInserted && sessionInserted && readBack ? 200 : 503);
+      read_back: readBack,
+      program_schema: programSchema
+    }, memberInserted && sessionInserted && readBack && programSchema?.ok === true ? 200 : 503);
   } catch (error) {
     return json({
       ok: false,
@@ -159,6 +163,7 @@ async function handleDbHealth(request, env) {
       member_insert: memberInserted,
       session_insert: sessionInserted,
       read_back: readBack,
+      program_schema: programSchema,
       error: String(error?.message || error)
     }, 503);
   } finally {
