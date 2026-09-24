@@ -1,0 +1,12 @@
+{
+  "name": "neverjustsell-community",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc",
+    "deploy": "node deploy.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "type": "module"
+}
