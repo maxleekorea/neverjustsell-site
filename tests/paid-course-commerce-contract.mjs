@@ -73,6 +73,8 @@ assert(admin.includes("/course-admin/api/curriculum/reorder"), "curriculum reord
 assert(admin.includes("refreshCurriculumDisplay"), "curriculum display refresh missing");
 assert(admin.includes("미리보기 지정"), "preview designation status badge missing");
 assert(admin.includes("영상 연결됨"), "video connection status badge missing");
+assert(admin.includes("비구매자에게 무료 미리보기 공개"), "course admin preview publication control missing");
+assert(admin.includes("강의가 게시된 상태에서만 공개 재생됩니다."), "preview publication warning missing");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
@@ -90,6 +92,20 @@ const adminApi = await readFile(
 );
 assert(adminApi.includes("Request parameter"), "Cafe24 write request wrapper fallback missing");
 assert(adminApi.includes("send({ request: init.body })"), "Cafe24 request wrapper retry missing");
+
+const router = await readFile(
+  new URL("../worker/src/router.js", import.meta.url),
+  "utf8"
+);
+assert(router.includes("isPublicPreviewLesson"), "public preview access predicate missing");
+assert(router.includes('course.status === "published"'), "preview must require a published course");
+assert(router.includes("lesson.isPreview"), "preview must require a designated lesson");
+assert(router.includes('["ready", "published"]'), "preview must require a ready lesson");
+assert(router.includes("renderPublicPreview"), "public preview player missing");
+assert(router.includes("?preview="), "public preview lesson URL missing");
+assert(router.includes("이 차시는 공개 미리보기가 아닙니다."), "locked lesson direct preview guard missing");
+assert(router.includes("contentPublished"), "course entry must require published content");
+assert(router.includes("수강 준비 중"), "entitled but unpublished course state missing");
 
 const access = await readFile(
   new URL("../worker/src/access.js", import.meta.url),
