@@ -889,7 +889,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       : "";
     return "<details class=\"lessoncard curriculum-lesson\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\">" +
       "<summary><span class=\"drag-handle lesson-drag\" draggable=\"true\" title=\"끌어서 순서 또는 섹션 변경\">⋮⋮</span>" +
-      "<span class=\"lesson-summary-main\"><span class=\"lesson-summary-title\"><strong>" + (index + 1) + ". " + escapeHtml(lesson.title) + "</strong></span>" +
+      "<span class=\"lesson-summary-main\"><span class=\"lesson-summary-title\"><span class=\"lesson-number\">" + (index + 1) + ".</span><strong>" + escapeHtml(lesson.title) + "</strong></span>" +
       "<span class=\"lesson-badges\">" + videoBadge + previewBadge + statusBadge + "</span></span>" +
       "<span class=\"pill\">편집</span></summary>" +
       "<div class=\"lessonbody\"><form method=\"post\" action=\"/course-admin/lesson-update\">" +
@@ -1914,10 +1914,18 @@ function adminClientScript() {
     "  if(draggingModule){const root=event.target.closest('[data-curriculum]');const target=event.target.closest('.curriculum-group[data-module-id]');if(!root||!target||!target.dataset.moduleId)return;event.preventDefault();const groups=Array.from(root.querySelectorAll(':scope > .curriculum-group[data-module-id]')).filter(function(g){return g.dataset.moduleId&&g!==draggingModule;});let before=null,best=Number.NEGATIVE_INFINITY;groups.forEach(function(g){const box=g.getBoundingClientRect();const off=event.clientY-box.top-box.height/2;if(off<0&&off>best){best=off;before=g;}});if(before)root.insertBefore(draggingModule,before);else root.appendChild(draggingModule);}",
     "});",
     "document.addEventListener('dragleave',function(event){const zone=event.target.closest&&event.target.closest('.lesson-dropzone');if(zone)zone.classList.remove('drop-target');});",
+    "function refreshCurriculumDisplay(root){",
+    "  let number=1;",
+    "  root.querySelectorAll('.curriculum-group[data-module-id]').forEach(function(group){",
+    "    const moduleId=group.dataset.moduleId||'';const rows=Array.from(group.querySelectorAll(':scope > .lesson-dropzone > .curriculum-lesson'));",
+    "    const count=group.querySelector('.curriculum-count');if(count)count.textContent=rows.length+'개 차시';",
+    "    rows.forEach(function(row){const n=row.querySelector('.lesson-number');if(n)n.textContent=(number++)+'.';const select=row.querySelector('select[name=module_id]');if(select)select.value=moduleId;});",
+    "  });",
+    "}",
     "document.addEventListener('dragend',function(){",
     "  const root=(draggingLesson||draggingModule)&&((draggingLesson||draggingModule).closest('[data-curriculum]'));",
     "  document.querySelectorAll('.dragging,.drop-target').forEach(function(el){el.classList.remove('dragging','drop-target');});",
-    "  draggingLesson=null;draggingModule=null;if(root)saveCurriculum(root);",
+    "  draggingLesson=null;draggingModule=null;if(root){refreshCurriculumDisplay(root);saveCurriculum(root);}",
     "});",
     "document.addEventListener('click',function(event){if(event.target.closest('.drag-handle'))event.preventDefault();});",
     "document.addEventListener('click',function(event){",
