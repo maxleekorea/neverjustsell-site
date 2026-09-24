@@ -1,0 +1,72 @@
+name: Production Workers deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/production.flag"
+
+concurrency:
+  group: neverjustsell-production-workers
+  cancel-in-progress: false
+
+jobs:
+  deploy-course:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install course Worker dependencies
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+      - name: Apply course D1 migrations
+        working-directory: worker
+        run: npx wrangler d1 migrations apply neverjustsell-courses --remote --config wrangler.production.jsonc
+      - name: Deploy course Worker
+        working-directory: worker
+        run: npx wrangler deploy --config wrangler.production.jsonc
+
+  deploy-community:
+    needs: deploy-course
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install community Worker dependencies
+        working-directory: community
+        run: npm install --no-audit --no-fund
+      - name: Apply community D1 migrations
+        working-directory: community
+        run: npx wrangler d1 migrations apply neverjustsell-community --remote --config wrangler.production.jsonc
+      - name: Deploy community Worker
+        working-directory: community
+        run: npx wrangler deploy --config wrangler.production.jsonc
+
+  verify:
+    needs: deploy-community
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify production routes after deployment
+        run: node tests/live-smoke.mjs
+      - name: Crawl public site after deployment
+        run: node tests/public-site-crawl.mjs
