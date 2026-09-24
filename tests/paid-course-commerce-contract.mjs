@@ -282,6 +282,17 @@ const simpleAccessMigration = await readFile(
 assert(simpleAccessMigration.includes("결제일 기준 180일"), "real paid courses must explain simple purchase-date access period");
 
 
+const realCurriculaMigration = await readFile(
+  new URL("../worker/migrations/0024_seed_real_paid_course_curricula.sql", import.meta.url),
+  "utf8"
+);
+assert(realCurriculaMigration.includes("naver-search-algorithm-01"), "real search-algorithm curriculum shell missing");
+assert(realCurriculaMigration.includes("naver-keyword-strategy-01"), "real keyword-strategy curriculum shell missing");
+assert(realCurriculaMigration.includes("NOT EXISTS"), "real curriculum seed must not overwrite an existing curriculum");
+assert(realCurriculaMigration.includes("방법보다 방향이 먼저인 이유"), "search-algorithm free first lesson shell missing");
+assert(realCurriculaMigration.includes("키워드를 보는 관점과 황금 키워드의 함정"), "keyword-strategy free first lesson shell missing");
+
+
 const productionWorker = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
   "utf8"
