@@ -39,10 +39,17 @@ jobs:
         run: node tests/access-contract.mjs
       - name: Verify roles and course ownership contract
         run: node tests/role-contract.mjs
+      - name: Verify program and community contract
+        run: node tests/program-community-contract.mjs
       - name: Verify paid course commerce contract
         run: node tests/paid-course-commerce-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
+        run: |
+          npm install --no-audit --no-fund
+          npx wrangler deploy --dry-run --config wrangler.production.jsonc
+      - name: Verify Community production bundle
+        working-directory: community
         run: |
           npm install --no-audit --no-fund
           npx wrangler deploy --dry-run --config wrangler.production.jsonc
