@@ -345,7 +345,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -1064,7 +1064,15 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
   } else if (tab === "sales") {
     panel =
       "<div class=\"sales-summary\"><div class=\"panel\"><div class=\"sectionhead\"><div><h3>판매 설정</h3>" +
-      "<p class=\"hint\">강의와 Cafe24 상품의 연결 및 판매 상태를 관리합니다.</p></div></div>" +
+      "<p class=\"hint\">강의와 Cafe24 상품의 연결, 판매 상태, 수강기간을 관리합니다.</p></div></div>" +
+      "<div class=\"course-settings\"><strong>수강 정책</strong>" +
+      "<form method=\"post\" action=\"/course-admin/course-access-policy\" style=\"margin-top:10px\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<label>수강기간(일)</label><input name=\"access_duration_days\" type=\"number\" min=\"1\" max=\"3650\" value=\"" + escapeHtml(course.access_duration_days || "") + "\" placeholder=\"비워두면 무기한\">" +
+      "<div class=\"hint\">구매 당시 값을 수강권에 저장합니다. 나중에 강의 설정을 바꿔도 기존 구매자의 조건은 바뀌지 않습니다.</div>" +
+      "<label>환불정책 버전</label><input name=\"refund_policy_version\" maxlength=\"80\" value=\"" + escapeHtml(course.refund_policy_version || "fair-trust-v0.3") + "\">" +
+      "<div class=\"hint\">현재 정책 문안의 버전 식별자입니다. 주문 당시 문안과 함께 스냅샷으로 보존합니다.</div>" +
+      "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">수강 정책 저장</button></form></div>" +
       commercePanel(course) + "</div>" +
       "<aside class=\"sales-preview\"><div class=\"hint\">판매 정보 미리보기</div><p><strong>" +
       (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</strong></p><p class=\"muted\">" +
@@ -1438,6 +1446,23 @@ async function linkExistingCafe24CourseProduct(form, env) {
     initialSalesState,
     course.id
   ).run();
+}
+
+async function updateCourseAccessPolicy(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  if (!courseId) throw new Error("강의 정보가 필요합니다.");
+  const rawDays = String(form.get("access_duration_days") || "").trim();
+  const durationDays = rawDays ? Number(rawDays) : null;
+  if (durationDays !== null && (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 3650)) {
+    throw new Error("수강기간은 1~3650일 사이로 입력해 주세요.");
+  }
+  const policyVersion = String(form.get("refund_policy_version") || "").trim();
+  if (!policyVersion || policyVersion.length > 80) throw new Error("환불정책 버전을 확인해 주세요.");
+
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET access_duration_days=?,refund_policy_version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(durationDays, policyVersion, courseId).run();
+  return "수강 정책을 저장했습니다.";
 }
 
 async function updatePresaleSchedule(form, env) {
@@ -2392,6 +2417,19 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("기존 Cafe24 상품을 강의와 연결했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/course-access-policy" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData();
+      const courseId = String(form.get("course_id") || "").trim();
+      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=sales";
+      try {
+        const message = await updateCourseAccessPolicy(form, env);
+        return redirect(base + "&message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
