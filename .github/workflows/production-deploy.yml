@@ -27,12 +27,17 @@ jobs:
       - name: Install course Worker dependencies
         working-directory: worker
         run: npm install --no-audit --no-fund
-      - name: Apply course D1 migrations
-        working-directory: worker
-        run: npx wrangler d1 migrations apply neverjustsell-courses --remote --config wrangler.production.jsonc
       - name: Deploy course Worker
         working-directory: worker
         run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Reconcile course schema through runtime binding
+        run: |
+          node -e '
+          const r=await fetch("https://classroom.neverjustsell.com/migration-health");
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          if(!r.ok || !j?.ok || !j?.program_schema?.ok) process.exit(1);
+          '
 
   deploy-community:
     needs: deploy-course
@@ -49,12 +54,17 @@ jobs:
       - name: Install community Worker dependencies
         working-directory: community
         run: npm install --no-audit --no-fund
-      - name: Apply community D1 migrations
-        working-directory: community
-        run: npx wrangler d1 migrations apply neverjustsell-community --remote --config wrangler.production.jsonc
       - name: Deploy community Worker
         working-directory: community
         run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Reconcile community schema through runtime binding
+        run: |
+          node -e '
+          const r=await fetch("https://community.neverjustsell.com/auth/db-health");
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          if(!r.ok || !j?.ok || !j?.program_schema?.ok) process.exit(1);
+          '
 
   verify:
     needs: deploy-community
