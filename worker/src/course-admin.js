@@ -227,7 +227,7 @@ function shell(title, body) {
     "textarea{min-height:86px;resize:vertical}button{padding:10px 14px;border:1px solid #333;background:#fff;color:#111;font-weight:800;cursor:pointer}" +
     "button.secondary{background:#181818;color:#ddd}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lesson{padding:12px 0;border-top:1px solid #262626}" +
     ".error{color:#ff9696}.ok{color:#a8e6a8}.course-settings{padding:14px;background:#101010;border:1px solid #262626;border-radius:12px;margin:12px 0 18px}.lessoncard{border:1px solid #2a2a2a;border-radius:12px;margin:10px 0;background:#101010;overflow:hidden}.lessoncard summary{cursor:pointer;padding:13px 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}.lessoncard summary::-webkit-details-marker{display:none}.lessonbody{padding:0 14px 14px;border-top:1px solid #242424}.lessonmeta{font-size:11px;color:#777}.fieldgrid{display:grid;grid-template-columns:1fr 180px;gap:10px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.toolbar form{margin:0}.toolbar button{padding:8px 10px}.upload{margin-top:12px;padding:12px;border:1px solid #2b2b2b;border-radius:12px;background:#101010}.uploadbar{height:8px;background:#262626;border-radius:999px;overflow:hidden;margin-top:9px}.uploadbar span{display:block;height:100%;width:0;background:#eee;transition:width .15s}.uploadstatus{font-size:12px;color:#aaa;margin-top:7px}.upload button{margin-top:8px}.upload input{margin-top:6px}.library{margin-top:12px;padding:12px;border:1px dashed #353535;border-radius:12px}.librarylist{display:grid;gap:7px;margin-top:10px}.libraryitem{display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;padding:9px;background:#0d0d0d;border:1px solid #272727;border-radius:9px}.libraryitem input{width:auto;margin:0}.librarymeta{font-size:11px;color:#777}.libraryactions{display:flex;gap:8px;margin-top:10px}.editor{margin-top:14px;border-top:1px solid #292929;padding-top:14px}.preview{display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa;margin-top:10px}.preview input{width:auto}.moduleform{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}@media(max-width:800px){.grid{grid-template-columns:1fr}.row,.fieldgrid{grid-template-columns:1fr}}" +
-    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}.action-link{display:inline-block;padding:9px 12px;border:1px solid #d4d4d8;border-radius:9px;text-decoration:none;font-size:13px;font-weight:700;background:#fff;color:#27272a}.student-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}.student-metric{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-metric .value{font-size:22px;font-weight:800;margin-top:4px}.student-table-wrap{overflow:auto;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-table{width:100%;border-collapse:collapse;min-width:900px}.student-table th{font-size:12px;text-align:left;color:#71717a;font-weight:700;padding:11px 12px;border-bottom:1px solid #e4e4e7;background:#fafafa}.student-table td{padding:12px;border-bottom:1px solid #f1f1f3;font-size:13px;vertical-align:middle}.student-table tr:last-child td{border-bottom:0}.status-active{color:#166534;font-weight:800}.status-revoked{color:#b91c1c;font-weight:800}.status-neutral{color:#71717a;font-weight:700}.student-search{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 14px}.progress-mini{display:flex;align-items:center;gap:8px}.progress-mini-track{width:84px;height:6px;background:#e4e4e7;border-radius:999px;overflow:hidden}.progress-mini-track span{display:block;height:100%;background:#18181b}.nowrap{white-space:nowrap}.student-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}.student-detail-card{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-detail-card strong{display:block;margin-top:4px;font-size:15px}.timeline{display:grid;gap:10px;margin:10px 0 18px}.timeline-item{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid #f0f0f2}.timeline-item:last-child{border-bottom:0}.timeline-time{font-size:12px;color:#71717a}.timeline-title{font-weight:800}.timeline-sub{font-size:12px;color:#71717a;margin-top:3px}.student-section{margin:20px 0}.student-section h3{margin-bottom:10px}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
+    "body{background:#f6f7f9;color:#18181b}.wrap{width:min(1280px,calc(100% - 40px));padding:28px 0 64px}.brand{color:#71717a}.card{background:#fff;border-color:#e4e4e7;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.03)}.muted,.hint{color:#71717a}.pill{border-color:#e4e4e7;color:#52525b;background:#fafafa}label{color:#52525b}input,textarea,select{background:#fff;border-color:#d4d4d8;color:#18181b}button{background:#18181b;color:#fff;border-color:#18181b}button.secondary{background:#fff;color:#27272a;border-color:#d4d4d8}.course-settings,.lessoncard,.upload,.library,.libraryitem{background:#fff;border-color:#e4e4e7}.lessonbody{border-color:#e4e4e7}.lessonmeta{color:#71717a}.error{color:#b91c1c;overflow-wrap:anywhere}.ok{color:#166534}.top{margin-bottom:20px}.top h1{font-size:24px}.course-list{width:100%;border-collapse:collapse}.course-list th{font-size:12px;text-align:left;color:#71717a;font-weight:600;padding:12px;border-bottom:1px solid #e4e4e7}.course-list td{padding:14px 12px;border-bottom:1px solid #f0f0f2;vertical-align:middle}.course-list tr:last-child td{border-bottom:0}.course-list a{text-decoration:none;font-weight:700}.course-list .sub{font-size:12px;color:#71717a;margin-top:4px}.admin-tabs{display:flex;gap:26px;border-bottom:1px solid #e4e4e7;margin:18px 0 22px}.admin-tabs a{padding:12px 2px;text-decoration:none;color:#71717a;font-size:14px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}.admin-tabs a.active{color:#18181b;border-bottom-color:#18181b}.editor-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.editor-head h2{font-size:22px;margin:4px 0 8px}.backlink{font-size:13px;color:#71717a;text-decoration:none}.panel{max-width:920px}.panel.narrow{max-width:760px}.list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px}.new-course{margin-bottom:18px}.new-course summary{cursor:pointer;font-weight:800;list-style:none}.new-course summary::-webkit-details-marker{display:none}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#a1a1aa;margin-right:6px}.status-dot.live{background:#16a34a}.course-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.editor{border-top:0;padding-top:0;margin-top:0}.lessoncard{box-shadow:none}.lessoncard summary{padding:12px 14px}.course-settings{padding:18px;border-radius:10px}.grid{grid-template-columns:1fr}.content-shell{max-width:960px;margin:0 auto}.sales-summary{display:grid;grid-template-columns:1fr 220px;gap:16px}.sales-preview{border:1px solid #e4e4e7;border-radius:12px;padding:16px;background:#fff;height:max-content}.sales-preview strong{font-size:20px}.advanced-note{padding:14px;border-radius:10px;background:#fafafa;border:1px solid #e4e4e7}.readiness{display:grid;gap:8px;margin:14px 0;padding:12px;border:1px solid #e4e4e7;border-radius:10px;background:#fafafa}.ready-row{display:flex;justify-content:space-between;gap:12px;font-size:13px}.ready-ok{color:#166534;font-weight:700}.ready-wait{color:#a16207;font-weight:700}.action-link{display:inline-block;padding:9px 12px;border:1px solid #d4d4d8;border-radius:9px;text-decoration:none;font-size:13px;font-weight:700;background:#fff;color:#27272a}.student-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 16px}.student-metric{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-metric .value{font-size:22px;font-weight:800;margin-top:4px}.student-table-wrap{overflow:auto;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-table{width:100%;border-collapse:collapse;min-width:900px}.student-table th{font-size:12px;text-align:left;color:#71717a;font-weight:700;padding:11px 12px;border-bottom:1px solid #e4e4e7;background:#fafafa}.student-table td{padding:12px;border-bottom:1px solid #f1f1f3;font-size:13px;vertical-align:middle}.student-table tr:last-child td{border-bottom:0}.status-active{color:#166534;font-weight:800}.status-revoked{color:#b91c1c;font-weight:800}.status-neutral{color:#71717a;font-weight:700}.student-search{display:grid;grid-template-columns:1fr auto;gap:8px;margin:0 0 14px}.progress-mini{display:flex;align-items:center;gap:8px}.progress-mini-track{width:84px;height:6px;background:#e4e4e7;border-radius:999px;overflow:hidden}.progress-mini-track span{display:block;height:100%;background:#18181b}.nowrap{white-space:nowrap}.curriculum{display:grid;gap:12px}.curriculum-group{border:1px solid #e4e4e7;border-radius:12px;background:#fafafa;overflow:hidden}.curriculum-group.dragging,.curriculum-lesson.dragging{opacity:.45}.curriculum-group.drop-target,.lesson-dropzone.drop-target{outline:2px solid #18181b;outline-offset:-2px}.curriculum-group-head{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #e4e4e7;background:#f4f4f5}.curriculum-group-head strong{flex:1}.curriculum-count{font-size:11px;color:#71717a}.drag-handle{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;color:#71717a;cursor:grab;user-select:none;border-radius:6px}.drag-handle:active{cursor:grabbing;background:#e4e4e7}.lesson-dropzone{min-height:10px;padding:6px}.lessoncard.curriculum-lesson{margin:6px 0;background:#fff}.lessoncard.curriculum-lesson summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px}.lesson-summary-main{min-width:0}.lesson-summary-title{display:flex;gap:6px;align-items:center;min-width:0}.lesson-summary-title strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lesson-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}.mini-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:700;background:#f4f4f5;color:#52525b}.mini-badge.ok{background:#ecfdf3;color:#166534}.mini-badge.warn{background:#fff7ed;color:#9a3412}.mini-badge.preview-badge{background:#eff6ff;color:#1d4ed8}.curriculum-save{font-size:12px;color:#71717a;margin-left:auto}.curriculum-save.saving{color:#a16207}.curriculum-save.saved{color:#166534}.curriculum-save.error{color:#b91c1c}.content-tools{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px}.content-tools .hint{margin:0}.student-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}.student-detail-card{padding:14px;border:1px solid #e4e4e7;border-radius:10px;background:#fff}.student-detail-card strong{display:block;margin-top:4px;font-size:15px}.timeline{display:grid;gap:10px;margin:10px 0 18px}.timeline-item{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid #f0f0f2}.timeline-item:last-child{border-bottom:0}.timeline-time{font-size:12px;color:#71717a}.timeline-title{font-weight:800}.timeline-sub{font-size:12px;color:#71717a;margin-top:3px}.student-section{margin:20px 0}.student-section h3{margin-bottom:10px}button:disabled{cursor:not-allowed;opacity:.45}@media(max-width:800px){.wrap{width:min(100% - 24px,1280px)}.admin-tabs{overflow:auto;gap:18px}.course-list th:nth-child(3),.course-list td:nth-child(3){display:none}.editor-head{display:block}.sales-summary{grid-template-columns:1fr}}" +
     "</style></head><body><main class=\"wrap\">" + body + "</main></body></html>";
 }
 
@@ -847,13 +847,29 @@ function studentManagementPanel(course, rows, query = "") {
 function courseCard(course, creators, activeTab = "content", studentRows = [], studentQuery = "", studentDetail = null, studentMemberId = "") {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
+  const modules = Array.isArray(course.modules) ? course.modules : [];
+  const lessons = Array.isArray(course.lessons) ? course.lessons : [];
   const moduleOptions = ['<option value="">섹션 없음</option>']
-    .concat((course.modules || []).map(function (module) {
+    .concat(modules.map(function (module) {
       return '<option value="' + escapeHtml(module.id) + '">' + escapeHtml(module.title) + '</option>';
     }));
-  const lessonHtml = (course.lessons || []).map(function (lesson, index) {
-    const vimeo = lesson.vimeo_id ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
-    const upload = lesson.vimeo_id ? "" :
+  const lessonOrder = new Map(lessons.map(function (lesson, index) {
+    return [String(lesson.id), index];
+  }));
+
+  function renderLesson(lesson) {
+    const index = Number(lessonOrder.get(String(lesson.id)) || 0);
+    const hasVideo = Boolean(lesson.vimeo_id);
+    const vimeo = hasVideo ? "Vimeo " + escapeHtml(lesson.vimeo_id) : "영상 미등록";
+    const processing = ["uploading","processing"].includes(String(lesson.status || ""));
+    const videoBadge = hasVideo
+      ? "<span class=\"mini-badge " + (processing ? "warn" : "ok") + "\">" + (processing ? "영상 처리 중" : "영상 연결됨") + "</span>"
+      : "<span class=\"mini-badge warn\">영상 없음</span>";
+    const previewBadge = course.access_type === "paid" && Number(lesson.is_preview) === 1
+      ? "<span class=\"mini-badge preview-badge\">무료 미리보기</span>"
+      : "";
+    const statusBadge = "<span class=\"mini-badge\">" + escapeHtml(lesson.status || "draft") + "</span>";
+    const upload = hasVideo ? "" :
       "<div class=\"upload\" data-vimeo-upload data-course-id=\"" + escapeHtml(course.id) + "\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\" data-lesson-title=\"" + escapeHtml(lesson.title) + "\">" +
       "<label>영상 파일</label><input class=\"uploadfile\" type=\"file\" accept=\"video/*\">" +
       "<button class=\"uploadbutton\" type=\"button\">Vimeo 업로드</button>" +
@@ -866,22 +882,50 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">이 차시를 무료 미리보기로 공개</label>"
       : "";
     const up = index > 0
-      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">순서 올리기</button></form>"
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">위로</button></form>"
       : "";
-    const down = index < course.lessons.length - 1
-      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\">순서 내리기</button></form>"
+    const down = index < lessons.length - 1
+      ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"down\"><button class=\"secondary\" type=\"submit\">아래로</button></form>"
       : "";
-    return "<details class=\"lessoncard\">" +
-      "<summary><span><strong>" + (index + 1) + ". " + escapeHtml(lesson.title) + "</strong><div class=\"lessonmeta\">" + vimeo + " · " + escapeHtml(lesson.status) + "</div></span><span class=\"pill\">차시 편집</span></summary>" +
+    return "<details class=\"lessoncard curriculum-lesson\" data-lesson-id=\"" + escapeHtml(lesson.id) + "\">" +
+      "<summary><span class=\"drag-handle lesson-drag\" draggable=\"true\" title=\"끌어서 순서 또는 섹션 변경\">⋮⋮</span>" +
+      "<span class=\"lesson-summary-main\"><span class=\"lesson-summary-title\"><strong>" + (index + 1) + ". " + escapeHtml(lesson.title) + "</strong></span>" +
+      "<span class=\"lesson-badges\">" + videoBadge + previewBadge + statusBadge + "</span></span>" +
+      "<span class=\"pill\">편집</span></summary>" +
       "<div class=\"lessonbody\"><form method=\"post\" action=\"/course-admin/lesson-update\">" +
       "<input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\">" +
       "<label>차시 제목</label><input name=\"title\" value=\"" + escapeHtml(lesson.title) + "\" required>" +
       "<label>차시 설명 · 학습 포인트</label><textarea name=\"description\" placeholder=\"수강생에게 이 차시에서 무엇을 배우는지 설명하세요.\">" + escapeHtml(lesson.description || "") + "</textarea>" +
-      "<div class=\"fieldgrid\"><div><label>소속 섹션</label><select name=\"module_id\">" + selectedOptions + "</select><div class=\"hint\">섹션은 여러 차시를 주제별로 묶을 때만 사용합니다.</div></div><div><label>영상 상태</label><div class=\"lessonmeta\" style=\"padding:12px 0\">" + vimeo + "</div></div></div>" +
+      "<div class=\"fieldgrid\"><div><label>소속 섹션</label><select name=\"module_id\">" + selectedOptions + "</select><div class=\"hint\">드래그로 다른 섹션에 옮겨도 자동 저장됩니다.</div></div><div><label>영상 상태</label><div class=\"lessonmeta\" style=\"padding:12px 0\">" + vimeo + "</div></div></div>" +
       preview +
       "<button type=\"submit\" style=\"margin-top:12px\">차시 저장</button></form>" +
       "<div class=\"toolbar\">" + up + down + "</div>" + upload + "</div></details>";
-  }).join("");
+  }
+
+  const groupedLessons = new Map();
+  groupedLessons.set("", []);
+  modules.forEach(function (module) { groupedLessons.set(String(module.id), []); });
+  lessons.forEach(function (lesson) {
+    const key = lesson.module_id && groupedLessons.has(String(lesson.module_id)) ? String(lesson.module_id) : "";
+    groupedLessons.get(key).push(lesson);
+  });
+
+  function renderGroup(module) {
+    const moduleId = module ? String(module.id) : "";
+    const title = module ? module.title : "섹션 없음";
+    const rows = groupedLessons.get(moduleId) || [];
+    const handle = module
+      ? "<span class=\"drag-handle module-drag\" draggable=\"true\" title=\"끌어서 섹션 순서 변경\">☰</span>"
+      : "<span class=\"drag-handle\" aria-hidden=\"true\">·</span>";
+    return "<section class=\"curriculum-group\" data-module-id=\"" + escapeHtml(moduleId) + "\">" +
+      "<div class=\"curriculum-group-head\">" + handle + "<strong>" + escapeHtml(title) + "</strong><span class=\"curriculum-count\">" + rows.length + "개 차시</span></div>" +
+      "<div class=\"lesson-dropzone\">" + rows.map(renderLesson).join("") + "</div></section>";
+  }
+
+  const curriculumHtml =
+    renderGroup(null) +
+    modules.map(renderGroup).join("");
+
   const published = course.status === "published" && Number(course.visible) === 1;
   const statusForm =
     "<form method=\"post\" action=\"/course-admin/course-status\" style=\"margin:0\">" +
@@ -949,18 +993,19 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
   } else {
     panel =
       "<div class=\"panel\"><div class=\"sectionhead\"><div><h3>콘텐츠</h3>" +
-      "<p class=\"hint\">차시는 필요할 때 펼쳐 편집합니다. 섹션으로 여러 차시를 묶을 수 있습니다.</p></div></div>" +
-      "<div class=\"editor\">" + lessonHtml +
-      "<div class=\"sectionhead\"><div><h3>섹션</h3><p class=\"hint\">예: 기초, 검색, 상품기획처럼 여러 차시를 묶는 단위입니다.</p></div></div>" +
+      "<p class=\"hint\">섹션과 차시를 끌어서 순서와 소속을 바꿀 수 있습니다. 변경한 순서는 자동 저장됩니다.</p></div></div>" +
+      "<div class=\"content-tools\"><span class=\"hint\">차시를 클릭하면 제목·설명·영상·미리보기를 편집합니다.</span><span class=\"curriculum-save\" data-curriculum-status>순서 자동 저장</span></div>" +
+      "<div class=\"editor curriculum\" data-curriculum data-course-id=\"" + escapeHtml(course.id) + "\">" + curriculumHtml + "</div>" +
+      "<div class=\"sectionhead\"><div><h3>콘텐츠 추가</h3><p class=\"hint\">섹션이나 차시를 추가한 뒤 위 목록에서 배치하세요.</p></div></div>" +
       "<form class=\"moduleform\" method=\"post\" action=\"/course-admin/modules\">" +
       "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
       "<input name=\"title\" placeholder=\"예: 1부. 온라인 유통의 구조\"><button class=\"secondary\" type=\"submit\">섹션 추가</button></form>" +
+      "<form method=\"post\" action=\"/course-admin/lessons\" style=\"margin-top:10px\">" +
+      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+      "<div class=\"row\"><input name=\"title\" required placeholder=\"새 차시명\"><button type=\"submit\">차시 추가</button></div></form>" +
       "<div class=\"library\" data-vimeo-library data-course-id=\"" + escapeHtml(course.id) + "\">" +
       "<button class=\"secondary libraryload\" type=\"button\">Vimeo 기존 영상 불러오기</button>" +
-      "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div>" +
-      "<form method=\"post\" action=\"/course-admin/lessons\">" +
-      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-      "<label>차시 추가</label><div class=\"row\"><input name=\"title\" required placeholder=\"차시명\"><button type=\"submit\">차시 추가</button></div></form></div></div>";
+      "<div class=\"librarylist\"></div><div class=\"libraryactions\"></div><div class=\"uploadstatus\"></div></div></div>";
   }
 
   return "<section class=\"content-shell\">" + header + panel + "</section>";
@@ -1647,6 +1692,71 @@ async function moveLesson(form, env) {
   ]);
 }
 
+async function reorderCurriculum(body, env) {
+  const courseId = String(body && body.course_id || "").trim();
+  const moduleIds = Array.isArray(body && body.modules)
+    ? body.modules.map((id) => String(id || "").trim()).filter(Boolean)
+    : [];
+  const lessonItems = Array.isArray(body && body.lessons) ? body.lessons : [];
+  if (!courseId) throw new Error("강의 정보가 필요합니다.");
+
+  const [moduleRows, lessonRows] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT id FROM course_modules WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    ).bind(courseId).all(),
+    env.COURSE_DB.prepare(
+      "SELECT id FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    ).bind(courseId).all()
+  ]);
+
+  const currentModules = (Array.isArray(moduleRows?.results) ? moduleRows.results : []).map((row) => String(row.id));
+  const currentLessons = (Array.isArray(lessonRows?.results) ? lessonRows.results : []).map((row) => String(row.id));
+  if (moduleIds.length !== currentModules.length || new Set(moduleIds).size !== currentModules.length ||
+      currentModules.some((id) => !moduleIds.includes(id))) {
+    throw new Error("섹션 목록이 최신 상태와 다릅니다. 화면을 새로고침한 뒤 다시 시도해 주세요.");
+  }
+
+  const normalizedLessons = lessonItems.map((item) => ({
+    id: String(item && item.id || "").trim(),
+    module_id: String(item && item.module_id || "").trim() || null
+  })).filter((item) => item.id);
+  const lessonIds = normalizedLessons.map((item) => item.id);
+  if (lessonIds.length !== currentLessons.length || new Set(lessonIds).size !== currentLessons.length ||
+      currentLessons.some((id) => !lessonIds.includes(id))) {
+    throw new Error("차시 목록이 최신 상태와 다릅니다. 화면을 새로고침한 뒤 다시 시도해 주세요.");
+  }
+
+  const allowedModules = new Set(moduleIds);
+  if (normalizedLessons.some((item) => item.module_id && !allowedModules.has(item.module_id))) {
+    throw new Error("차시의 섹션 정보가 올바르지 않습니다.");
+  }
+
+  const statements = [
+    env.COURSE_DB.prepare(
+      "UPDATE lessons SET sort_order=sort_order+1000000,updated_at=CURRENT_TIMESTAMP WHERE course_id=? AND status!='archived'"
+    ).bind(courseId),
+    env.COURSE_DB.prepare(
+      "UPDATE course_modules SET sort_order=sort_order+1000000,updated_at=CURRENT_TIMESTAMP WHERE course_id=? AND status!='archived'"
+    ).bind(courseId)
+  ];
+  moduleIds.forEach((id, index) => {
+    statements.push(
+      env.COURSE_DB.prepare(
+        "UPDATE course_modules SET sort_order=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND course_id=?"
+      ).bind(index, id, courseId)
+    );
+  });
+  normalizedLessons.forEach((item, index) => {
+    statements.push(
+      env.COURSE_DB.prepare(
+        "UPDATE lessons SET sort_order=?,module_id=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND course_id=?"
+      ).bind(index, item.module_id, item.id, courseId)
+    );
+  });
+  await env.COURSE_DB.batch(statements);
+  return { module_count: moduleIds.length, lesson_count: normalizedLessons.length };
+}
+
 async function setCourseStatus(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
   const action = String(form.get("action") || "").trim();
@@ -1779,6 +1889,37 @@ function adminClientScript() {
     "  status.textContent='선택 영상을 차시로 연결하는 중…';",
     "  try{const result=await api('/course-admin/api/vimeo/import',{method:'POST',body:JSON.stringify({course_id:box.dataset.courseId,video_ids:selected})});status.textContent=result.imported_count+'개 영상을 연결했습니다.';setTimeout(function(){location.reload();},700);}catch(error){status.textContent=error.message;status.classList.add('error');}",
     "}",
+    "function curriculumPayload(root){",
+    "  const modules=Array.from(root.querySelectorAll('.curriculum-group[data-module-id]')).map(function(group){return group.dataset.moduleId||'';}).filter(Boolean);",
+    "  const lessons=[];",
+    "  root.querySelectorAll('.curriculum-group[data-module-id]').forEach(function(group){const moduleId=group.dataset.moduleId||'';group.querySelectorAll(':scope > .lesson-dropzone > .curriculum-lesson').forEach(function(row){lessons.push({id:row.dataset.lessonId,module_id:moduleId||null});});});",
+    "  return {course_id:root.dataset.courseId,modules:modules,lessons:lessons};",
+    "}",
+    "async function saveCurriculum(root){",
+    "  const status=document.querySelector('[data-curriculum-status]');",
+    "  if(status){status.textContent='저장 중…';status.className='curriculum-save saving';}",
+    "  try{await api('/course-admin/api/curriculum/reorder',{method:'POST',body:JSON.stringify(curriculumPayload(root))});if(status){status.textContent='저장됨';status.className='curriculum-save saved';setTimeout(function(){status.textContent='순서 자동 저장';status.className='curriculum-save';},1300);}}",
+    "  catch(error){if(status){status.textContent=error.message||'저장 실패';status.className='curriculum-save error';}setTimeout(function(){location.reload();},1600);}",
+    "}",
+    "function beforeNode(container,y,selector){const rows=Array.from(container.querySelectorAll(selector)).filter(function(el){return !el.classList.contains('dragging');});let best=null,bestOffset=Number.NEGATIVE_INFINITY;rows.forEach(function(el){const box=el.getBoundingClientRect();const offset=y-box.top-box.height/2;if(offset<0&&offset>bestOffset){bestOffset=offset;best=el;}});return best;}",
+    "let draggingLesson=null;let draggingModule=null;",
+    "document.addEventListener('dragstart',function(event){",
+    "  const lessonHandle=event.target.closest('.lesson-drag');",
+    "  if(lessonHandle){draggingLesson=lessonHandle.closest('.curriculum-lesson');if(draggingLesson){draggingLesson.classList.add('dragging');event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',draggingLesson.dataset.lessonId||'lesson');}return;}",
+    "  const moduleHandle=event.target.closest('.module-drag');",
+    "  if(moduleHandle){draggingModule=moduleHandle.closest('.curriculum-group');if(draggingModule){draggingModule.classList.add('dragging');event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',draggingModule.dataset.moduleId||'module');}}",
+    "});",
+    "document.addEventListener('dragover',function(event){",
+    "  if(draggingLesson){const zone=event.target.closest('.lesson-dropzone');if(!zone)return;event.preventDefault();const before=beforeNode(zone,event.clientY,':scope > .curriculum-lesson');if(before)zone.insertBefore(draggingLesson,before);else zone.appendChild(draggingLesson);zone.classList.add('drop-target');return;}",
+    "  if(draggingModule){const root=event.target.closest('[data-curriculum]');const target=event.target.closest('.curriculum-group[data-module-id]');if(!root||!target||!target.dataset.moduleId)return;event.preventDefault();const groups=Array.from(root.querySelectorAll(':scope > .curriculum-group[data-module-id]')).filter(function(g){return g.dataset.moduleId&&g!==draggingModule;});let before=null,best=Number.NEGATIVE_INFINITY;groups.forEach(function(g){const box=g.getBoundingClientRect();const off=event.clientY-box.top-box.height/2;if(off<0&&off>best){best=off;before=g;}});if(before)root.insertBefore(draggingModule,before);else root.appendChild(draggingModule);}",
+    "});",
+    "document.addEventListener('dragleave',function(event){const zone=event.target.closest&&event.target.closest('.lesson-dropzone');if(zone)zone.classList.remove('drop-target');});",
+    "document.addEventListener('dragend',function(){",
+    "  const root=(draggingLesson||draggingModule)&&((draggingLesson||draggingModule).closest('[data-curriculum]'));",
+    "  document.querySelectorAll('.dragging,.drop-target').forEach(function(el){el.classList.remove('dragging','drop-target');});",
+    "  draggingLesson=null;draggingModule=null;if(root)saveCurriculum(root);",
+    "});",
+    "document.addEventListener('click',function(event){if(event.target.closest('.drag-handle'))event.preventDefault();});",
     "document.addEventListener('click',function(event){",
     "  const uploadButton=event.target.closest('.uploadbutton');",
     "  if(uploadButton){const box=uploadButton.closest('[data-vimeo-upload]');if(box) startUpload(box);return;}",
@@ -2159,6 +2300,15 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("차시를 추가했습니다."));
       } catch (error) {
         return json({ ok: false, error: "course_admin_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
+      }
+    }
+
+    if (url.pathname === "/course-admin/api/curriculum/reorder" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      try {
+        return json({ ok: true, ...(await reorderCurriculum(await readJson(request), env)) });
+      } catch (error) {
+        return json({ ok: false, error: "curriculum_reorder_failed", detail: String(error && error.message ? error.message : error) }, { status: 400 });
       }
     }
 
