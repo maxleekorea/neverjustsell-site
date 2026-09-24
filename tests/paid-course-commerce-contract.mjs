@@ -49,6 +49,11 @@ assert(!admin.includes("/course-admin/presale-schedule"), "presale scheduling UI
 assert(!admin.includes("/course-admin/course-access-policy"), "standard VOD policy must not require per-course admin editing");
 assert(admin.includes("일반 유료 VOD는 별도 설정 없이 이 정책을 자동 적용합니다."), "fixed standard VOD policy summary missing");
 assert(admin.includes("다음 할 일"), "course admin next-action guide missing");
+assert(admin.includes("기존 Vimeo 영상 연결"), "existing Vimeo video must be linkable to an existing lesson");
+assert(admin.includes("/course-admin/api/vimeo/link"), "direct existing Vimeo lesson-link API missing");
+assert(admin.includes("linkExistingVimeoVideo"), "existing Vimeo lesson-link handler missing");
+assert(admin.includes("linked_to"), "Vimeo library must expose reuse information");
+assert(admin.includes("재사용"), "Vimeo reuse must be visible in the admin UI");
 assert(admin.includes("짧은 사전판매가 필요하면"), "manual short-presale guidance missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
