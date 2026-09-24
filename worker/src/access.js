@@ -159,18 +159,69 @@ async function manualAccessDecision(env, memberId, courseId) {
   return { active: true, row, expired: false };
 }
 
+async function coursePurchaseSnapshot(env, courseId) {
+  if (!env.COURSE_DB || !courseId) return null;
+  return env.COURSE_DB.prepare(
+    "SELECT id,price_krw,access_duration_days,refund_policy_version,refund_policy_text,presale_opens_at FROM courses WHERE id=? LIMIT 1"
+  ).bind(courseId).first();
+}
+
+function paidItemAmount(item) {
+  const direct = Number(item?.payment_amount ?? item?.payed_amount);
+  return Number.isFinite(direct) && direct >= 0 ? Math.round(direct) : null;
+}
+
+function purchaseDate(purchase) {
+  const raw = String(
+    purchase?.order?.order_date ||
+    purchase?.order?.payment_date ||
+    purchase?.order?.pay_date ||
+    ""
+  ).trim();
+  return raw || null;
+}
+
 async function persistEntitlement(env, memberId, courseId, productNo, purchase, active) {
   if (!env.COURSE_DB || !memberId || !courseId) return;
   const orderId = purchase?.order?.order_id || null;
   const itemCode = purchase?.item?.order_item_code || null;
+  const snapshot = active ? await coursePurchaseSnapshot(env, courseId) : null;
+  const purchasedAt = active ? purchaseDate(purchase) : null;
+  const purchasePrice = active ? paidItemAmount(purchase?.item) : null;
+  const policyVersion = active ? String(snapshot?.refund_policy_version || "").trim() || null : null;
+  const policyText = active ? String(snapshot?.refund_policy_text || "").trim() || null : null;
+  const durationSnapshot = active && snapshot?.access_duration_days != null
+    ? Number(snapshot.access_duration_days)
+    : null;
   const existing = await env.COURSE_DB.prepare(
     "SELECT status,source_order_id,source_order_item_code FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
   ).bind(memberId, courseId).first();
 
   if (active) {
     await env.COURSE_DB.prepare(
-      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at) VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP) ON CONFLICT(member_id,course_id) DO UPDATE SET product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase',access_expires_at=NULL,revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
-    ).bind(memberId, courseId, Number(productNo), orderId, itemCode).run();
+      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at,purchase_price_krw,purchased_at,policy_version,refund_policy_snapshot,access_duration_days_snapshot) " +
+      "VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP,?,?,?,?,?) " +
+      "ON CONFLICT(member_id,course_id) DO UPDATE SET " +
+      "product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase'," +
+      "purchase_price_krw=COALESCE(course_entitlements.purchase_price_krw,excluded.purchase_price_krw)," +
+      "purchased_at=COALESCE(course_entitlements.purchased_at,excluded.purchased_at)," +
+      "policy_version=COALESCE(course_entitlements.policy_version,excluded.policy_version)," +
+      "refund_policy_snapshot=COALESCE(course_entitlements.refund_policy_snapshot,excluded.refund_policy_snapshot)," +
+      "access_duration_days_snapshot=COALESCE(course_entitlements.access_duration_days_snapshot,excluded.access_duration_days_snapshot)," +
+      "access_expires_at=CASE WHEN course_entitlements.grant_reason='manual' THEN NULL ELSE course_entitlements.access_expires_at END," +
+      "revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
+    ).bind(
+      memberId,
+      courseId,
+      Number(productNo),
+      orderId,
+      itemCode,
+      purchasePrice,
+      purchasedAt,
+      policyVersion,
+      policyText,
+      durationSnapshot
+    ).run();
 
     const changed =
       !existing ||
