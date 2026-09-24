@@ -1,4 +1,5 @@
 import app from "./main.js";
+import { getProgramCommunityProjection } from "./program-access.js";
 
 const SIGNED_TICKET_PREFIX = "v1";
 const encoder = new TextEncoder();
@@ -89,7 +90,21 @@ async function redeemCommunityTicket(request, env) {
     return json({ ok: false, error: "ticket_invalid_or_expired" }, { status: 401 });
   }
 
-  return json({ ok: true, ...identity });
+  let projection = {
+    program_access: [],
+    moderation: [],
+    managed_runs: [],
+    platform_operator: false,
+    sync: { synced: false, skipped: true },
+    sync_error: null
+  };
+  try {
+    projection = await getProgramCommunityProjection(env, identity.member_id, { syncPurchases: true });
+  } catch (error) {
+    projection.sync_error = String(error?.message || error);
+  }
+
+  return json({ ok: true, ...identity, ...projection });
 }
 
 export default {
