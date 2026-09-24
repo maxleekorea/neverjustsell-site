@@ -12,6 +12,7 @@ import {
   getPublishedD1Course,
   getCourseProgress,
   touchLessonProgress,
+  recordLessonWatch,
   completeLesson,
   d1CourseToPlayerCourse,
   isCourseEnrolled,
@@ -39,7 +40,7 @@ function html(body, init = {}) {
   headers.set("Cache-Control", "no-store");
   headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; style-src 'unsafe-inline'; frame-src https://player.vimeo.com; img-src 'self' data:; base-uri 'none'; form-action 'self'"
+    "default-src 'self'; style-src 'unsafe-inline'; script-src 'self' https://player.vimeo.com; frame-src https://player.vimeo.com; img-src 'self' data:; base-uri 'none'; form-action 'self'"
   );
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("X-Frame-Options", "DENY");
@@ -542,7 +543,7 @@ function renderD1CoursePlayer(course, progress, slug, url) {
   const selectedLesson = resolved.selectedLesson;
   const completedIds = progress?.completedIds || new Set();
   const player = selectedLesson?.vimeoId
-    ? `<div class="video"><iframe src="https://player.vimeo.com/video/${encodeURIComponent(selectedLesson.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(playerCourse.title)} ${escapeHtml(selectedLesson.title)}"></iframe></div>`
+    ? `<div class="video"><iframe id="learning-player" data-learning-player data-course-slug="${escapeHtml(slug)}" data-lesson-id="${escapeHtml(selectedLesson.id)}" src="https://player.vimeo.com/video/${encodeURIComponent(selectedLesson.vimeoId)}?dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${escapeHtml(playerCourse.title)} ${escapeHtml(selectedLesson.title)}"></iframe></div><script src="https://player.vimeo.com/api/player.js"></script><script src="/classroom/player-tracking.js"></script>`
     : `<p class="note">영상 처리 중이거나 아직 연결되지 않은 차시입니다.</p>`;
 
   const grouped = new Map();
@@ -610,6 +611,88 @@ async function renderPublishedD1Course(request, env, url, course) {
   }
   const progress = await getCourseProgress(env, session.record.member_id, playerCourse);
   return renderD1CoursePlayer(course, progress, course.slug, url);
+}
+
+async function handleWatchPost(request, env) {
+  const origin = String(request.headers.get("Origin") || "");
+  if (origin && origin !== CLASSROOM_ORIGIN) {
+    return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+  }
+  const session = await getCustomerSession(request, env);
+  if (!session?.record?.member_id) return json({ ok: false, error: "login_required" }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const slug = String(body?.course_slug || "").trim();
+  const lessonId = String(body?.lesson_id || "").trim();
+  const positionSeconds = Math.max(0, Number(body?.position_seconds || 0) || 0);
+  const watchedDeltaSeconds = Math.max(0, Number(body?.watched_delta_seconds || 0) || 0);
+
+  const course = await getPublishedD1Course(env, slug);
+  if (!course || !course.lessons.some((lesson) => lesson.id === lessonId)) {
+    return json({ ok: false, error: "invalid_progress_target" }, { status: 400 });
+  }
+
+  if (course.access_type === "public") {
+    const enrolled = await isCourseEnrolled(env, session.record.member_id, course.id);
+    if (!enrolled) return json({ ok: false, error: "course_enrollment_required" }, { status: 403 });
+  } else {
+    const decision = await getCourseAccessDecision(request, env, Number(course.cafe24_product_no), course.id);
+    if (!decision.body.access) return json({ ok: false, error: "course_access_required" }, { status: 403 });
+  }
+
+  await recordLessonWatch(
+    env,
+    session.record.member_id,
+    course.id,
+    lessonId,
+    positionSeconds,
+    watchedDeltaSeconds
+  );
+  return json({ ok: true });
+}
+
+function learningPlayerTrackingScript() {
+  return `(function(){
+    const iframe=document.querySelector('[data-learning-player]');
+    if(!iframe||!window.Vimeo||!window.Vimeo.Player)return;
+    const player=new window.Vimeo.Player(iframe);
+    const courseSlug=iframe.dataset.courseSlug||'';
+    const lessonId=iframe.dataset.lessonId||'';
+    let lastSeconds=null;
+    let pending=0;
+    let lastSentAt=Date.now();
+
+    async function flush(force){
+      if(!pending&&!force)return;
+      const delta=Math.max(0,Math.min(30,Math.floor(pending)));
+      pending=0;
+      lastSentAt=Date.now();
+      let position=0;
+      try{position=await player.getCurrentTime();}catch(_){}
+      const payload={course_slug:courseSlug,lesson_id:lessonId,position_seconds:position,watched_delta_seconds:delta};
+      const body=JSON.stringify(payload);
+      if(force&&navigator.sendBeacon){
+        navigator.sendBeacon('/classroom/progress/watch',new Blob([body],{type:'application/json'}));
+        return;
+      }
+      fetch('/classroom/progress/watch',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true,credentials:'same-origin'}).catch(function(){});
+    }
+
+    player.on('timeupdate',function(data){
+      const current=Number(data&&data.seconds);
+      if(!Number.isFinite(current))return;
+      if(lastSeconds!==null){
+        const step=current-lastSeconds;
+        if(step>0&&step<=3)pending+=step;
+      }
+      lastSeconds=current;
+      if(pending>=10||Date.now()-lastSentAt>=15000)flush(false);
+    });
+    player.on('seeked',function(data){lastSeconds=Number(data&&data.seconds)||null;});
+    player.on('pause',function(){flush(false);});
+    player.on('ended',function(){flush(true);});
+    window.addEventListener('pagehide',function(){flush(true);});
+  })();`;
 }
 
 async function handleProgressPost(request, env) {
@@ -846,6 +929,24 @@ export default {
         return await handleFreeEnrollment(request, env);
       } catch {
         return renderClassroomError("수강 신청");
+      }
+    }
+
+    if (url.pathname === "/classroom/player-tracking.js" && request.method === "GET") {
+      return new Response(learningPlayerTrackingScript(), {
+        headers: {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
+    }
+
+    if (url.pathname === "/classroom/progress/watch" && request.method === "POST") {
+      try {
+        return await handleWatchPost(request, env);
+      } catch {
+        return json({ ok: false, error: "watch_progress_failed" }, { status: 500 });
       }
     }
 
