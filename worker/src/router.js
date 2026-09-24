@@ -171,6 +171,21 @@ function formatPrice(course) {
   return price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 준비 중";
 }
 
+function courseSalesState(course) {
+  const state = String(course?.sales_state || "").trim();
+  if (["preparing","presale","selling","paused"].includes(state)) return state;
+  return Number(course?.sales_enabled) === 1 ? "selling" : "preparing";
+}
+
+function courseSalesLabel(course) {
+  return {
+    preparing: "판매 준비 중",
+    presale: "사전판매 중",
+    selling: "판매 중",
+    paused: "판매 중단"
+  }[courseSalesState(course)] || "판매 준비 중";
+}
+
 function isPublicPreviewLesson(course, lesson) {
   return Boolean(
     course &&
@@ -368,14 +383,22 @@ async function renderCourseLanding(request, env, slug) {
   } else if (paidAccess) {
     cta = '<span class="action secondary">수강 준비 중</span>';
   } else {
-    cta = Number(course.sales_enabled) === 1 && course.sales_url
-      ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
-      : '<span class="action secondary">판매 준비 중</span>';
+    const salesState = courseSalesState(course);
+    if (salesState === "presale" && course.sales_url) {
+      cta = '<a class="action" href="' + escapeHtml(course.sales_url) + '">사전판매 구매하기</a>';
+    } else if (salesState === "selling" && course.sales_url) {
+      cta = '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>';
+    } else if (salesState === "paused") {
+      cta = '<span class="action secondary">판매 중단</span>';
+    } else {
+      cta = '<span class="action secondary">판매 준비 중</span>';
+    }
   }
 
   const metaText = lessonCount + '개 차시 · ' +
     (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
-    (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '');
+    (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '') +
+    (course.access_type === "paid" ? ' · ' + courseSalesLabel(course) : '');
 
   const previewBlock = renderPublicPreview(course, preview);
   const audienceSection = renderSalesListSection("이런 분께 추천합니다", course.target_audience);
@@ -396,7 +419,12 @@ async function renderCourseLanding(request, env, slug) {
     : '';
 
   const sideNote = course.access_type === "paid"
-    ? (Number(course.sales_enabled) === 1 ? 'Cafe24 회원으로 구매 후 바로 수강권을 확인합니다.' : '현재 신규 구매는 준비 중입니다.')
+    ? ({
+        preparing: '현재 신규 구매는 준비 중입니다.',
+        presale: '사전판매 중입니다. 결제 후 수강권은 생성되며, 강의 게시 전에는 ‘수강 준비 중’으로 표시됩니다.',
+        selling: 'Cafe24 회원으로 구매 후 수강권을 확인하고 게시된 강의를 바로 수강할 수 있습니다.',
+        paused: '현재 신규 구매가 중단되어 있습니다. 기존 수강생의 수강권은 유지됩니다.'
+      }[courseSalesState(course)] || '현재 신규 구매는 준비 중입니다.')
     : 'Cafe24 회원 로그인 후 무료 수강 신청할 수 있습니다.';
 
   return html(classroomShell(
