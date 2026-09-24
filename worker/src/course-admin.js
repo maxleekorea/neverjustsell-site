@@ -950,7 +950,7 @@ function studentManagementPanel(course, rows, query = "") {
     "<p class=\"hint\" style=\"margin-top:10px\">Cafe24 구매 수강권은 주문에서 관리하고, 관리자 부여 수강권은 회원 상세에서 회수·기간 변경할 수 있습니다.</p></div>";
 }
 
-function courseCard(course, creators, activeTab = "content", studentRows = [], studentQuery = "", studentDetail = null, studentMemberId = "") {
+function courseCard(course, creators, activeTab = "basic", studentRows = [], studentQuery = "", studentDetail = null, studentMemberId = "") {
   const access = course.access_type === "paid" ? "유료" : "무료 · 로그인 필요";
   const price = Number(course.price_krw || 0);
   const modules = Array.isArray(course.modules) ? course.modules : [];
@@ -1043,22 +1043,39 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     "<input type=\"hidden\" name=\"action\" value=\"" + (published ? "unpublish" : "publish") + "\">" +
     "<button class=\"secondary\" type=\"submit\">" + (published ? "게시 중지" : "강의 게시") + "</button></form>";
 
-  const tab = ["basic", "content", "landing", "sales", "students", "advanced"].includes(activeTab) ? activeTab : "content";
+  const tab = ["basic", "content", "landing", "sales", "students", "advanced"].includes(activeTab) ? activeTab : "basic";
   const base = "/course-admin?course=" + encodeURIComponent(course.id);
   const tabLink = function (key, label) {
     return "<a class=\"" + (tab === key ? "active" : "") + "\" href=\"" + base + "&tab=" + key + "\">" + label + "</a>";
   };
 
   const missingVideo = lessons.some((lesson) => !lesson.vimeo_id);
+  const basicReady = Boolean(String(course.summary || "").trim()) &&
+    Boolean(String(course.owner_member_id || "").trim()) &&
+    (course.access_type !== "paid" || price > 0);
+  const salesPageReady = course.access_type !== "paid" || [
+    course.instructor_name,
+    course.instructor_bio,
+    course.target_audience,
+    course.learning_outcomes
+  ].every((value) => Boolean(String(value || "").trim()));
   const salesState = normalizedSalesState(course);
-  let nextTab = "content";
-  let nextLabel = "콘텐츠를 등록하세요";
-  if (lessons.length === 0) {
+  let nextTab = "basic";
+  let nextLabel = "기본 정보를 확인하세요";
+  if (!basicReady) {
+    nextTab = "basic";
+    nextLabel = course.access_type === "paid" && price <= 0
+      ? "판매가를 입력하고 기본 정보를 확인하세요"
+      : "기본 정보를 완성하세요";
+  } else if (lessons.length === 0) {
     nextTab = "content";
     nextLabel = "첫 차시와 강의 영상을 등록하세요";
   } else if (missingVideo) {
     nextTab = "content";
     nextLabel = "영상이 없는 차시를 연결하세요";
+  } else if (course.access_type === "paid" && !salesPageReady) {
+    nextTab = "landing";
+    nextLabel = "판매 페이지를 작성하세요";
   } else if (course.access_type === "paid" && !(Number(course.cafe24_product_no) > 0)) {
     nextTab = "sales";
     nextLabel = "Cafe24 상품 연결을 확인하세요";
@@ -1086,7 +1103,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     "<div class=\"editor-head\"><div><a class=\"backlink\" href=\"/course-admin\">← 강의 목록</a>" +
     "<h2>" + escapeHtml(course.title) + "</h2><div class=\"course-meta\">" +
     "<span class=\"pill\">" + access + "</span><span class=\"pill\">" + escapeHtml(course.status) + "</span>" +
-    (price > 0 ? "<span class=\"pill\">" + price.toLocaleString("ko-KR") + "원</span>" : "") +
+    (course.access_type === "paid" ? "<span class=\"pill\">" + (price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 미정") + "</span>" : "") +
     "</div></div>" + statusForm + "</div>" +
     "<nav class=\"admin-tabs\">" +
     tabLink("basic", "기본 정보") +
@@ -1189,14 +1206,14 @@ function courseListTable(courses) {
     const lessons = Array.isArray(course.lessons) ? course.lessons.length : 0;
     const live = course.status === "published" && Number(course.visible) === 1;
     return "<tr>" +
-      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">" + escapeHtml(course.title) + "</a>" +
+      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=basic\">" + escapeHtml(course.title) + "</a>" +
       "<div class=\"sub\">" + escapeHtml(course.slug) + "</div></td>" +
-      "<td>" + (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</td>" +
+      "<td>" + (course.access_type === "paid" ? (price > 0 ? price.toLocaleString("ko-KR") + "원" : "가격 미정") : "무료") + "</td>" +
       "<td>" + lessons + "개</td>" +
       "<td><span class=\"status-dot" + (live ? " live" : "") + "\"></span>" + (live ? "게시 중" : "초안") + "</td>" +
       "<td>" + (productNo ? "상품 #" + productNo : "미연결") +
       "<div class=\"sub\">" + escapeHtml(salesStateLabel(normalizedSalesState(course))) + " · " + escapeHtml(course.cafe24_sync_status || "not_linked") + "</div></td>" +
-      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=content\">관리 →</a></td></tr>";
+      "<td><a href=\"/course-admin?course=" + encodeURIComponent(course.id) + "&tab=basic\">관리 →</a></td></tr>";
   }).join("");
   return "<section class=\"card\"><table class=\"course-list\"><thead><tr>" +
     "<th>강의</th><th>가격</th><th>콘텐츠</th><th>공개 상태</th><th>Cafe24</th><th></th>" +
@@ -1347,7 +1364,7 @@ async function dashboardPage(env, message, errorMessage, selectedCourseId, selec
     "<button type=\"submit\" style=\"margin-top:14px\">강의 만들기</button></form></details>";
 
   const content = selectedCourse
-    ? courseCard(selectedCourse, creators, selectedTab || "content", studentRows, studentQuery || "", studentDetail, studentMemberId || "")
+    ? courseCard(selectedCourse, creators, selectedTab || "basic", studentRows, studentQuery || "", studentDetail, studentMemberId || "")
     : (e2eInspectError ? "<p class=\"error\">" + escapeHtml(e2eInspectError) + "</p>" : "") + paymentE2EPanel(e2eCourse, e2eInspection, e2eOrderId) + newCourse +
       "<div class=\"list-toolbar\"><div><h2 style=\"margin:0\">등록 강의</h2>" +
       "<p class=\"hint\">강의를 선택하면 기본 정보·콘텐츠·판매 설정을 분리해서 편집합니다.</p></div></div>" +
@@ -2421,7 +2438,7 @@ export default {
         const message = result && result.product_no
           ? "강의를 만들고 Cafe24 숨김 상품 #" + result.product_no + "을 자동 생성·연결했습니다."
           : "강의를 만들었습니다.";
-        let target = "/course-admin?message=" + encodeURIComponent(message);
+        let target = "/course-admin?course=" + encodeURIComponent(result.course_id) + "&tab=content&message=" + encodeURIComponent(message);
         if (result && result.cafe24_error) {
           target += "&error=" + encodeURIComponent("Cafe24 자동 상품 등록 실패: " + result.cafe24_error);
         }
