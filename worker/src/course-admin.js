@@ -657,7 +657,7 @@ async function loadCourseStudentDetail(env, course, memberId) {
   }
 
   const progressRows = await env.COURSE_DB.prepare(
-    "SELECT l.id,l.title,l.sort_order,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,COALESCE(lp.watched_seconds,0) AS watched_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
+    "SELECT l.id,l.title,l.sort_order,l.duration_seconds,l.is_preview,COALESCE(lp.completed,0) AS completed,COALESCE(lp.last_position_seconds,0) AS last_position_seconds,COALESCE(lp.watched_seconds,0) AS watched_seconds,lp.first_started_at,lp.completed_at,lp.updated_at " +
     "FROM lessons l LEFT JOIN lesson_progress lp ON lp.lesson_id=l.id AND lp.member_id=? AND lp.course_id=l.course_id " +
     "WHERE l.course_id=? AND l.status!='archived' ORDER BY l.sort_order,l.created_at"
   ).bind(normalized, course.id).all();
@@ -685,7 +685,8 @@ async function loadCourseStudentDetail(env, course, memberId) {
           payment_status: item?.payment_status || source.payment_status || "",
           canceled: source.canceled || "",
           refund_status: source.refund_status || "",
-          order_date: source.order_date || source.created_date || ""
+          order_date: source.order_date || source.created_date || "",
+          payment_amount: item?.payment_amount ?? item?.payed_amount ?? null
         };
       }
     } catch (error) {
@@ -704,6 +705,31 @@ async function loadCourseStudentDetail(env, course, memberId) {
   const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
   const watchedSeconds = progress.reduce((sum, row) => sum + Number(row.watched_seconds || 0), 0);
 
+  const paidLessonRows = progress.filter((row, index) =>
+    index > 0 && Number(row.is_preview || 0) !== 1
+  );
+  const refundEvidenceComplete = paidLessonRows.length > 0 &&
+    paidLessonRows.every((row) => Number(row.duration_seconds || 0) > 0);
+  const paidContentSeconds = refundEvidenceComplete
+    ? paidLessonRows.reduce((sum, row) => sum + Number(row.duration_seconds || 0), 0)
+    : 0;
+  const paidConsumedSeconds = refundEvidenceComplete
+    ? paidLessonRows.reduce((sum, row) => {
+        const duration = Number(row.duration_seconds || 0);
+        const watched = Number(row.watched_seconds || 0);
+        return sum + (Number(row.completed) === 1 ? duration : Math.min(duration, watched));
+      }, 0)
+    : 0;
+  const paidUsageRatio = paidContentSeconds > 0
+    ? Math.min(1, paidConsumedSeconds / paidContentSeconds)
+    : null;
+  const snapshotPrice = access.purchase_price_krw != null
+    ? Number(access.purchase_price_krw)
+    : (order?.payment_amount != null ? Number(order.payment_amount) : null);
+  const suggestedRefund = snapshotPrice != null && Number.isFinite(snapshotPrice) && paidUsageRatio != null
+    ? Math.max(0, Math.round(snapshotPrice * (1 - paidUsageRatio)))
+    : null;
+
   return {
     member_id: normalized,
     access,
@@ -718,6 +744,11 @@ async function loadCourseStudentDetail(env, course, memberId) {
       completed_lessons: completed,
       progress_percent: percent,
       watched_seconds: watchedSeconds,
+      paid_content_seconds: paidContentSeconds,
+      paid_consumed_seconds: paidConsumedSeconds,
+      paid_usage_ratio: paidUsageRatio,
+      refund_evidence_complete: refundEvidenceComplete,
+      suggested_refund_krw: suggestedRefund,
       last_activity: lastActivity
     }
   };
@@ -755,6 +786,19 @@ function studentDetailPanel(course, detail) {
     : (detail.access.status === "enrolled" ? "active" : "revoked");
   const active = accessStatus === "active";
   const back = "/course-admin?course=" + encodeURIComponent(course.id) + "&tab=students";
+
+  const refundEstimate = course.access_type === "paid"
+    ? "<div class=\"student-section\"><h3>환불 참고 계산</h3>" +
+      "<div class=\"readiness\">" +
+      "<div class=\"ready-row\"><span>유료 콘텐츠 기준 길이</span><strong>" + escapeHtml(formatWatchDuration(detail.metrics.paid_content_seconds)) + "</strong></div>" +
+      "<div class=\"ready-row\"><span>인정 이용량</span><strong>" + escapeHtml(formatWatchDuration(detail.metrics.paid_consumed_seconds)) + "</strong></div>" +
+      "<div class=\"ready-row\"><span>유료 이용률</span><strong>" + (detail.metrics.paid_usage_ratio == null ? "계산 불가" : (detail.metrics.paid_usage_ratio * 100).toFixed(1) + "%") + "</strong></div>" +
+      "<div class=\"ready-row\"><span>권장 환불 참고액</span><strong>" + (detail.metrics.suggested_refund_krw == null ? "관리자 확인 필요" : Number(detail.metrics.suggested_refund_krw).toLocaleString("ko-KR") + "원") + "</strong></div>" +
+      "</div>" +
+      "<p class=\"hint\">첫 차시와 추가 무료 미리보기는 계산에서 제외합니다. 완료한 유료 차시는 전체 길이, 미완료 차시는 실제 누적 시청시간만 반영하며 차시 길이를 초과해 차감하지 않습니다.</p>" +
+      (!detail.metrics.refund_evidence_complete ? "<p class=\"error\">영상 길이 또는 재생 기록이 불완전해 자동 확정하지 않습니다.</p>" : "") +
+      "<p class=\"hint\">이 값은 관리자 판단용 참고액입니다. Cafe24 환불을 자동 실행하지 않으며 적용 법령과 환불 사유를 확인한 뒤 최종 처리합니다.</p></div>"
+    : "";
 
   const orderSection = course.access_type === "paid"
     ? "<div class=\"student-section\"><h3>Cafe24 주문</h3>" +
@@ -869,7 +913,7 @@ function studentDetailPanel(course, detail) {
         "<div class=\"ready-row\"><span>환불정책 버전</span><strong>" + escapeHtml(detail.access.policy_version || "-") + "</strong></div>" +
         "</div></div>"
       : "") +
-    orderSection + history + manualControls + adminHistory +
+    refundEstimate + orderSection + history + manualControls + adminHistory +
     "<div class=\"student-section\"><h3>차시별 학습 진도</h3><div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
     "<th>차시</th><th>상태</th><th>마지막 위치</th><th>시청 누적</th><th>첫 학습</th><th>완료</th><th>최근 변경</th>" +
     "</tr></thead><tbody>" + progressRows + "</tbody></table></div></div>" +
@@ -1976,15 +2020,21 @@ async function setCourseStatus(form, env) {
   if (action !== "publish") throw new Error("잘못된 게시 요청입니다.");
 
   const lessons = await env.COURSE_DB.prepare(
-    "SELECT id,vimeo_id,status FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
+    "SELECT id,vimeo_id,status,is_preview FROM lessons WHERE course_id=? AND status!='archived' ORDER BY sort_order,created_at"
   ).bind(courseId).all();
   const rows = Array.isArray(lessons.results) ? lessons.results : [];
   if (rows.length === 0) throw new Error("게시하려면 차시가 하나 이상 필요합니다.");
   if (rows.some((lesson) => !lesson.vimeo_id)) {
     throw new Error("모든 차시에 영상을 연결한 뒤 게시해 주세요.");
   }
-  if (course.access_type === "paid" && !(Number(course.cafe24_product_no) > 0)) {
-    throw new Error("유료 강의는 Cafe24 상품 연결 후 게시할 수 있습니다.");
+  if (course.access_type === "paid") {
+    if (!(Number(course.cafe24_product_no) > 0)) {
+      throw new Error("유료 강의는 Cafe24 상품 연결 후 게시할 수 있습니다.");
+    }
+    const paidLessons = rows.filter((lesson, index) => index > 0 && Number(lesson.is_preview || 0) !== 1);
+    if (paidLessons.length === 0) {
+      throw new Error("유료 강의는 의무 무료 1차시 외에 최소 한 개의 유료 차시가 필요합니다.");
+    }
   }
 
   await env.COURSE_DB.prepare(
