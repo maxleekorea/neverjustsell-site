@@ -1,3 +1,3 @@
-deploy_at=2026-09-24T19:41:00+09:00
-reason=runtime-d1-reconcile-v2
-expected_head=a246dfd121d6787b5c5e09a4905f4c681ae2e957
+deploy_at=2026-09-24T19:49:00+09:00
+reason=payment-program-community-access-v1
+expected_head=7116e5f65228edcfff52ff45133591d7d1a34b3d
