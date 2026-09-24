@@ -111,3 +111,59 @@ export async function listScopedRoleGrants(env, memberId) {
     return [];
   }
 }
+
+
+export async function isPlatformOperator(env, memberId) {
+  const roles = await getActivePlatformRoles(env, memberId);
+  return roles.has(PLATFORM_ROLES.PLATFORM_OWNER) || roles.has(PLATFORM_ROLES.STAFF_OPERATOR);
+}
+
+export async function canManageProgram(env, memberId, programId, runId = null) {
+  if (!env.COURSE_DB || !memberId || !programId) return false;
+  if (await isPlatformOperator(env, memberId)) return true;
+
+  if (
+    await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_HOST, "program", programId) ||
+    await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_MODERATOR, "program", programId)
+  ) {
+    return true;
+  }
+
+  if (runId) {
+    return (
+      await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_HOST, "program_run", runId) ||
+      await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_MODERATOR, "program_run", runId)
+    );
+  }
+
+  return false;
+}
+
+export async function canHostProgram(env, memberId, programId, runId = null) {
+  if (!env.COURSE_DB || !memberId || !programId) return false;
+  if (await isPlatformOperator(env, memberId)) return true;
+
+  if (await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_HOST, "program", programId)) {
+    return true;
+  }
+
+  return Boolean(
+    runId &&
+    await hasActiveScopedRole(env, memberId, SCOPED_ROLES.PROGRAM_HOST, "program_run", runId)
+  );
+}
+
+export async function canModerateSpace(env, memberId, spaceId, { programId = null, runId = null } = {}) {
+  if (!env.COURSE_DB || !memberId || !spaceId) return false;
+  if (await isPlatformOperator(env, memberId)) return true;
+
+  if (await hasActiveScopedRole(env, memberId, SCOPED_ROLES.SPACE_MODERATOR, "space", spaceId)) {
+    return true;
+  }
+
+  if (programId && await canManageProgram(env, memberId, programId, runId)) {
+    return true;
+  }
+
+  return false;
+}
