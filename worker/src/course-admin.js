@@ -841,7 +841,7 @@ function studentManagementPanel(course, rows, query = "") {
     "<div class=\"student-table-wrap\"><table class=\"student-table\"><thead><tr>" +
     "<th>회원</th><th>주문번호</th><th>출처</th><th>수강권</th><th>취소·환불</th><th>진도</th><th>수강기간</th><th>마지막 학습</th><th>수강 시작</th>" +
     "</tr></thead><tbody>" + body + "</tbody></table></div>" +
-    "<p class=\"hint\" style=\"margin-top:10px\">수동 수강권 부여·회수는 운영자 변경 이력 기능과 함께 추가합니다.</p></div>";
+    "<p class=\"hint\" style=\"margin-top:10px\">Cafe24 구매 수강권은 주문에서 관리하고, 관리자 부여 수강권은 회원 상세에서 회수·기간 변경할 수 있습니다.</p></div>";
 }
 
 function courseCard(course, creators, activeTab = "content", studentRows = [], studentQuery = "", studentDetail = null, studentMemberId = "") {
@@ -866,7 +866,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       ? "<span class=\"mini-badge " + (processing ? "warn" : "ok") + "\">" + (processing ? "영상 처리 중" : "영상 연결됨") + "</span>"
       : "<span class=\"mini-badge warn\">영상 없음</span>";
     const previewBadge = course.access_type === "paid" && Number(lesson.is_preview) === 1
-      ? "<span class=\"mini-badge preview-badge\">무료 미리보기</span>"
+      ? "<span class=\"mini-badge preview-badge\">미리보기 지정</span>"
       : "";
     const statusBadge = "<span class=\"mini-badge\">" + escapeHtml(lesson.status || "draft") + "</span>";
     const upload = hasVideo ? "" :
@@ -879,7 +879,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       return option.replace('value="' + escapeHtml(lesson.module_id) + '"', 'value="' + escapeHtml(lesson.module_id) + '" selected');
     }).join("");
     const preview = course.access_type === "paid"
-      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">이 차시를 무료 미리보기로 공개</label>"
+      ? "<label class=\"preview\"><input type=\"checkbox\" name=\"is_preview\" value=\"1\"" + (Number(lesson.is_preview) === 1 ? " checked" : "") + ">무료 미리보기 차시로 지정</label>"
       : "";
     const up = index > 0
       ? "<form method=\"post\" action=\"/course-admin/lesson-move\"><input type=\"hidden\" name=\"lesson_id\" value=\"" + escapeHtml(lesson.id) + "\"><input type=\"hidden\" name=\"direction\" value=\"up\"><button class=\"secondary\" type=\"submit\">위로</button></form>"
