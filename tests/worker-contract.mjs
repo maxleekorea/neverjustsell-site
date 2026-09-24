@@ -25,10 +25,26 @@ function assert(condition, message) {
 const classroomProductionConfig = JSON.parse(
   await readFile(new URL("../worker/wrangler.production.jsonc", import.meta.url), "utf8")
 );
+const classroomDefaultConfig = JSON.parse(
+  await readFile(new URL("../worker/wrangler.jsonc", import.meta.url), "utf8")
+);
+const classroomDeployScript = await readFile(
+  new URL("../worker/deploy.mjs", import.meta.url),
+  "utf8"
+);
 assert(classroomProductionConfig.workers_dev === false, "production classroom workers.dev route must stay disabled");
 assert(
   classroomProductionConfig.routes?.some((route) => route.pattern === "classroom.neverjustsell.com" && route.custom_domain === true),
   "production classroom must use the canonical custom domain"
+);
+assert(classroomDefaultConfig.workers_dev === false, "default classroom config must not re-enable workers.dev");
+assert(
+  classroomDefaultConfig.routes?.some((route) => route.pattern === "classroom.neverjustsell.com" && route.custom_domain === true),
+  "default classroom config must use the canonical custom domain"
+);
+assert(
+  classroomDeployScript.includes('"--config", "wrangler.production.jsonc"'),
+  "Cloudflare Worker build deploy must use the canonical production config"
 );
 
 async function get(url, init = {}) {
