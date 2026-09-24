@@ -54,6 +54,15 @@ assert(admin.includes("/course-admin/api/vimeo/link"), "direct existing Vimeo le
 assert(admin.includes("linkExistingVimeoVideo"), "existing Vimeo lesson-link handler missing");
 assert(admin.includes("linked_to"), "Vimeo library must expose reuse information");
 assert(admin.includes("재사용"), "Vimeo reuse must be visible in the admin UI");
+assert(admin.includes("syncCourseVimeoMetadata"), "linked Vimeo metadata must be refreshed before launch");
+assert(admin.includes("courseReadiness"), "course launch readiness model missing");
+assert(admin.includes("renderCourseReadiness"), "course launch preflight UI missing");
+assert(admin.includes("출시 점검"), "course launch checklist heading missing");
+assert(admin.includes("Vimeo 처리 완료"), "course launch must verify Vimeo processing");
+assert(admin.includes("영상 길이 확인"), "course launch must verify duration evidence for refunds");
+assert(admin.includes("게시 전 확인이 필요합니다:"), "publishing must fail closed when launch checks are incomplete");
+assert(admin.includes("사전판매") && admin.includes("전 확인이 필요합니다:"), "presale must fail closed when commerce basics are incomplete");
+assert(!admin.includes("status=CASE WHEN status IN ('draft','uploading','processing') THEN 'ready'"), "publishing must not force processing videos to ready");
 assert(admin.includes("짧은 사전판매가 필요하면"), "manual short-presale guidance missing");
 assert(admin.includes("결제 E2E 테스트"), "isolated payment E2E admin panel missing");
 assert(admin.includes("updatePaymentE2ETest"), "payment E2E control handler missing");
@@ -118,7 +127,7 @@ assert(admin.includes("paid_usage_ratio"), "paid-content usage ratio calculation
 assert(admin.includes("suggested_refund_krw"), "suggested refund amount calculation missing");
 assert(admin.includes("Math.min(duration, watched)"), "refund usage must cap repeated watch time at lesson duration");
 assert(admin.includes("index > 0 && Number(row.is_preview || 0) !== 1"), "mandatory and additional previews must be excluded from refund usage");
-assert(admin.includes("최소 한 개의 유료 차시가 필요합니다."), "paid course must retain paid content after mandatory preview");
+assert(admin.includes("무료 1차시 + 유료 차시"), "paid course readiness must require paid content after mandatory preview");
 assert(admin.includes("DEFAULT_PAID_ACCESS_DAYS = 180"), "new paid VOD default duration must be 180 days");
 assert(admin.includes("access_duration_days=CASE WHEN ?='paid' THEN ?"), "paid courses must always use the standard duration");
 assert(admin.includes("DEFAULT_REFUND_POLICY_TEXT"), "paid courses must always use the standard refund policy");
