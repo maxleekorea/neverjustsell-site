@@ -7,6 +7,7 @@ import baseApp from "./index.js";
 import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
+import { ensureProgramSchema } from "./program-schema.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -120,15 +121,26 @@ export default {
     }
 
     if (url.pathname === "/migration-health") {
-      return json({
-        ok: true,
-        host: url.hostname,
-        redirect_uri: cafe24RedirectUri(env),
-        site_origin: env.SITE_ORIGIN || null,
-        community_origins: [...allowedCommunityOrigins(env)],
-        admin_scopes: CAFE24_ADMIN_SCOPES,
-        route_owner: "production-dispatch-v2"
-      });
+      try {
+        const programSchema = await ensureProgramSchema(env);
+        return json({
+          ok: true,
+          host: url.hostname,
+          redirect_uri: cafe24RedirectUri(env),
+          site_origin: env.SITE_ORIGIN || null,
+          community_origins: [...allowedCommunityOrigins(env)],
+          admin_scopes: CAFE24_ADMIN_SCOPES,
+          route_owner: "production-dispatch-v3",
+          program_schema: programSchema
+        });
+      } catch (error) {
+        return json({
+          ok: false,
+          host: url.hostname,
+          route_owner: "production-dispatch-v3",
+          program_schema_error: String(error?.message || error)
+        }, { status: 503 });
+      }
     }
 
     if (BASE_ROUTES.has(url.pathname)) {
