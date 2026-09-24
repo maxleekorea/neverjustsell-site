@@ -64,6 +64,15 @@ assert(admin.includes("수강기간 저장"), "manual access expiry control miss
 assert(admin.includes("course_access_admin_log"), "manual access admin log missing");
 assert(admin.includes("Cafe24 구매 수강권은 주문 취소·환불로 관리해 주세요."), "purchase entitlements must not be manually revoked");
 assert(admin.includes("updateManualCourseAccess"), "manual access handler missing");
+assert(admin.includes("reorderCurriculum"), "curriculum reorder handler missing");
+assert(admin.includes("curriculum-group"), "compact curriculum group UI missing");
+assert(admin.includes("lesson-drag"), "lesson drag handle missing");
+assert(admin.includes("module-drag"), "module drag handle missing");
+assert(admin.includes("data-curriculum-status"), "curriculum autosave status missing");
+assert(admin.includes("/course-admin/api/curriculum/reorder"), "curriculum reorder API route missing");
+assert(admin.includes("refreshCurriculumDisplay"), "curriculum display refresh missing");
+assert(admin.includes("무료 미리보기"), "preview status badge missing");
+assert(admin.includes("영상 연결됨"), "video connection status badge missing");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
