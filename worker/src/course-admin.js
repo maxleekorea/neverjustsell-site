@@ -1483,7 +1483,7 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
     "<div class=\"ready-row\"><span>Program 참가권</span><span class=\"ready-ok\">active / withdrawn 검증</span></div>" +
     "</div>" +
     "<details class=\"advanced-note\" style=\"margin:14px 0\"><summary style=\"cursor:pointer;font-weight:700\">전체 E2E 순서 보기</summary>" +
-    "<ol class=\"hint\" style=\"line-height:1.8;margin-bottom:0\"><li>테스트 판매 시작</li><li>Cafe24 회원 계정으로 1,000원 실제 주문</li><li>주문번호 입력 후 결제 완료·Program 참가권 active 확인</li><li>강의실 진입 후 D1 수강권 active 및 유료 차시 진도 확인</li><li>같은 회원으로 커뮤니티 로그인 후 Program Run Space 접근권한 생성</li><li>Cafe24에서 주문 취소 또는 환불 처리</li><li>같은 주문번호로 강의 revoked·Program withdrawn 확인</li><li>테스트 판매 종료</li></ol></details>" +
+    "<ol class=\"hint\" style=\"line-height:1.8;margin-bottom:0\"><li>테스트 판매 시작</li><li>Cafe24 회원 계정으로 1,000원 실제 주문</li><li>주문번호 입력 후 결제 완료·Program 참가권 active 확인</li><li>강의실 진입 후 D1 수강권 active 확인 및 유료 차시 재생 및 진도 기록 확인</li><li>같은 회원으로 커뮤니티 로그인 후 Program Run Space 접근권한 생성</li><li>Cafe24에서 주문 취소 또는 환불 처리</li><li>같은 주문번호로 강의 revoked·Program withdrawn 확인</li><li>테스트 판매 종료</li></ol></details>" +
     (active
       ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
         "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
