@@ -462,34 +462,6 @@ function salesStateLabel(value) {
   return labels[String(value || "")] || "준비 중";
 }
 
-function presaleInputValue(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const date = new Date(raw);
-  if (!Number.isFinite(date.getTime())) return "";
-  return new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
-}
-
-function presaleDisplayKst(value) {
-  const local = presaleInputValue(value);
-  return local ? local.replace("T", " ") + " KST" : "미설정";
-}
-
-function presaleLocalKstToUtc(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return null;
-  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
-  if (!match) throw new Error("오픈 예정일 형식이 올바르지 않습니다.");
-  const [, y, mo, d, h, mi] = match;
-  const utcMs = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)) - 9 * 60 * 60 * 1000;
-  const date = new Date(utcMs);
-  if (!Number.isFinite(date.getTime())) throw new Error("오픈 예정일을 확인해 주세요.");
-  const roundTrip = new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
-  if (roundTrip !== raw) throw new Error("오픈 예정일을 확인해 주세요.");
-  if (date.getTime() <= Date.now()) throw new Error("오픈 예정일은 현재보다 이후로 설정해 주세요. 바로 판매하려면 ‘판매 중’을 선택하세요.");
-  return date.toISOString();
-}
-
 function commercePanel(course) {
   if (course.access_type !== "paid") return "";
 
@@ -553,14 +525,7 @@ function commercePanel(course) {
     stateButton("selling", "판매 중", !publishedReady) +
     stateButton("paused", "판매 중단") +
     "</div></form>" +
-    (!publishedReady ? "<p class=\"hint\">정식 판매는 강의를 게시한 뒤 선택할 수 있습니다. 사전판매는 게시 전에도 가능합니다.</p>" : "") +
-    "<div class=\"course-settings\" style=\"margin-top:16px\"><strong>사전판매 오픈 예정일</strong>" +
-    "<p class=\"hint\">한국시간(KST) 기준입니다. 예정 시각이 지나고 강의가 게시된 상태라면 ‘판매 중’으로 자동 전환됩니다. 미게시 상태라면 자동 공개하지 않습니다.</p>" +
-    "<form method=\"post\" action=\"/course-admin/presale-schedule\">" +
-    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-    "<label>오픈 예정일 · KST</label><input type=\"datetime-local\" name=\"presale_opens_at\" value=\"" + escapeHtml(presaleInputValue(course.presale_opens_at)) + "\">" +
-    "<div class=\"hint\">현재: " + escapeHtml(presaleDisplayKst(course.presale_opens_at)) + " · 비워서 저장하면 예약을 해제합니다.</div>" +
-    "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">오픈 예정일 저장</button></form></div>" +
+    (!publishedReady ? "<p class=\"hint\">정식 판매는 강의를 게시한 뒤 선택할 수 있습니다. 짧은 사전판매가 필요하면 ‘사전판매’를 선택하고, 게시 후 ‘판매 중’으로 바꾸면 됩니다.</p>" : "") +
     "</div>";
 }
 
@@ -1084,6 +1049,39 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     return "<a class=\"" + (tab === key ? "active" : "") + "\" href=\"" + base + "&tab=" + key + "\">" + label + "</a>";
   };
 
+  const missingVideo = lessons.some((lesson) => !lesson.vimeo_id);
+  const salesState = normalizedSalesState(course);
+  let nextTab = "content";
+  let nextLabel = "콘텐츠를 등록하세요";
+  if (lessons.length === 0) {
+    nextTab = "content";
+    nextLabel = "첫 차시와 강의 영상을 등록하세요";
+  } else if (missingVideo) {
+    nextTab = "content";
+    nextLabel = "영상이 없는 차시를 연결하세요";
+  } else if (course.access_type === "paid" && !(Number(course.cafe24_product_no) > 0)) {
+    nextTab = "sales";
+    nextLabel = "Cafe24 상품 연결을 확인하세요";
+  } else if (!published) {
+    nextTab = "content";
+    nextLabel = "준비가 끝났으면 강의를 게시하세요";
+  } else if (course.access_type === "paid" && salesState === "preparing") {
+    nextTab = "sales";
+    nextLabel = "사전판매 또는 판매를 시작하세요";
+  } else if (course.access_type === "paid" && salesState === "presale") {
+    nextTab = "sales";
+    nextLabel = "사전판매 중 · 준비되면 판매 중으로 전환하세요";
+  } else if (course.access_type === "paid" && salesState === "paused") {
+    nextTab = "sales";
+    nextLabel = "판매 중단 상태입니다";
+  } else {
+    nextTab = "students";
+    nextLabel = "운영 중 · 수강생 현황을 확인하세요";
+  }
+  const nextAction =
+    "<div class=\"readiness\" style=\"margin:14px 0 0\"><div class=\"ready-row\"><span><strong>다음 할 일</strong></span>" +
+    "<a class=\"action-link\" href=\"" + base + "&tab=" + nextTab + "\">" + escapeHtml(nextLabel) + " →</a></div></div>";
+
   const header =
     "<div class=\"editor-head\"><div><a class=\"backlink\" href=\"/course-admin\">← 강의 목록</a>" +
     "<h2>" + escapeHtml(course.title) + "</h2><div class=\"course-meta\">" +
@@ -1097,7 +1095,7 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
     tabLink("sales", "판매 설정") +
     tabLink("students", "수강생") +
     tabLink("advanced", "고급 설정") +
-    "</nav>";
+    "</nav>" + nextAction;
 
   let panel = "";
 
@@ -1128,22 +1126,20 @@ function courseCard(course, creators, activeTab = "content", studentRows = [], s
       "<label>이런 분께 추천합니다</label><textarea name=\"target_audience\" placeholder=\"한 줄에 한 항목씩 입력하세요.\">" + escapeHtml(course.target_audience || "") + "</textarea>" +
       "<div class=\"hint\">한 줄에 한 항목씩 입력하면 판매 페이지에서 목록으로 표시됩니다.</div>" +
       "<label>이 강의에서 배우는 내용</label><textarea name=\"learning_outcomes\" placeholder=\"한 줄에 한 항목씩 입력하세요.\">" + escapeHtml(course.learning_outcomes || "") + "</textarea>" +
-      "<label>수강 이용 안내</label><textarea name=\"access_info\" placeholder=\"예: 수강기간, 이용 방식, 필요한 준비사항 등을 입력하세요.\">" + escapeHtml(course.access_info || "") + "</textarea>" +
-      "<label>환불 안내</label><textarea name=\"refund_policy_text\" placeholder=\"확정된 환불 정책만 입력하세요. 정책 확정 전에는 비워둘 수 있습니다.\">" + escapeHtml(course.refund_policy_text || "") + "</textarea>" +
-      "<div class=\"hint\">환불 기준은 자동 생성하지 않습니다. 실제 운영정책과 법적 검토가 끝난 문구만 입력하세요.</div>" +
+      "<div class=\"advanced-note\" style=\"margin-top:16px\"><strong>이용·환불 안내는 자동 적용</strong>" +
+      "<p class=\"hint\">일반 유료 VOD는 결제일 기준 180일, 첫 본강의 1차시 무료, Fair-trust v1.0 정책을 사용합니다. 판매 페이지에는 시스템에 저장된 안내가 자동 표시됩니다.</p></div>" +
       "<button type=\"submit\" style=\"margin-top:14px\">판매 페이지 저장</button></form></div></div>";
   } else if (tab === "sales") {
     panel =
       "<div class=\"sales-summary\"><div class=\"panel\"><div class=\"sectionhead\"><div><h3>판매 설정</h3>" +
-      "<p class=\"hint\">강의와 Cafe24 상품의 연결, 판매 상태, 수강기간을 관리합니다.</p></div></div>" +
-      "<div class=\"course-settings\"><strong>수강 정책</strong>" +
-      "<form method=\"post\" action=\"/course-admin/course-access-policy\" style=\"margin-top:10px\">" +
-      "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
-      "<label>수강기간(일)</label><input name=\"access_duration_days\" type=\"number\" min=\"1\" max=\"3650\" value=\"" + escapeHtml(course.access_duration_days || "") + "\" placeholder=\"비워두면 무기한\">" +
-      "<div class=\"hint\">일반 유료 VOD는 결제일 기준 180일이 기본입니다. 구매 당시 값을 수강권에 저장하므로 이후 강의 설정을 바꿔도 기존 구매자의 조건은 바뀌지 않습니다.</div>" +
-      "<label>환불정책 버전</label><input name=\"refund_policy_version\" maxlength=\"80\" value=\"" + escapeHtml(course.refund_policy_version || "fair-trust-v0.3") + "\">" +
-      "<div class=\"hint\">현재 정책 문안의 버전 식별자입니다. 주문 당시 문안과 함께 스냅샷으로 보존합니다.</div>" +
-      "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">수강 정책 저장</button></form></div>" +
+      "<p class=\"hint\">강의와 Cafe24 상품의 연결 및 판매 상태만 관리합니다.</p></div></div>" +
+      (course.access_type === "paid"
+        ? "<div class=\"course-settings\"><strong>기본 수강 정책</strong><div class=\"readiness\">" +
+          "<div class=\"ready-row\"><span>수강기간</span><strong>결제일 기준 180일</strong></div>" +
+          "<div class=\"ready-row\"><span>무료 미리보기</span><strong>첫 본강의 1차시</strong></div>" +
+          "<div class=\"ready-row\"><span>환불정책</span><strong>Fair-trust v1.0</strong></div>" +
+          "</div><p class=\"hint\">일반 유료 VOD는 별도 설정 없이 이 정책을 자동 적용합니다.</p></div>"
+        : "") +
       commercePanel(course) + "</div>" +
       "<aside class=\"sales-preview\"><div class=\"hint\">판매 정보 미리보기</div><p><strong>" +
       (price > 0 ? price.toLocaleString("ko-KR") + "원" : "무료") + "</strong></p><p class=\"muted\">" +
@@ -1533,37 +1529,6 @@ async function linkExistingCafe24CourseProduct(form, env) {
   ).run();
 }
 
-async function updateCourseAccessPolicy(form, env) {
-  const courseId = String(form.get("course_id") || "").trim();
-  if (!courseId) throw new Error("강의 정보가 필요합니다.");
-  const rawDays = String(form.get("access_duration_days") || "").trim();
-  const durationDays = rawDays ? Number(rawDays) : null;
-  if (durationDays !== null && (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 3650)) {
-    throw new Error("수강기간은 1~3650일 사이로 입력해 주세요.");
-  }
-  const policyVersion = String(form.get("refund_policy_version") || "").trim();
-  if (!policyVersion || policyVersion.length > 80) throw new Error("환불정책 버전을 확인해 주세요.");
-
-  await env.COURSE_DB.prepare(
-    "UPDATE courses SET access_duration_days=?,refund_policy_version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(durationDays, policyVersion, courseId).run();
-  return "수강 정책을 저장했습니다.";
-}
-
-async function updatePresaleSchedule(form, env) {
-  const courseId = String(form.get("course_id") || "").trim();
-  if (!courseId) throw new Error("강의 정보가 필요합니다.");
-  const course = await getAdminCourse(env, courseId);
-  if (!course) throw new Error("강의를 찾을 수 없습니다.");
-  if (course.access_type !== "paid") throw new Error("유료 강의에서만 오픈 예정일을 설정할 수 있습니다.");
-
-  const opensAt = presaleLocalKstToUtc(form.get("presale_opens_at"));
-  await env.COURSE_DB.prepare(
-    "UPDATE courses SET presale_opens_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(opensAt, courseId).run();
-  return opensAt ? "사전판매 오픈 예정일을 저장했습니다." : "사전판매 오픈 예약을 해제했습니다.";
-}
-
 async function updateCafe24CourseSales(form, env) {
   const courseId = String(form.get("course_id") || "").trim();
   const legacyAction = String(form.get("action") || "").trim();
@@ -1868,20 +1833,16 @@ async function updateCourseSalesPage(form, env) {
   const instructorBio = String(form.get("instructor_bio") || "").trim();
   const targetAudience = String(form.get("target_audience") || "").trim();
   const learningOutcomes = String(form.get("learning_outcomes") || "").trim();
-  const accessInfo = String(form.get("access_info") || "").trim();
-  const refundPolicyText = String(form.get("refund_policy_text") || "").trim();
 
   if (instructorName.length > 120) throw new Error("강사명은 120자 이내로 입력해 주세요.");
 
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET instructor_name=?,instructor_bio=?,target_audience=?,learning_outcomes=?,access_info=?,refund_policy_text=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+    "UPDATE courses SET instructor_name=?,instructor_bio=?,target_audience=?,learning_outcomes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
   ).bind(
     instructorName || null,
     instructorBio || null,
     targetAudience || null,
     learningOutcomes || null,
-    accessInfo || null,
-    refundPolicyText || null,
     courseId
   ).run();
 }
@@ -2508,32 +2469,6 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("기존 Cafe24 상품을 강의와 연결했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
-      }
-    }
-
-    if (url.pathname === "/course-admin/course-access-policy" && request.method === "POST") {
-      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
-      const form = await request.formData();
-      const courseId = String(form.get("course_id") || "").trim();
-      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=sales";
-      try {
-        const message = await updateCourseAccessPolicy(form, env);
-        return redirect(base + "&message=" + encodeURIComponent(message));
-      } catch (error) {
-        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
-      }
-    }
-
-    if (url.pathname === "/course-admin/presale-schedule" && request.method === "POST") {
-      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
-      const form = await request.formData();
-      const courseId = String(form.get("course_id") || "").trim();
-      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=sales";
-      try {
-        const message = await updatePresaleSchedule(form, env);
-        return redirect(base + "&message=" + encodeURIComponent(message));
-      } catch (error) {
-        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
