@@ -181,6 +181,19 @@ function purchaseDate(purchase) {
   return raw || null;
 }
 
+function purchaseAccessPeriod(purchasedAt, durationDays) {
+  const raw = String(purchasedAt || "").trim();
+  const days = Number(durationDays || 0);
+  if (!/^\d{4}-\d{2}-\d{2}/.test(raw) || !Number.isInteger(days) || days <= 0) {
+    return { startsAt: raw || null, expiresAt: null };
+  }
+  const startDate = raw.slice(0, 10);
+  return {
+    startsAt: startDate,
+    expiresAt: addUtcDays(startDate, Math.max(0, days - 1))
+  };
+}
+
 async function persistEntitlement(env, memberId, courseId, productNo, purchase, active) {
   if (!env.COURSE_DB || !memberId || !courseId) return;
   const orderId = purchase?.order?.order_id || null;
@@ -193,14 +206,17 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
   const durationSnapshot = active && snapshot?.access_duration_days != null
     ? Number(snapshot.access_duration_days)
     : null;
+  const accessPeriod = active
+    ? purchaseAccessPeriod(purchasedAt, durationSnapshot)
+    : { startsAt: null, expiresAt: null };
   const existing = await env.COURSE_DB.prepare(
-    "SELECT status,source_order_id,source_order_item_code FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+    "SELECT status,source_order_id,source_order_item_code,grant_reason,access_expires_at FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
   ).bind(memberId, courseId).first();
 
   if (active) {
     await env.COURSE_DB.prepare(
-      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at,purchase_price_krw,purchased_at,policy_version,refund_policy_snapshot,access_duration_days_snapshot) " +
-      "VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP,?,?,?,?,?) " +
+      "INSERT INTO course_entitlements (member_id,course_id,product_no,source_order_id,source_order_item_code,status,grant_reason,revoked_at,last_verified_at,purchase_price_krw,purchased_at,policy_version,refund_policy_snapshot,access_duration_days_snapshot,access_starts_at,access_expires_at) " +
+      "VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP,?,?,?,?,?,?,?) " +
       "ON CONFLICT(member_id,course_id) DO UPDATE SET " +
       "product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase'," +
       "purchase_price_krw=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.purchase_price_krw ELSE COALESCE(course_entitlements.purchase_price_krw,excluded.purchase_price_krw) END," +
@@ -208,7 +224,8 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
       "policy_version=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.policy_version ELSE COALESCE(course_entitlements.policy_version,excluded.policy_version) END," +
       "refund_policy_snapshot=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.refund_policy_snapshot ELSE COALESCE(course_entitlements.refund_policy_snapshot,excluded.refund_policy_snapshot) END," +
       "access_duration_days_snapshot=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.access_duration_days_snapshot ELSE COALESCE(course_entitlements.access_duration_days_snapshot,excluded.access_duration_days_snapshot) END," +
-      "access_expires_at=CASE WHEN course_entitlements.grant_reason='manual' THEN NULL ELSE course_entitlements.access_expires_at END," +
+      "access_starts_at=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.access_starts_at ELSE COALESCE(course_entitlements.access_starts_at,excluded.access_starts_at) END," +
+      "access_expires_at=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.access_expires_at ELSE course_entitlements.access_expires_at END," +
       "revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
     ).bind(
       memberId,
@@ -220,7 +237,9 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
       purchasedAt,
       policyVersion,
       policyText,
-      durationSnapshot
+      durationSnapshot,
+      accessPeriod.startsAt,
+      accessPeriod.expiresAt
     ).run();
 
     const changed =
@@ -263,6 +282,36 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
       "Cafe24 주문 취소·환불 감지"
     ).run();
   }
+}
+
+async function purchaseEntitlementState(env, memberId, courseId) {
+  if (!env.COURSE_DB || !memberId || !courseId) return null;
+  return env.COURSE_DB.prepare(
+    "SELECT member_id,course_id,status,grant_reason,source_order_id,access_starts_at,access_expires_at FROM course_entitlements WHERE member_id=? AND course_id=? AND grant_reason='purchase' LIMIT 1"
+  ).bind(memberId, courseId).first();
+}
+
+function purchaseEntitlementExpired(row) {
+  if (!row || row.grant_reason !== "purchase") return false;
+  const expiry = String(row.access_expires_at || "").trim();
+  return Boolean(expiry && expiry < todayDate());
+}
+
+async function expirePurchaseEntitlement(env, row) {
+  if (!env.COURSE_DB || !row || row.grant_reason !== "purchase" || row.status === "revoked") return;
+  await env.COURSE_DB.prepare(
+    "UPDATE course_entitlements SET status='revoked',revoked_at=COALESCE(revoked_at,CURRENT_TIMESTAMP),last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE member_id=? AND course_id=? AND grant_reason='purchase'"
+  ).bind(row.member_id, row.course_id).run();
+  await env.COURSE_DB.prepare(
+    "INSERT INTO course_entitlement_events (id,member_id,course_id,event_type,source_order_id,source_order_item_code,reason,actor_type) VALUES (?,?,?,?,?,NULL,?,'system')"
+  ).bind(
+    crypto.randomUUID(),
+    row.member_id,
+    row.course_id,
+    "expired",
+    row.source_order_id || null,
+    "구매 수강기간 만료"
+  ).run();
 }
 
 export function getValidPaidProductNos(orders, targetProductNos) {
@@ -358,14 +407,27 @@ export async function getCourseAccessDecision(request, env, productNo, courseId 
   }
 
   if (access && validPurchase) {
-    await persistEntitlement(
+    const currentPurchase = await purchaseEntitlementState(
       env,
       session.record.member_id,
-      resolvedCourseId,
-      productNo,
-      validPurchase,
-      true
+      resolvedCourseId
     );
+    const sameOrder =
+      currentPurchase &&
+      String(currentPurchase.source_order_id || "") === String(validPurchase?.order?.order_id || "");
+    if (sameOrder && purchaseEntitlementExpired(currentPurchase)) {
+      await expirePurchaseEntitlement(env, currentPurchase);
+      access = false;
+    } else {
+      await persistEntitlement(
+        env,
+        session.record.member_id,
+        resolvedCourseId,
+        productNo,
+        validPurchase,
+        true
+      );
+    }
   } else if (revokedPurchase) {
     await persistEntitlement(
       env,
@@ -384,7 +446,7 @@ export async function getCourseAccessDecision(request, env, productNo, courseId 
       authenticated: true,
       access,
       entitlement: "course",
-      reason: access ? "paid_purchase_verified" : "no_valid_paid_purchase",
+      reason: access ? "paid_purchase_verified" : "no_valid_paid_purchase_or_expired",
       product_no: Number(productNo),
       matching_order_count: matchingOrderCount,
       check_range: {
