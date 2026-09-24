@@ -203,11 +203,11 @@ async function persistEntitlement(env, memberId, courseId, productNo, purchase, 
       "VALUES (?,?,?,?,?,'active','purchase',NULL,CURRENT_TIMESTAMP,?,?,?,?,?) " +
       "ON CONFLICT(member_id,course_id) DO UPDATE SET " +
       "product_no=excluded.product_no,source_order_id=excluded.source_order_id,source_order_item_code=excluded.source_order_item_code,status='active',grant_reason='purchase'," +
-      "purchase_price_krw=COALESCE(course_entitlements.purchase_price_krw,excluded.purchase_price_krw)," +
-      "purchased_at=COALESCE(course_entitlements.purchased_at,excluded.purchased_at)," +
-      "policy_version=COALESCE(course_entitlements.policy_version,excluded.policy_version)," +
-      "refund_policy_snapshot=COALESCE(course_entitlements.refund_policy_snapshot,excluded.refund_policy_snapshot)," +
-      "access_duration_days_snapshot=COALESCE(course_entitlements.access_duration_days_snapshot,excluded.access_duration_days_snapshot)," +
+      "purchase_price_krw=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.purchase_price_krw ELSE COALESCE(course_entitlements.purchase_price_krw,excluded.purchase_price_krw) END," +
+      "purchased_at=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.purchased_at ELSE COALESCE(course_entitlements.purchased_at,excluded.purchased_at) END," +
+      "policy_version=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.policy_version ELSE COALESCE(course_entitlements.policy_version,excluded.policy_version) END," +
+      "refund_policy_snapshot=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.refund_policy_snapshot ELSE COALESCE(course_entitlements.refund_policy_snapshot,excluded.refund_policy_snapshot) END," +
+      "access_duration_days_snapshot=CASE WHEN course_entitlements.grant_reason!='purchase' OR COALESCE(course_entitlements.source_order_id,'')<>COALESCE(excluded.source_order_id,'') THEN excluded.access_duration_days_snapshot ELSE COALESCE(course_entitlements.access_duration_days_snapshot,excluded.access_duration_days_snapshot) END," +
       "access_expires_at=CASE WHEN course_entitlements.grant_reason='manual' THEN NULL ELSE course_entitlements.access_expires_at END," +
       "revoked_at=NULL,last_verified_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP"
     ).bind(
