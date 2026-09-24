@@ -3,6 +3,13 @@
   "name": "neverjustsell-course-access",
   "main": "src/production.js",
   "compatibility_date": "2026-09-16",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "classroom.neverjustsell.com",
+      "custom_domain": true
+    }
+  ],
   "kv_namespaces": [
     {
       "binding": "CAFE24_AUTH"
