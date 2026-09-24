@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import app from "../worker/src/production.js";
 
 class MemoryKV {
@@ -20,6 +21,15 @@ const env = {
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
+
+const classroomProductionConfig = JSON.parse(
+  await readFile(new URL("../worker/wrangler.production.jsonc", import.meta.url), "utf8")
+);
+assert(classroomProductionConfig.workers_dev === false, "production classroom workers.dev route must stay disabled");
+assert(
+  classroomProductionConfig.routes?.some((route) => route.pattern === "classroom.neverjustsell.com" && route.custom_domain === true),
+  "production classroom must use the canonical custom domain"
+);
 
 async function get(url, init = {}) {
   return app.fetch(new Request(url, init), env, {});
