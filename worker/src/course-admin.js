@@ -1363,8 +1363,20 @@ async function createCourse(form, env) {
   await assertActiveCreator(env, ownerMemberId);
   const id = crypto.randomUUID();
   await env.COURSE_DB.prepare(
-    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,catalog_visible,sales_enabled,cafe24_sync_status) VALUES (?,?,?,?,?,?,?,1,'draft',0,?,0,'not_linked')"
-  ).bind(id, slug, title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, catalogVisible).run();
+    "INSERT INTO courses (id,slug,title,summary,access_type,price_krw,owner_member_id,login_required,status,visible,catalog_visible,sales_enabled,cafe24_sync_status,access_duration_days,refund_policy_version) " +
+    "VALUES (?,?,?,?,?,?,?,1,'draft',0,?,0,'not_linked',?,?)"
+  ).bind(
+    id,
+    slug,
+    title,
+    summary || null,
+    accessType,
+    Math.trunc(priceKrw),
+    ownerMemberId,
+    catalogVisible,
+    accessType === "paid" ? 180 : null,
+    accessType === "paid" ? "fair-trust-v1.0" : "fair-trust-v0.3"
+  ).run();
 
   if (accessType !== "paid") {
     return { course_id: id, product_no: null, cafe24_error: null };
