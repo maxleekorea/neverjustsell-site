@@ -258,7 +258,7 @@ function renderCourseOutline(course, options = {}) {
           '</a><span class="badge preview-badge">미리보기</span></div>';
       }
 
-      const previewPending = lesson.isPreview && course.status !== "published";
+      const previewPending = lesson.isPreview && !isPublicPreviewLesson(course, lesson);
       return '<div class="lesson-row"><span class="lesson-link locked">' + label +
         '</span><span class="badge lock-badge">' + (previewPending ? '미리보기 준비 중' : '잠김') + '</span></div>';
     }).join('');
@@ -304,6 +304,7 @@ async function renderCourseLanding(request, env, slug) {
   const enrolled = memberId ? await isCourseEnrolled(env, memberId, course.id) : false;
   const playerCourse = d1CourseToPlayerCourse(course);
   const lessonCount = playerCourse.lessons.length;
+  const contentPublished = course.status === "published" && Number(course.visible) === 1;
   const url = new URL(request.url);
   const preview = resolvePublicPreview(course, url);
   const previewCount = playerCourse.lessons.filter((lesson) => isPublicPreviewLesson(course, lesson)).length;
@@ -320,16 +321,20 @@ async function renderCourseLanding(request, env, slug) {
 
   let cta = "";
   if (course.access_type === "public") {
-    if (enrolled) {
+    if (enrolled && contentPublished) {
       cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
+    } else if (enrolled) {
+      cta = '<span class="action secondary">수강 준비 중</span>';
     } else if (memberId) {
       cta = '<form method="post" action="/courses/enroll"><input type="hidden" name="course_slug" value="' + escapeHtml(course.slug) + '"><button class="action" style="border:0;cursor:pointer" type="submit">무료 수강 신청</button></form>';
     } else {
       const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
       cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
     }
-  } else if (paidAccess) {
+  } else if (paidAccess && contentPublished) {
     cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
+  } else if (paidAccess) {
+    cta = '<span class="action secondary">수강 준비 중</span>';
   } else {
     cta = Number(course.sales_enabled) === 1 && course.sales_url
       ? '<a class="action" href="' + escapeHtml(course.sales_url) + '">구매하기</a>'
@@ -344,7 +349,7 @@ async function renderCourseLanding(request, env, slug) {
     '<p class="note">' + lessonCount + '개 차시 · ' + (course.access_type === "public" ? '회원 무료' : '구매 후 수강') +
     (course.access_type === "paid" && previewCount > 0 ? ' · 무료 미리보기 ' + previewCount + '개' : '') + '</p>' +
     cta + renderPublicPreview(course, preview) +
-    renderCourseOutline(course, { paidAccess, enrolled }) + '</section>'
+    renderCourseOutline(course, { paidAccess: paidAccess && contentPublished, enrolled: enrolled && contentPublished }) + '</section>'
   ));
 }
 
