@@ -484,6 +484,64 @@ INSERT OR IGNORE INTO program_event_templates (
   );
 `;
 
+function splitSqlStatements(sql) {
+  const noLineComments = String(sql || "")
+    .split("\n")
+    .map((line) => line.trimStart().startsWith("--") ? "" : line)
+    .join("\n");
+
+  const statements = [];
+  let current = "";
+  let single = false;
+  let double = false;
+
+  for (let i = 0; i < noLineComments.length; i += 1) {
+    const ch = noLineComments[i];
+    const next = noLineComments[i + 1];
+
+    if (ch === "'" && !double) {
+      if (single && next === "'") {
+        current += "''";
+        i += 1;
+        continue;
+      }
+      single = !single;
+      current += ch;
+      continue;
+    }
+
+    if (ch === '"' && !single) {
+      if (double && next === '"') {
+        current += '""';
+        i += 1;
+        continue;
+      }
+      double = !double;
+      current += ch;
+      continue;
+    }
+
+    if (ch === ";" && !single && !double) {
+      const statement = current.trim();
+      if (statement) statements.push(statement);
+      current = "";
+      continue;
+    }
+
+    current += ch;
+  }
+
+  const tail = current.trim();
+  if (tail) statements.push(tail);
+  return statements;
+}
+
+async function executeStatements(db, sql) {
+  const statements = splitSqlStatements(sql);
+  if (!statements.length) return;
+  await db.batch(statements.map((statement) => db.prepare(statement)));
+}
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -509,7 +567,7 @@ async function ensureInternal(db) {
   const applied = [];
 
   if (!(await migrationApplied(db, "0027_program_community_foundation.sql"))) {
-    await db.exec(MIGRATION_0027);
+    await executeStatements(db, MIGRATION_0027);
     await markMigration(db, "0027_program_community_foundation.sql");
     applied.push("0027_program_community_foundation.sql");
   }
@@ -524,7 +582,7 @@ async function ensureInternal(db) {
     if (!cols.has("cloned_from_run_id")) {
       await db.prepare("ALTER TABLE program_runs ADD COLUMN cloned_from_run_id TEXT").run();
     }
-    await db.exec(MIGRATION_0028_REST);
+    await executeStatements(db, MIGRATION_0028_REST);
     await markMigration(db, "0028_program_operations.sql");
     applied.push("0028_program_operations.sql");
   }
