@@ -58,6 +58,10 @@ assert(admin.includes("syncCourseVimeoMetadata"), "linked Vimeo metadata must be
 assert(admin.includes("courseReadiness"), "course launch readiness model missing");
 assert(admin.includes("renderCourseReadiness"), "course launch preflight UI missing");
 assert(admin.includes("출시 점검"), "course launch checklist heading missing");
+assert(admin.includes("adminStudentPreviewPage"), "admin student-view preview renderer missing");
+assert(admin.includes("/course-admin/preview?course="), "admin student-view preview link missing");
+assert(admin.includes("관리자 전용 수강생 화면 미리보기"), "admin preview must clearly identify test mode");
+assert(admin.includes("frame-src https://player.vimeo.com"), "admin preview CSP must allow Vimeo playback");
 assert(admin.includes("Vimeo 처리 완료"), "course launch must verify Vimeo processing");
 assert(admin.includes("영상 길이 확인"), "course launch must verify duration evidence for refunds");
 assert(admin.includes("게시 전 확인이 필요합니다:"), "publishing must fail closed when launch checks are incomplete");
