@@ -6,6 +6,7 @@ import sessionOrdersApp from "./session-orders.js";
 import baseApp from "./index.js";
 import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
+import programHostApp from "./program-host.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -112,6 +113,10 @@ export default {
 
     if (url.pathname === "/course-admin" || url.pathname.startsWith("/course-admin/")) {
       return courseAdminApp.fetch(request, env, ctx);
+    }
+
+    if (url.pathname === "/program-host" || url.pathname.startsWith("/program-host/")) {
+      return programHostApp.fetch(request, env, ctx);
     }
 
     if (url.pathname === "/migration-health") {
