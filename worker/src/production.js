@@ -122,7 +122,9 @@ export default {
 
     if (url.pathname === "/migration-health") {
       try {
-        const programSchema = await ensureProgramSchema(env);
+        const programSchema = env.COURSE_DB
+          ? await ensureProgramSchema(env)
+          : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
         return json({
           ok: true,
           host: url.hostname,
