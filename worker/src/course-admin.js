@@ -345,7 +345,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -457,6 +457,34 @@ function salesStateLabel(value) {
   return labels[String(value || "")] || "준비 중";
 }
 
+function presaleInputValue(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return "";
+  return new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}
+
+function presaleDisplayKst(value) {
+  const local = presaleInputValue(value);
+  return local ? local.replace("T", " ") + " KST" : "미설정";
+}
+
+function presaleLocalKstToUtc(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) throw new Error("오픈 예정일 형식이 올바르지 않습니다.");
+  const [, y, mo, d, h, mi] = match;
+  const utcMs = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi)) - 9 * 60 * 60 * 1000;
+  const date = new Date(utcMs);
+  if (!Number.isFinite(date.getTime())) throw new Error("오픈 예정일을 확인해 주세요.");
+  const roundTrip = new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  if (roundTrip !== raw) throw new Error("오픈 예정일을 확인해 주세요.");
+  if (date.getTime() <= Date.now()) throw new Error("오픈 예정일은 현재보다 이후로 설정해 주세요. 바로 판매하려면 ‘판매 중’을 선택하세요.");
+  return date.toISOString();
+}
+
 function commercePanel(course) {
   if (course.access_type !== "paid") return "";
 
@@ -521,6 +549,13 @@ function commercePanel(course) {
     stateButton("paused", "판매 중단") +
     "</div></form>" +
     (!publishedReady ? "<p class=\"hint\">정식 판매는 강의를 게시한 뒤 선택할 수 있습니다. 사전판매는 게시 전에도 가능합니다.</p>" : "") +
+    "<div class=\"course-settings\" style=\"margin-top:16px\"><strong>사전판매 오픈 예정일</strong>" +
+    "<p class=\"hint\">한국시간(KST) 기준입니다. 예정 시각이 지나고 강의가 게시된 상태라면 ‘판매 중’으로 자동 전환됩니다. 미게시 상태라면 자동 공개하지 않습니다.</p>" +
+    "<form method=\"post\" action=\"/course-admin/presale-schedule\">" +
+    "<input type=\"hidden\" name=\"course_id\" value=\"" + escapeHtml(course.id) + "\">" +
+    "<label>오픈 예정일 · KST</label><input type=\"datetime-local\" name=\"presale_opens_at\" value=\"" + escapeHtml(presaleInputValue(course.presale_opens_at)) + "\">" +
+    "<div class=\"hint\">현재: " + escapeHtml(presaleDisplayKst(course.presale_opens_at)) + " · 비워서 저장하면 예약을 해제합니다.</div>" +
+    "<button class=\"secondary\" type=\"submit\" style=\"margin-top:10px\">오픈 예정일 저장</button></form></div>" +
     "</div>";
 }
 
@@ -1319,7 +1354,7 @@ function cafe24ProductNumber(payload) {
 
 async function getAdminCourse(env, courseId) {
   return env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,sales_state,status FROM courses WHERE id=? LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,status FROM courses WHERE id=? LIMIT 1"
   ).bind(courseId).first();
 }
 
@@ -1397,6 +1432,20 @@ async function linkExistingCafe24CourseProduct(form, env) {
     initialSalesState,
     course.id
   ).run();
+}
+
+async function updatePresaleSchedule(form, env) {
+  const courseId = String(form.get("course_id") || "").trim();
+  if (!courseId) throw new Error("강의 정보가 필요합니다.");
+  const course = await getAdminCourse(env, courseId);
+  if (!course) throw new Error("강의를 찾을 수 없습니다.");
+  if (course.access_type !== "paid") throw new Error("유료 강의에서만 오픈 예정일을 설정할 수 있습니다.");
+
+  const opensAt = presaleLocalKstToUtc(form.get("presale_opens_at"));
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET presale_opens_at=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(opensAt, courseId).run();
+  return opensAt ? "사전판매 오픈 예정일을 저장했습니다." : "사전판매 오픈 예약을 해제했습니다.";
 }
 
 async function updateCafe24CourseSales(form, env) {
@@ -2333,6 +2382,19 @@ export default {
         return redirect("/course-admin?message=" + encodeURIComponent("기존 Cafe24 상품을 강의와 연결했습니다."));
       } catch (error) {
         return redirect("/course-admin?message=" + encodeURIComponent(String(error && error.message ? error.message : error)));
+      }
+    }
+
+    if (url.pathname === "/course-admin/presale-schedule" && request.method === "POST") {
+      if (!sameOrigin(request)) return json({ ok: false, error: "origin_rejected" }, { status: 403 });
+      const form = await request.formData();
+      const courseId = String(form.get("course_id") || "").trim();
+      const base = "/course-admin?course=" + encodeURIComponent(courseId) + "&tab=sales";
+      try {
+        const message = await updatePresaleSchedule(form, env);
+        return redirect(base + "&message=" + encodeURIComponent(message));
+      } catch (error) {
+        return redirect(base + "&error=" + encodeURIComponent(String(error && error.message ? error.message : error)));
       }
     }
 
