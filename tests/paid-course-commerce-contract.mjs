@@ -305,6 +305,14 @@ assert(realCurriculaMigration.includes("방법보다 방향이 먼저인 이유"
 assert(realCurriculaMigration.includes("키워드를 보는 관점과 황금 키워드의 함정"), "keyword-strategy free first lesson shell missing");
 
 
+const fastTestMediaMigration = await readFile(
+  new URL("../worker/migrations/0026_reuse_vimeo_for_real_paid_course_test.sql", import.meta.url),
+  "utf8"
+);
+assert(fastTestMediaMigration.includes("1227604364"), "real paid course test video 1 missing");
+assert(fastTestMediaMigration.includes("1227604365"), "real paid course test video 2 missing");
+assert(fastTestMediaMigration.includes("naver-search-algorithm-04"), "all real search-algorithm test lessons must be video-linked");
+
 const realSalesPageMigration = await readFile(
   new URL("../worker/migrations/0025_seed_real_paid_course_sales_pages.sql", import.meta.url),
   "utf8"
