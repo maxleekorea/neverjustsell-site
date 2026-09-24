@@ -100,6 +100,14 @@ assert(admin.includes("refund_policy_version"), "refund policy version setting m
 assert(admin.includes("watched_seconds"), "student detail watched seconds missing");
 assert(admin.includes("누적 시청"), "student detail watch-time summary missing");
 assert(admin.includes("구매 당시 조건"), "purchase snapshot admin section missing");
+assert(admin.includes("환불 참고 계산"), "usage-based refund estimate panel missing");
+assert(admin.includes("paid_usage_ratio"), "paid-content usage ratio calculation missing");
+assert(admin.includes("suggested_refund_krw"), "suggested refund amount calculation missing");
+assert(admin.includes("Math.min(duration, watched)"), "refund usage must cap repeated watch time at lesson duration");
+assert(admin.includes("index > 0 && Number(row.is_preview || 0) !== 1"), "mandatory and additional previews must be excluded from refund usage");
+assert(admin.includes("최소 한 개의 유료 차시가 필요합니다."), "paid course must retain paid content after mandatory preview");
+assert(admin.includes('accessType === "paid" ? 180 : null'), "new paid VOD default duration must be 180 days");
+assert(admin.includes('"fair-trust-v1.0"'), "new paid VOD policy version default missing");
 assert(!admin.includes("|| items[0] || null"), "student detail must not infer an unrelated order item");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
@@ -257,6 +265,15 @@ const entitlementDurationMigration = await readFile(
   "utf8"
 );
 assert(entitlementDurationMigration.includes("access_duration_days_snapshot"), "entitlement duration snapshot migration missing");
+
+const generalVodPolicyMigration = await readFile(
+  new URL("../worker/migrations/0022_general_vod_policy_v1.sql", import.meta.url),
+  "utf8"
+);
+assert(generalVodPolicyMigration.includes("access_duration_days=180"), "real paid courses must use 180-day access policy");
+assert(generalVodPolicyMigration.includes("fair-trust-v1.0"), "real paid courses must use Fair-trust policy v1");
+assert(generalVodPolicyMigration.includes("paid-naver-search-algorithm"), "first real paid course policy migration missing");
+assert(generalVodPolicyMigration.includes("paid-naver-keyword-strategy"), "second real paid course policy migration missing");
 
 const productionWorker = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
