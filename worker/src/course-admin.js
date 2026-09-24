@@ -1438,14 +1438,31 @@ function paymentE2EPanel(course, inspection = null, orderId = "") {
     ? "<span class=\"pill\">테스트 판매 중</span>"
     : "<span class=\"pill\">테스트 대기</span>";
 
+  const nextStep = !active
+    ? "1. 테스트 판매를 시작하세요."
+    : !inspection
+      ? "2. 테스트 상품을 회원 계정으로 1,000원 결제한 뒤 주문번호를 입력하세요."
+      : !inspection.paid
+        ? "3. Cafe24에서 결제 완료 상태인지 확인하세요."
+        : inspection.entitlement?.status !== "active" && !inspection.revoked
+          ? "4. 테스트 강의를 열어 구매 수강권 생성을 확인하세요."
+          : !inspection.revoked
+            ? "5. 유료 차시를 재생한 뒤 Cafe24에서 주문을 취소·환불하고 다시 상태를 확인하세요."
+            : inspection.entitlement?.status === "revoked"
+              ? "6. 결제·수강권·회수 흐름 검증 완료. 테스트 판매를 종료하세요."
+              : "6. 취소·환불은 감지됐습니다. 수강권 revoked 반영을 다시 확인하세요.";
+
   return "<section class=\"card\"><div class=\"sectionhead\"><div><h2>결제 E2E 테스트</h2>" +
     "<p class=\"hint\">실제 강의와 분리된 product_no=13 테스트 fixture입니다. 테스트 주문 금액은 " + price.toLocaleString("ko-KR") + "원입니다.</p></div>" +
     state + "</div>" +
+    "<div class=\"advanced-note\" style=\"margin-bottom:14px\"><strong>현재 다음 단계</strong><p class=\"hint\" style=\"margin-bottom:0\">" + escapeHtml(nextStep) + "</p></div>" +
     "<div class=\"readiness\">" +
     "<div class=\"ready-row\"><span>Cafe24 테스트 상품</span><span class=\"ready-ok\">#" + productNo + "</span></div>" +
     "<div class=\"ready-row\"><span>Vimeo 테스트 영상</span><span class=\"ready-ok\">2개 연결</span></div>" +
     "<div class=\"ready-row\"><span>D1 수강권 기록</span><span class=\"ready-ok\">active / revoked 검증</span></div>" +
     "</div>" +
+    "<details class=\"advanced-note\" style=\"margin:14px 0\"><summary style=\"cursor:pointer;font-weight:700\">전체 E2E 순서 보기</summary>" +
+    "<ol class=\"hint\" style=\"line-height:1.8;margin-bottom:0\"><li>테스트 판매 시작</li><li>Cafe24 회원 계정으로 1,000원 실제 주문</li><li>주문번호 입력 후 결제 완료·D1 수강권 active 확인</li><li>강의실 진입 후 유료 차시 재생 및 진도 기록 확인</li><li>Cafe24에서 주문 취소 또는 환불 처리</li><li>같은 주문번호로 revoked 감지와 수강권 회수 확인</li><li>테스트 판매 종료</li></ol></details>" +
     (active
       ? "<div class=\"toolbar\"><a class=\"action-link\" href=\"" + escapeHtml(cafe24ProductDetailUrl(productNo)) + "\" target=\"_blank\" rel=\"noreferrer\">테스트 상품 열기 →</a>" +
         "<a class=\"action-link\" href=\"/system-check\" target=\"_blank\">시스템 점검 →</a>" +
