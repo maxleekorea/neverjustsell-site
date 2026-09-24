@@ -79,9 +79,14 @@ assert(admin.includes("module-drag"), "module drag handle missing");
 assert(admin.includes("data-curriculum-status"), "curriculum autosave status missing");
 assert(admin.includes("/course-admin/api/curriculum/reorder"), "curriculum reorder API route missing");
 assert(admin.includes("refreshCurriculumDisplay"), "curriculum display refresh missing");
-assert(admin.includes("미리보기 지정"), "preview designation status badge missing");
+assert(admin.includes("mandatory-preview-badge"), "mandatory preview drag-state badge missing");
+assert(admin.includes("additional-preview-toggle"), "additional preview toggle missing after reorder");
+assert(admin.includes("1차시 무료"), "mandatory first-lesson preview badge missing");
+assert(admin.includes("추가 미리보기"), "additional preview badge missing");
 assert(admin.includes("영상 연결됨"), "video connection status badge missing");
-assert(admin.includes("비구매자에게 무료 미리보기 공개"), "course admin preview publication control missing");
+assert(admin.includes("1차시는 의무 무료 미리보기"), "mandatory first-lesson preview control missing");
+assert(admin.includes("이 차시도 추가 무료 미리보기로 공개"), "additional preview control missing");
+assert(admin.includes("OT·소개가 아니라 실제 강의 품질을 판단할 수 있는 본강의를 배치하세요."), "mandatory preview substantive-lesson guidance missing");
 assert(admin.includes("강의가 게시된 상태에서만 공개 재생됩니다."), "preview publication warning missing");
 assert(admin.includes('tabLink("landing", "판매 페이지")'), "course sales page admin tab missing");
 assert(admin.includes("updateCourseSalesPage"), "course sales page save handler missing");
@@ -112,6 +117,11 @@ const router = await readFile(
   "utf8"
 );
 assert(router.includes("isPublicPreviewLesson"), "public preview access predicate missing");
+assert(router.includes("mandatoryFirstLesson"), "first paid lesson must be an effective public preview");
+assert(router.includes("Number(lessonIndex) === 0"), "mandatory preview must follow current lesson order");
+assert(router.includes("FIRST LESSON · FREE PREVIEW"), "mandatory first preview player label missing");
+assert(router.includes("첫 차시 무료"), "mandatory first preview curriculum badge missing");
+assert(router.includes("추가 미리보기"), "additional preview curriculum badge missing");
 assert(router.includes('course.status === "published"'), "preview must require a published course");
 assert(router.includes("lesson.isPreview"), "preview must require a designated lesson");
 assert(router.includes('["ready", "published"]'), "preview must require a ready lesson");
