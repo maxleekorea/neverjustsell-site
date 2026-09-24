@@ -75,6 +75,12 @@ assert(admin.includes("미리보기 지정"), "preview designation status badge 
 assert(admin.includes("영상 연결됨"), "video connection status badge missing");
 assert(admin.includes("비구매자에게 무료 미리보기 공개"), "course admin preview publication control missing");
 assert(admin.includes("강의가 게시된 상태에서만 공개 재생됩니다."), "preview publication warning missing");
+assert(admin.includes('tabLink("landing", "판매 페이지")'), "course sales page admin tab missing");
+assert(admin.includes("updateCourseSalesPage"), "course sales page save handler missing");
+assert(admin.includes("강사 소개"), "course sales page instructor editor missing");
+assert(admin.includes("이런 분께 추천합니다"), "course sales page audience editor missing");
+assert(admin.includes("이 강의에서 배우는 내용"), "course sales page outcomes editor missing");
+assert(admin.includes("환불 기준은 자동 생성하지 않습니다."), "refund policy must not be auto-generated");
 assert(admin.includes('url.searchParams.get("student")'), "student detail route query missing");
 assert(admin.includes("price: 1000"), "payment E2E test must use a 1,000 KRW bank-transfer order");
 assert(admin.includes("e2e_selling_member_only"), "payment E2E selling state missing");
@@ -106,6 +112,14 @@ assert(router.includes("?preview="), "public preview lesson URL missing");
 assert(router.includes("이 차시는 공개 미리보기가 아닙니다."), "locked lesson direct preview guard missing");
 assert(router.includes("contentPublished"), "course entry must require published content");
 assert(router.includes("수강 준비 중"), "entitled but unpublished course state missing");
+assert(router.includes("renderSalesListSection"), "sales page list renderer missing");
+assert(router.includes("renderInstructorSection"), "sales page instructor section missing");
+assert(router.includes("sales-layout"), "sales page layout missing");
+assert(router.includes("수강 이용 안내"), "sales page access information missing");
+assert(router.includes("환불 안내"), "sales page refund information missing");
+assert(router.includes("수강을 시작하시겠습니까?"), "sales page bottom CTA missing");
+assert(router.includes("showTitle: false"), "sales page curriculum heading should not be duplicated");
+
 
 const access = await readFile(
   new URL("../worker/src/access.js", import.meta.url),
@@ -138,5 +152,22 @@ assert(manualAccessMigration.includes("ALTER TABLE course_entitlements ADD COLUM
 assert(manualAccessMigration.includes("CREATE TABLE IF NOT EXISTS course_access_admin_log"), "manual access admin log migration missing");
 assert(manualAccessMigration.includes("previous_expires_at"), "manual access audit must preserve previous expiry");
 assert(manualAccessMigration.includes("new_expires_at"), "manual access audit must preserve new expiry");
+
+const salesPageMigration = await readFile(
+  new URL("../worker/migrations/0017_course_sales_page_content.sql", import.meta.url),
+  "utf8"
+);
+assert(salesPageMigration.includes("instructor_name"), "course sales page instructor field migration missing");
+assert(salesPageMigration.includes("target_audience"), "course sales page audience field migration missing");
+assert(salesPageMigration.includes("learning_outcomes"), "course sales page outcomes field migration missing");
+assert(salesPageMigration.includes("access_info"), "course sales page access information migration missing");
+assert(salesPageMigration.includes("refund_policy_text"), "course sales page refund policy migration missing");
+
+const courseStore = await readFile(
+  new URL("../worker/src/course-store.js", import.meta.url),
+  "utf8"
+);
+assert(courseStore.includes("instructor_name"), "course store must expose sales page content");
+assert(courseStore.includes("refund_policy_text"), "course store must expose refund policy content");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
