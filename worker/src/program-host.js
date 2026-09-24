@@ -6,6 +6,7 @@ import {
   hasActiveScopedRole
 } from "./roles.js";
 import { CLASSROOM_ORIGIN, SITE_ORIGIN, COMMUNITY_ORIGIN } from "./config.js";
+import { ensureProgramSchema } from "./program-schema.js";
 
 function esc(value) {
   return String(value ?? "")
@@ -283,6 +284,11 @@ function detailHtml(detail, hostAllowed, created) {
 export default {
   async fetch(request, env) {
     if (!env.COURSE_DB) return html(shell("Program Host", '<div class="notice error">프로그램 DB가 연결되지 않았습니다.</div>'), { status: 503 });
+    try {
+      await ensureProgramSchema(env);
+    } catch (error) {
+      return html(shell("Program Host", '<div class="notice error">프로그램 데이터 구조를 준비하지 못했습니다. 운영자에게 알려 주세요.</div>'), { status: 503 });
+    }
 
     const memberId = await currentMember(request, env);
     if (!memberId) return loginRedirect(request);
