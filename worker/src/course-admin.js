@@ -350,7 +350,7 @@ async function syncOnlineCommerceBasics(env) {
 
 async function listCourses(env) {
   const courseRows = await env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
+    "SELECT id,slug,title,summary,access_type,cafe24_product_no,sales_enabled,sales_state,access_duration_days,refund_policy_version,visible,catalog_visible,sort_order,status,price_krw,cafe24_sync_status,login_required,owner_member_id,instructor_name,instructor_bio,target_audience,learning_outcomes,access_info,refund_policy_text,created_at,updated_at FROM courses ORDER BY sort_order,created_at"
   ).all();
   const [lessonRows, moduleRows] = await Promise.all([
     env.COURSE_DB.prepare(
@@ -1449,7 +1449,7 @@ function cafe24ProductNumber(payload) {
 
 async function getAdminCourse(env, courseId) {
   return env.COURSE_DB.prepare(
-    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,sales_state,presale_opens_at,status FROM courses WHERE id=? LIMIT 1"
+    "SELECT id,slug,title,summary,access_type,price_krw,cafe24_product_no,sales_enabled,sales_state,status FROM courses WHERE id=? LIMIT 1"
   ).bind(courseId).first();
 }
 
@@ -1821,8 +1821,29 @@ async function updateCourse(form, env) {
   if (accessType === "paid" && priceKrw <= 0) throw new Error("유료 강의는 가격을 입력해야 합니다.");
   await assertActiveCreator(env, ownerMemberId);
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,catalog_visible=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
-  ).bind(title, summary || null, accessType, Math.trunc(priceKrw), ownerMemberId, catalogVisible, courseId).run();
+    "UPDATE courses SET title=?,summary=?,access_type=?,price_krw=?,owner_member_id=?,catalog_visible=?," +
+    "access_duration_days=CASE WHEN ?='paid' THEN COALESCE(access_duration_days,?) ELSE access_duration_days END," +
+    "refund_policy_version=CASE WHEN ?='paid' THEN COALESCE(NULLIF(refund_policy_version,''),?) ELSE refund_policy_version END," +
+    "access_info=CASE WHEN ?='paid' THEN COALESCE(NULLIF(access_info,''),?) ELSE access_info END," +
+    "refund_policy_text=CASE WHEN ?='paid' THEN COALESCE(NULLIF(refund_policy_text,''),?) ELSE refund_policy_text END," +
+    "updated_at=CURRENT_TIMESTAMP WHERE id=?"
+  ).bind(
+    title,
+    summary || null,
+    accessType,
+    Math.trunc(priceKrw),
+    ownerMemberId,
+    catalogVisible,
+    accessType,
+    DEFAULT_PAID_ACCESS_DAYS,
+    accessType,
+    DEFAULT_REFUND_POLICY_VERSION,
+    accessType,
+    DEFAULT_PAID_ACCESS_INFO,
+    accessType,
+    DEFAULT_REFUND_POLICY_TEXT,
+    courseId
+  ).run();
 }
 
 async function updateCourseSalesPage(form, env) {
