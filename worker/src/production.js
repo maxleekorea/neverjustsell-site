@@ -8,7 +8,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
-import { runPendingSystemOperations, getPaymentE2EProductStatus } from "./system-operations.js";
+import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-25-auto-order-v2";
 import {
@@ -121,6 +121,15 @@ export default {
 
     if (url.pathname === "/program-host" || url.pathname.startsWith("/program-host/")) {
       return programHostApp.fetch(request, env, ctx);
+    }
+
+    if (url.pathname === "/system-check/payment-e2e/flow-status" && request.method === "GET") {
+      try {
+        const flow = await getPaymentE2EFlowStatus(env);
+        return json(flow, { status: flow.ok ? 200 : 503 });
+      } catch (error) {
+        return json({ ok: false, error: String(error?.message || error) }, { status: 503 });
+      }
     }
 
     if (url.pathname === "/system-check/payment-e2e/status" && request.method === "GET") {
