@@ -348,3 +348,5 @@ assert(!communityDeploy.includes('"d1"'), "community deploy must not depend on D
 console.log("PASS: creator-reader program and community operating scaffold");
 
 assert(!systemOperations.includes('undone: "F"'), "awaiting-refund transition must not send undone=F to Cafe24");
+
+assert(programSchema.includes("0049_supersede_incorrect_awaiting_refund_transition.sql"), "runtime reconciler must retire the incorrect cancellation-change refund transition");

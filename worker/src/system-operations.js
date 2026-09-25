@@ -1099,6 +1099,27 @@ export async function getPaymentE2EClaimStatus(env) {
       : [];
   const firstRefund = refunds[0] || null;
 
+  let refundListPayload = null;
+  try {
+    refundListPayload = await cafe24AdminGet("/refunds", env, {
+      shop_no: 1,
+      start_date: date,
+      end_date: kstToday,
+      date_type: "accepted_refund_date",
+      order_id: orderId,
+      limit: 100,
+      offset: 0
+    });
+  } catch {
+    refundListPayload = null;
+  }
+  const refundRecords = Array.isArray(refundListPayload?.refunds)
+    ? refundListPayload.refunds
+    : [];
+  const refundRecord = refundRecords.find(
+    (record) => String(record?.order_id || "") === orderId
+  ) || null;
+
   const pick = (key) => {
     for (const source of [detailedTargetItem, targetItem, order, cancellation, firstRefund, detail]) {
       const value = source?.[key];
@@ -1131,6 +1152,19 @@ export async function getPaymentE2EClaimStatus(env) {
     claim_code: claimCode || null,
     cancellation_status: String(cancellation?.status || "").trim() || null,
     refund_method_code: firstRefund?.refund_method_code ?? cancellation?.refund_method_code ?? null,
+    refund_record_found: Boolean(refundRecord),
+    refund_record_count: refundRecords.length,
+    refund_code: refundRecord?.refund_code ? String(refundRecord.refund_code) : null,
+    refund_record_status: refundRecord?.refund_status != null
+      ? String(refundRecord.refund_status)
+      : refundRecord?.status != null
+        ? String(refundRecord.status)
+        : null,
+    accepted_refund_date: refundRecord?.accepted_refund_date || null,
+    actual_refund_amount: refundRecord?.actual_refund_amount != null
+      ? Number(refundRecord.actual_refund_amount)
+      : null,
+    refund_payment_methods: refundRecord?.refund_payment_methods ?? null,
     refund_bank_account_complete: refundBankComplete,
     refund_bank_code_present: Boolean(pick("refund_bank_code")),
     refund_bank_name_present: Boolean(pick("refund_bank_name")),
