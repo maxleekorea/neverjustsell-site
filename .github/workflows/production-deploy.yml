@@ -111,6 +111,19 @@ jobs:
             j?.all_no_shipping!==true
           ) process.exit(1);
           '
+      - name: Verify digital product detail hides shipping properties
+        run: |
+          node -e '
+          const r=await fetch("https://classroom.neverjustsell.com/system-check/product-detail-properties-status?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          if(
+            !r.ok ||
+            !j?.ok ||
+            j?.shipping_property_count<1 ||
+            j?.all_shipping_properties_hidden!==true
+          ) process.exit(1);
+          '
 
   deploy-community:
     needs: deploy-course
