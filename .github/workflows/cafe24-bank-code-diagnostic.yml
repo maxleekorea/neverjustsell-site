@@ -1,0 +1,70 @@
+name: Cafe24 refund bank code diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/cafe24-bank-code-diagnostic.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download official Cafe24 refund bank code table
+        run: |
+          curl --fail --location --silent --show-error             "https://d2wxkjpieznxai.cloudfront.net/resource/ko/refund_bank_code.xlsx"             --output /tmp/refund_bank_code.xlsx
+      - name: Print public bank name and code rows
+        run: |
+          python3 - <<'PY'
+          import re
+          import zipfile
+          import xml.etree.ElementTree as ET
+
+          path = "/tmp/refund_bank_code.xlsx"
+          ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+
+          with zipfile.ZipFile(path) as z:
+              shared = []
+              if "xl/sharedStrings.xml" in z.namelist():
+                  root = ET.fromstring(z.read("xl/sharedStrings.xml"))
+                  for si in root.findall("m:si", ns):
+                      shared.append("".join(t.text or "" for t in si.iterfind(".//m:t", ns)))
+
+              workbook = ET.fromstring(z.read("xl/workbook.xml"))
+              rels = ET.fromstring(z.read("xl/_rels/workbook.xml.rels"))
+              rel_ns = {"r": "http://schemas.openxmlformats.org/package/2006/relationships"}
+              rel_map = {r.attrib["Id"]: r.attrib["Target"] for r in rels.findall("r:Relationship", rel_ns)}
+              sheet = workbook.find("m:sheets/m:sheet", ns)
+              rid = sheet.attrib["{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"]
+              target = rel_map[rid]
+              sheet_path = target if target.startswith("xl/") else "xl/" + target.lstrip("/")
+              root = ET.fromstring(z.read(sheet_path))
+
+              rows = []
+              for row in root.findall(".//m:sheetData/m:row", ns):
+                  vals = {}
+                  for c in row.findall("m:c", ns):
+                      ref = c.attrib.get("r", "")
+                      col = re.match(r"[A-Z]+", ref)
+                      col = col.group(0) if col else ref
+                      typ = c.attrib.get("t")
+                      v = c.find("m:v", ns)
+                      value = v.text if v is not None and v.text is not None else ""
+                      if typ == "s" and value.isdigit():
+                          value = shared[int(value)]
+                      elif typ == "inlineStr":
+                          value = "".join(t.text or "" for t in c.iterfind(".//m:t", ns))
+                      vals[col] = value.strip()
+                  if vals:
+                      rows.append(vals)
+
+          print("CAFE24_BANK_CODE_TABLE_START")
+          for row in rows:
+              ordered = [f"{k}={row[k]}" for k in sorted(row)]
+              print("BANK_CODE_ROW\t" + "\t".join(ordered))
+          print("CAFE24_BANK_CODE_TABLE_END")
+          PY
