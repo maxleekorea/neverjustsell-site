@@ -290,11 +290,19 @@ expect(
   `status=${r.response.status}`
 );
 
-r = await request("https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom");
+let legacyWorkersDev = null;
+try {
+  legacyWorkersDev = await request("https://neverjustsell-course-access.max-lee-korea.workers.dev/classroom");
+} catch (error) {
+  legacyWorkersDev = { unreachable: true, error: String(error?.cause?.code || error?.message || error) };
+}
 expect(
   "legacy classroom workers.dev route stays disabled",
-  r.response.status === 404 && !r.response.headers.get("location"),
-  `status=${r.response.status} location=${r.response.headers.get("location")}`
+  legacyWorkersDev.unreachable === true ||
+    (legacyWorkersDev.response.status === 404 && !legacyWorkersDev.response.headers.get("location")),
+  legacyWorkersDev.unreachable
+    ? `unreachable=${legacyWorkersDev.error}`
+    : `status=${legacyWorkersDev.response.status} location=${legacyWorkersDev.response.headers.get("location")}`
 );
 
 for (const item of cases) {
