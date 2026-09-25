@@ -804,6 +804,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0043 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-reconcile-customer-cancelled-payment-e2e-access',
+  'reconcile_customer_cancelled_payment_e2e_access',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25","order_id":"20260925-0000013"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -931,6 +942,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0042);
     await markMigration(db, "0042_configure_customer_claim_settings.sql");
     applied.push("0042_configure_customer_claim_settings.sql");
+  }
+
+  if (!(await migrationApplied(db, "0043_reconcile_customer_cancelled_payment_e2e_access.sql"))) {
+    await executeStatements(db, MIGRATION_0043);
+    await markMigration(db, "0043_reconcile_customer_cancelled_payment_e2e_access.sql");
+    applied.push("0043_reconcile_customer_cancelled_payment_e2e_access.sql");
   }
 
   const check = await db.prepare(

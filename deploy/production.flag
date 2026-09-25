@@ -12,3 +12,4 @@ reason=adapt-cancellation-buttons-to-enabled-order-status-v11
 reason=fix-payment-e2e-date-rollover-v12
 reason=restore-latest-v12-after-store-scope-verification
 reason=inspect-customer-cancellation-claim-after-buyer-request
+reason=reconcile-customer-cancelled-payment-e2e-access
