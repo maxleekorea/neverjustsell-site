@@ -350,3 +350,5 @@ console.log("PASS: creator-reader program and community operating scaffold");
 assert(!systemOperations.includes('undone: "F"'), "awaiting-refund transition must not send undone=F to Cafe24");
 
 assert(programSchema.includes("0049_supersede_incorrect_awaiting_refund_transition.sql"), "runtime reconciler must retire the incorrect cancellation-change refund transition");
+
+assert(programSchema.includes("0050_start_payment_e2e_refund_processing.sql"), "runtime reconciler must start refund processing from accepted cancellation");
