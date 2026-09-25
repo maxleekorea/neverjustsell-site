@@ -15,3 +15,4 @@ reason=inspect-customer-cancellation-claim-after-buyer-request
 reason=reconcile-customer-cancelled-payment-e2e-access
 reason=isolate-payment-e2e-program-withdrawal
 reason=pin-payment-e2e-program-to-cancelled-source-order
+reason=rerun-payment-e2e-withdrawal-after-source-pin
