@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T15:05:00+09:00
-reason=fix-cafe24-category-product-request-wrapper
-expected_head=50c2867fef94e1eb93b04b3b30339374d2364563
+deploy_at=2026-09-25T15:12:00+09:00
+reason=assign-product-13-via-add-category-and-clean-automation-duplicates
+expected_head=98ee8d56d189bdbe5328f3c1add08a3b564ae5b8
