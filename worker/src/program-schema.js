@@ -719,6 +719,17 @@ ON CONFLICT(category_no) DO UPDATE SET
   updated_at=CURRENT_TIMESTAMP;
 `;
 
+const MIGRATION_0037 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-reconcile-all-course-product-fulfillment',
+  'reconcile_all_course_product_fulfillment',
+  'pending',
+  '{}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -810,6 +821,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0036);
     await markMigration(db, "0036_commerce_fulfillment_profiles.sql");
     applied.push("0036_commerce_fulfillment_profiles.sql");
+  }
+
+  if (!(await migrationApplied(db, "0037_reconcile_all_course_product_fulfillment.sql"))) {
+    await executeStatements(db, MIGRATION_0037);
+    await markMigration(db, "0037_reconcile_all_course_product_fulfillment.sql");
+    applied.push("0037_reconcile_all_course_product_fulfillment.sql");
   }
 
   const check = await db.prepare(
