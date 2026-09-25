@@ -1,3 +1,4 @@
 deploy_at=2026-09-25T22:44:00+09:00
 reason=retry-final-payment-e2e-consistency-and-close-test-product
 expected_head=846b8a27a4401290ec2fce042a65d4c09f600408
+reason=fix-cafe24-refund-method-array-and-complete-final-e2e
