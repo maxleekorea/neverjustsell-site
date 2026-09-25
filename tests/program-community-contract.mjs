@@ -40,6 +40,10 @@ const production = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
   "utf8"
 );
+const workerEntrypoint = await readFile(
+  new URL("../worker/src/entrypoint.js", import.meta.url),
+  "utf8"
+);
 const unified = await readFile(
   new URL("../worker/src/unified.js", import.meta.url),
   "utf8"
@@ -226,9 +230,9 @@ assert(communityRuntime.includes("revokeProjectedProgramSpaces"), "community ref
 assert(communityAccess.includes("revokeProjectedProgramSpaces"), "community fail-closed projection revocation helper missing");
 assert(sessionAccessRefresh.includes("access_checked_at"), "community session access refresh migration missing");
 assert(communitySchema.includes("0003_session_access_refresh.sql"), "runtime community schema must track access refresh migration");
-assert(production.includes("CommunityAuthRpc"), "course Worker private Community RPC entrypoint missing");
-assert(production.includes("getCommunityIdentity"), "course Worker Community identity RPC missing");
-assert(production.includes("getPaymentE2ECommunityIdentity"), "course Worker payment E2E Community RPC missing");
+assert(workerEntrypoint.includes("CommunityAuthRpc"), "course Worker private Community RPC entrypoint missing");
+assert(workerEntrypoint.includes("getCommunityIdentity"), "course Worker Community identity RPC missing");
+assert(workerEntrypoint.includes("getPaymentE2ECommunityIdentity"), "course Worker payment E2E Community RPC missing");
 
 assert(admin.includes("program_enrollment"), "payment E2E inspection must expose Program enrollment");
 assert(admin.includes("Program 참가권"), "payment E2E admin must show Program enrollment state");
