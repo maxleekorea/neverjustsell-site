@@ -162,7 +162,7 @@ async function startAuthorization(request, env, mode) {
   if (mode === "admin") {
     await env.CAFE24_AUTH.put(`${ADMIN_STATE_PREFIX}${state}`, "1", { expirationTtl: 600 });
     authUrl = new URL(`${CAFE24_ADMIN_DOMAIN}/api/v2/oauth/authorize`);
-    authUrl.searchParams.set("scope", ADMIN_SCOPES.join(" "));
+    authUrl.searchParams.set("scope", ADMIN_SCOPES.join(","));
   } else {
     const rawReturnTo = requestUrl.searchParams.get("return_to");
     const communityReturn = validCommunityReturn(rawReturnTo, env);
