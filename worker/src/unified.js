@@ -10,6 +10,7 @@ import {
   validCustomerReturn,
   validCommunityReturn
 } from "./config.js";
+import { bootstrapCafe24Catalog } from "./system-operations.js";
 
 const REQUIRED_ADMIN_SCOPES = [...ADMIN_SCOPES];
 const CUSTOMER_STATE_PREFIX = "cafe24:customer-oauth-state:";
@@ -227,7 +228,27 @@ async function finishAuthorization(request, env) {
   if (adminRaw) {
     const token = await exchangeCode(code, env, true);
     await env.CAFE24_AUTH.put(ADMIN_TOKEN_KEY, JSON.stringify(token));
-    return html(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Cafe24 연결 완료</title></head><body style="font-family:Arial,sans-serif;max-width:720px;margin:60px auto;padding:0 24px"><h1>Cafe24 연결 완료</h1><p>Admin API 인증이 완료되었습니다.</p></body></html>`);
+
+    let catalog = null;
+    let catalogError = null;
+    try {
+      catalog = await bootstrapCafe24Catalog(env);
+    } catch (error) {
+      catalogError = String(error?.message || error);
+    }
+
+    const categories = catalog?.categories || {};
+    const categoryRows = ["강의", "전자책", "프로그램", "일반상품"]
+      .map((name) => `<li><strong>${name}</strong> · category_no=${categories[name] ?? "확인 필요"}</li>`)
+      .join("");
+
+    return html(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Cafe24 연결 완료</title></head>
+<body style="font-family:Arial,'Noto Sans KR',sans-serif;max-width:720px;margin:60px auto;padding:0 24px;line-height:1.7">
+<h1>Cafe24 연결 완료</h1>
+<p>Admin API 권한 갱신이 완료되었습니다.</p>
+${catalog?.ok ? `<h2>상품 분류 자동 구성 완료</h2><ul>${categoryRows}</ul><p>테스트 상품 #13은 <strong>강의</strong> 분류에 배치했습니다.</p>` : `<h2>상품 분류 구성 확인 필요</h2><p>${catalogError || "상품 분류 자동 구성을 완료하지 못했습니다."}</p>`}
+<p><a href="/oauth/cafe24/status">연결 상태 확인</a></p>
+</body></html>`);
   }
 
   const token = await exchangeCode(code, env, false);
