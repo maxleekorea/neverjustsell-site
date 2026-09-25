@@ -396,3 +396,35 @@ export async function bootstrapCafe24Catalog(env) {
     }
   };
 }
+
+
+export async function getCafe24CatalogStatus(env) {
+  const categories = await listRootCategories(env);
+  const wanted = {};
+  for (const name of CATALOG_CATEGORY_NAMES) {
+    const match = categories.find((category) =>
+      String(category?.category_name || "").trim() === name &&
+      Number(category?.parent_category_no || 1) === 1
+    );
+    wanted[name] = match?.category_no ? Number(match.category_no) : null;
+  }
+
+  let product13InCourse = false;
+  const courseCategoryNo = wanted["강의"];
+  if (courseCategoryNo) {
+    const current = await cafe24AdminGet(`/categories/${courseCategoryNo}/products`, env, {
+      shop_no: 1,
+      display_group: 1,
+      limit: 50000
+    });
+    const products = Array.isArray(current?.products) ? current.products : [];
+    product13InCourse = products.some((product) => Number(product?.product_no || 0) === 13);
+  }
+
+  return {
+    ok: true,
+    categories: wanted,
+    all_categories_present: CATALOG_CATEGORY_NAMES.every((name) => Number(wanted[name] || 0) > 0),
+    product_13_in_course: product13InCourse
+  };
+}
