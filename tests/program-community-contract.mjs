@@ -16,6 +16,10 @@ const paymentFixture = await readFile(
   new URL("../worker/migrations/0029_program_payment_e2e_fixture.sql", import.meta.url),
   "utf8"
 );
+const refundMigration = await readFile(
+  new URL("../worker/migrations/0040_cancel_payment_e2e_order.sql", import.meta.url),
+  "utf8"
+);
 const community = await readFile(
   new URL("../community/migrations/0002_program_spaces.sql", import.meta.url),
   "utf8"
@@ -179,6 +183,9 @@ assert(programSchema.includes("0029_program_payment_e2e_fixture.sql"), "runtime 
 assert(programSchema.includes("0030_open_payment_e2e_product.sql"), "runtime reconciler must apply one-time payment product operation");
 assert(programSchema.includes("0031_reopen_payment_e2e_product_without_group_lock.sql"), "runtime reconciler must apply logged-in E2E fallback operation");
 assert(programSchema.includes("0032_reconcile_latest_payment_e2e_order.sql"), "runtime reconciler must apply latest paid order reconciliation");
+assert(programSchema.includes("0040_cancel_payment_e2e_order.sql"), "runtime reconciler must apply final paid order cancellation");
+assert(refundMigration.includes("'cancel_payment_e2e_order'"), "final payment E2E cancellation migration missing");
+assert(refundMigration.includes('{"product_no":13,"date":"2026-09-25"}'), "final cancellation must target only the known E2E order date and product");
 assert(systemOperations.includes("reconcile_latest_payment_e2e_order"), "latest paid E2E order reconciliation operation missing");
 assert(systemOperations.includes("syncPaidCourseEntitlementForPurchase"), "automatic E2E reconciliation must create course entitlement");
 assert(systemOperations.includes("reconcilePurchasedProgramEnrollments"), "automatic E2E reconciliation must create Program enrollment");
@@ -190,8 +197,11 @@ assert(systemOperations.includes('buy_limit_type: "M"'), "one-time operation mus
 assert(systemOperations.includes("getPaymentE2EProductStatus"), "read-only payment E2E product status missing");
 assert(systemOperations.includes("cancel_payment_e2e_order"), "guarded payment E2E cancellation operation missing");
 assert(systemOperations.includes("revokePaidCourseEntitlementForPurchase"), "payment E2E cancellation must revoke course entitlement");
-assert(systemOperations.includes('payment_gateway_cancel: "T"'), "payment E2E cancellation must request payment gateway cancellation");
+assert(systemOperations.includes('PAYMENT_E2E_PG_CANCEL_METHODS'), "payment E2E cancellation must decide PG cancellation by payment method");
+assert(systemOperations.includes('payment_gateway_cancel: requestPaymentGatewayCancel ? "T" : "F"'), "payment E2E cancellation must not request PG cancellation for bank deposit");
 assert(systemOperations.includes('recover_inventory: "F"'), "digital payment E2E cancellation must not restore physical inventory");
+assert(systemOperations.includes('display: "F", selling: "F"'), "completed payment E2E must hide the test product");
+assert(systemOperations.includes("e2e_refund_verified_hidden"), "hidden post-refund fixture state missing");
 assert(systemOperations.includes('"withdrawn"'), "payment E2E cancellation must verify Program withdrawal");
 assert(systemOperations.includes('order_state: orderState'), "payment E2E flow status must expose active/revoked order state");
 assert(systemOperations.includes("access_state_consistent"), "payment E2E flow status must verify access state consistency");

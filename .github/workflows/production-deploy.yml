@@ -40,7 +40,7 @@ jobs:
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
-          const expected="2026-09-25-auto-order-v2";
+          const expected="2026-09-25-refund-e2e-v3";
           let last=null;
           for(let i=0;i<8;i+=1){
             const r=await fetch("https://classroom.neverjustsell.com/migration-health?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
@@ -66,7 +66,7 @@ jobs:
           const r=await fetch("https://classroom.neverjustsell.com/system-check/payment-e2e/status");
           const j=await r.json().catch(()=>null);
           console.log(JSON.stringify(j,null,2));
-          if(!r.ok || !j?.ok || Number(j?.price_krw)!==1000 || j?.display!=="T" || j?.selling!=="T") process.exit(1);
+          if(!r.ok || !j?.ok || Number(j?.price_krw)!==1000 || j?.display!=="F" || j?.selling!=="F") process.exit(1);
           '
       - name: Verify paid E2E order and access state
         run: |
@@ -78,10 +78,11 @@ jobs:
             !r.ok ||
             !j?.ok ||
             j?.order_detected!==true ||
-            j?.order_state!=="active" ||
+            j?.order_state!=="revoked" ||
             j?.paid_member_order!==true ||
-            j?.course_entitlement!=="active" ||
-            j?.program_enrollment!=="active" ||
+            j?.payment_method!=="cash" ||
+            j?.course_entitlement!=="revoked" ||
+            j?.program_enrollment!=="withdrawn" ||
             j?.identity_consistent!==true ||
             j?.access_state_consistent!==true
           ) process.exit(1);
@@ -165,6 +166,22 @@ jobs:
           const j=await r.json().catch(()=>null);
           console.log(JSON.stringify(j,null,2));
           if(!r.ok || !j?.ok || !j?.program_schema?.ok) process.exit(1);
+          '
+      - name: Verify refunded Program space access is revoked
+        run: |
+          node -e '
+          const r=await fetch("https://community.neverjustsell.com/auth/payment-e2e-space-status?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          if(
+            !r.ok ||
+            !j?.ok ||
+            j?.logged_in_once!==true ||
+            j?.source_program_enrollment!=="withdrawn" ||
+            Number(j?.community_accessible_space_count||0)!==0 ||
+            Number(j?.community_revoked_space_count||0)<1 ||
+            j?.access_consistent!==true
+          ) process.exit(1);
           '
 
   verify:

@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T22:16:00+09:00
-reason=observe-payment-e2e-state-before-final-refund
-expected_head=6acf0446889b92eed4bc01b9de4c9e0dd05ecde0
+deploy_at=2026-09-25T22:26:00+09:00
+reason=execute-final-payment-refund-and-access-revocation-e2e
+expected_head=34eb0d7319e595b5d5859157d1b484bdfa4da352
