@@ -271,6 +271,91 @@ function findStringByKeyDeep(value, key, depth = 0) {
   return "";
 }
 
+const CAFE24_REFUND_BANK_CODE_BY_NAME = new Map([
+  ["산업은행","bank_02"],
+  ["기업은행","bank_03"],
+  ["국민은행","bank_04"],
+  ["하나(외환)은행","bank_05"],
+  ["수협중앙회","bank_07"],
+  ["농협중앙회","bank_11"],
+  ["농협개인","bank_12"],
+  ["농협","bank_13"],
+  ["우리은행","bank_20"],
+  ["유안타증권","bank_209"],
+  ["조흥은행","bank_21"],
+  ["KB증권","bank_218"],
+  ["SC제일은행","bank_23"],
+  ["미래에셋증권","bank_230"],
+  ["대우증권","bank_238"],
+  ["삼성증권","bank_240"],
+  ["한국투자증권","bank_243"],
+  ["우리투자증권","bank_247"],
+  ["신한은행","bank_26"],
+  ["교보증권","bank_261"],
+  ["하이투자증권","bank_262"],
+  ["현대차증권","bank_263"],
+  ["SK증권","bank_266"],
+  ["대신증권","bank_267"],
+  ["한화증권","bank_269"],
+  ["한미은행","bank_27"],
+  ["하나대투증권","bank_270"],
+  ["신한금융투자","bank_278"],
+  ["동부증권","bank_279"],
+  ["유진투자증권","bank_280"],
+  ["메리츠증권","bank_287"],
+  ["NH투자증권","bank_289"],
+  ["신영증권","bank_291"],
+  ["케이뱅크","bank_292"],
+  ["카카오뱅크","bank_293"],
+  ["iM뱅크","bank_31"],
+  ["부산은행","bank_32"],
+  ["광주은행","bank_34"],
+  ["제주은행","bank_35"],
+  ["전북은행","bank_37"],
+  ["경남은행","bank_39"],
+  ["모건스탠리은행","bank_52"],
+  ["씨티은행","bank_53"],
+  ["유에프제이은행","bank_57"],
+  ["미즈호코퍼레이트은행","bank_58"],
+  ["미쓰비시도쿄은행","bank_59"],
+  ["뱅크오브아메리카","bank_60"],
+  ["우체국","bank_71"],
+  ["하나은행","bank_81"],
+  ["농협회원조합","bank_82"],
+  ["도이치은행","bank_83"],
+  ["상호저축은행","bank_84"],
+  ["새마을금고","bank_85"],
+  ["수출입은행","bank_86"],
+  ["신용협동조합","bank_87"],
+  ["홍콩상하이은행(HSBC)","bank_89"],
+  ["에이비엔암로은행","bank_90"],
+  ["산림조합","bank_91"],
+  ["신용보증기금","bank_76"],
+  ["기술신용보증기금","bank_77"],
+  ["한국주택금융공사","bank_93"],
+  ["서울보증보험","bank_94"],
+  ["경찰청","bank_95"],
+  ["금융결제원","bank_99"],
+  ["카카오페이증권","bank_288"],
+  ["LIG증권","bank_294"],
+  ["OK저축은행","bank_295"],
+  ["토스뱅크","bank_296"],
+  ["토스증권","bank_297"],
+  ["체이스 뱅크","bank_447"]
+].map(([name, code]) => [
+  String(name).normalize("NFKC").replace(/\s+/g, "").toLowerCase(),
+  code
+]));
+
+function resolveCafe24RefundBankCode(bankName) {
+  const normalized = String(bankName || "")
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+  if (!normalized) return "";
+  return CAFE24_REFUND_BANK_CODE_BY_NAME.get(normalized) || "bank_m";
+}
+
 async function paymentE2ERefundBank(env, orderId) {
   const detailPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId), env, {
     shop_no: 1,
@@ -700,13 +785,14 @@ async function beginPaymentE2ECustomerRefund(env, row) {
   const claimBankName = findStringByKeyDeep(cancellationDetail, "refund_bank_name");
   const claimAccountNo = findStringByKeyDeep(cancellationDetail, "refund_bank_account_no");
   const claimAccountHolder = findStringByKeyDeep(cancellationDetail, "refund_bank_account_holder");
-  const bankCode = claimBankCode || storedBank.bankCode;
   const bankName = claimBankName || storedBank.bankName;
+  const officialBankCode = resolveCafe24RefundBankCode(bankName);
+  const bankCode = claimBankCode || storedBank.bankCode || officialBankCode;
   const accountNo = claimAccountNo || storedBank.accountNo;
   const accountHolder = claimAccountHolder || storedBank.accountHolder;
 
   if (!bankCode) {
-    throw new Error("Cafe24 cancellation detail does not contain the required cash-refund bank code");
+    throw new Error("Cafe24 cash-refund bank code cannot be resolved from the stored cancellation account");
   }
   if (!accountNo || !accountHolder) {
     throw new Error("Cafe24 cancellation detail does not contain a complete cash-refund account");
@@ -767,7 +853,13 @@ async function beginPaymentE2ECustomerRefund(env, row) {
     refund_pending: true,
     already_refund_pending: false,
     refund_method: "cash",
-    refund_bank_code_source: claimBankCode ? "cancellation_detail" : "order_detail",
+    refund_bank_code_source: claimBankCode
+      ? "cancellation_detail"
+      : storedBank.bankCode
+        ? "order_detail"
+        : officialBankCode === "bank_m"
+          ? "cafe24_official_direct_input"
+          : "cafe24_official_bank_name_map",
     item_order_status: observedStatus
   };
 }
@@ -1324,7 +1416,14 @@ export async function getPaymentE2EClaimStatus(env) {
   const cancellationDetailRefundMethod =
     findStringByKeyDeep(cancellationDetailPayload, "refund_method_code") ||
     findStringByKeyDeep(cancellationDetailPayload, "refund_method");
-  const effectiveBankCode = cancellationDetailBankCode || pick("refund_bank_code");
+  const diagnosticBankName =
+    findStringByKeyDeep(cancellationDetailPayload, "refund_bank_name") ||
+    pick("refund_bank_name");
+  const resolvedBankCode = resolveCafe24RefundBankCode(diagnosticBankName);
+  const effectiveBankCode =
+    cancellationDetailBankCode ||
+    pick("refund_bank_code") ||
+    resolvedBankCode;
   const effectiveAccountNo =
     findStringByKeyDeep(cancellationDetailPayload, "refund_bank_account_no") ||
     pick("refund_bank_account_no");
@@ -1374,6 +1473,12 @@ export async function getPaymentE2EClaimStatus(env) {
     cancellation_detail_found: Boolean(cancellationDetailPayload),
     cancellation_detail_refund_method: cancellationDetailRefundMethod || null,
     cancellation_detail_refund_bank_code_present: Boolean(cancellationDetailBankCode),
+    refund_bank_code_resolvable_from_name: Boolean(resolvedBankCode),
+    refund_bank_code_resolver_mode: resolvedBankCode
+      ? resolvedBankCode === "bank_m"
+        ? "cafe24_official_direct_input"
+        : "cafe24_official_bank_name_map"
+      : null,
     claim_reason_type_present: Boolean(pick("claim_reason_type")),
     claim_reason_present: Boolean(pick("claim_reason")),
     detailed_item_found: Boolean(detailedTargetItem),

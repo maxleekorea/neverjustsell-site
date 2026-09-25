@@ -358,3 +358,6 @@ assert(systemOperations.includes('"/cancellation/" + encodeURIComponent(claimCod
 assert(systemOperations.includes('refund_method_code: ["T"]'), "bank-deposit refund processing must explicitly use Cafe24 cash refund");
 assert(systemOperations.includes("findStringByKeyDeep"), "refund processing must recover nested Cafe24 cancellation data without guessing");
 assert(systemOperations.includes("cancellation_detail_refund_bank_code_present"), "claim diagnostics must report bank-code availability without exposing the value");
+assert(systemOperations.includes("CAFE24_REFUND_BANK_CODE_BY_NAME"), "Cafe24 official refund bank code table must be embedded for missing-code recovery");
+assert(systemOperations.includes('return CAFE24_REFUND_BANK_CODE_BY_NAME.get(normalized) || "bank_m"'), "unmatched stored bank names must use Cafe24 official direct-input code");
+assert(systemOperations.includes("refund_bank_code_resolvable_from_name"), "claim diagnostics must verify bank-code recovery without exposing bank details");
