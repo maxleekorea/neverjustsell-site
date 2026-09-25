@@ -188,6 +188,13 @@ assert(systemOperations.includes('display: "T"'), "one-time operation must expos
 assert(systemOperations.includes('selling: "T"'), "one-time operation must enable selling");
 assert(systemOperations.includes('buy_limit_type: "M"'), "one-time operation must keep member-only purchase");
 assert(systemOperations.includes("getPaymentE2EProductStatus"), "read-only payment E2E product status missing");
+assert(systemOperations.includes("cancel_payment_e2e_order"), "guarded payment E2E cancellation operation missing");
+assert(systemOperations.includes("revokePaidCourseEntitlementForPurchase"), "payment E2E cancellation must revoke course entitlement");
+assert(systemOperations.includes('payment_gateway_cancel: "T"'), "payment E2E cancellation must request payment gateway cancellation");
+assert(systemOperations.includes('recover_inventory: "F"'), "digital payment E2E cancellation must not restore physical inventory");
+assert(systemOperations.includes('"withdrawn"'), "payment E2E cancellation must verify Program withdrawal");
+assert(systemOperations.includes('order_state: orderState'), "payment E2E flow status must expose active/revoked order state");
+assert(systemOperations.includes("access_state_consistent"), "payment E2E flow status must verify access state consistency");
 
 assert(config.includes('"mall.read_category"'), "Cafe24 category read scope missing");
 assert(config.includes('"mall.write_category"'), "Cafe24 category write scope missing");
