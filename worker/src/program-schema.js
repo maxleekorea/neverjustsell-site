@@ -848,6 +848,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0048 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-advance-payment-e2e-to-awaiting-refund',
+  'advance_payment_e2e_to_awaiting_refund',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25","order_id":"20260925-0000013"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -999,6 +1010,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0047);
     await markMigration(db, "0047_reassert_separated_refund_processing.sql");
     applied.push("0047_reassert_separated_refund_processing.sql");
+  }
+
+  if (!(await migrationApplied(db, "0048_advance_payment_e2e_to_awaiting_refund.sql"))) {
+    await executeStatements(db, MIGRATION_0048);
+    await markMigration(db, "0048_advance_payment_e2e_to_awaiting_refund.sql");
+    applied.push("0048_advance_payment_e2e_to_awaiting_refund.sql");
   }
 
   const check = await db.prepare(
