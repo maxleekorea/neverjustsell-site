@@ -341,9 +341,10 @@ async function cancelPaymentE2EOrder(env, row) {
       reason: "NEVER JUST SELL 결제 E2E 취소·환불 검증",
       items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
     };
-    if (!requestPaymentGatewayCancel) {
-      cancellationBody.refund_method_code = ["I"];
-    }
+    // For non-PG payments such as bank deposit, do not invent a refund method
+    // or bank account. Cafe24 can create the cancellation without
+    // refund_method_code and determine the applicable refund workflow from
+    // the order's payment state.
     await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
       method: "POST",
       body: cancellationBody
