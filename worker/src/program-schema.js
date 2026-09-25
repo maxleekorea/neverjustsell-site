@@ -870,6 +870,18 @@ WHERE id='2026-09-26-advance-payment-e2e-to-awaiting-refund'
   AND status IN ('pending','failed','running');
 `;
 
+
+const MIGRATION_0050 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-begin-payment-e2e-customer-refund',
+  'begin_payment_e2e_customer_refund',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25","order_id":"20260925-0000013"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -1033,6 +1045,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0049);
     await markMigration(db, "0049_supersede_incorrect_awaiting_refund_transition.sql");
     applied.push("0049_supersede_incorrect_awaiting_refund_transition.sql");
+  }
+
+  if (!(await migrationApplied(db, "0050_begin_payment_e2e_customer_refund.sql"))) {
+    await executeStatements(db, MIGRATION_0050);
+    await markMigration(db, "0050_begin_payment_e2e_customer_refund.sql");
+    applied.push("0050_begin_payment_e2e_customer_refund.sql");
   }
 
   const check = await db.prepare(

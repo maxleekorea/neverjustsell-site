@@ -16,6 +16,7 @@ const CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION = "configure_customer_claim_se
 const RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION = "reconcile_customer_cancelled_payment_e2e_access";
 const ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION = "accept_payment_e2e_customer_cancellation";
 const ADVANCE_CUSTOMER_CANCELLED_E2E_AWAITING_REFUND_OPERATION = "advance_payment_e2e_to_awaiting_refund";
+const BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION = "begin_payment_e2e_customer_refund";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -596,6 +597,108 @@ async function advancePaymentE2EToAwaitingRefund(env, row) {
     claim_code: claimCode,
     awaiting_refund: true,
     already_awaiting_refund: false,
+    item_order_status: observedStatus
+  };
+}
+
+
+async function beginPaymentE2ECustomerRefund(env, row) {
+  let payload = {};
+  try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
+
+  const expectedOrderId = String(payload.order_id || "").trim();
+  const productNo = Number(payload.product_no || 13);
+  const date = String(payload.date || "").trim();
+  if (expectedOrderId !== "20260925-0000013" || productNo !== 13 || date !== "2026-09-25") {
+    throw new Error("Refund-pending transition is restricted to the dedicated payment E2E order");
+  }
+
+  const orders = await paymentE2EOrdersForDate(env, date);
+  const order = orders.find((candidate) => String(candidate?.order_id || "") === expectedOrderId) || null;
+  const item = (Array.isArray(order?.items) ? order.items : [])
+    .find((candidate) => Number(candidate?.product_no || 0) === 13) || null;
+  if (!order || !item) throw new Error("Dedicated payment E2E order item was not found");
+
+  const itemStatus = String(item?.order_status || order?.order_status || "").trim();
+  const awaitingStatuses = new Set(["C34","C36","C41","C42","C43"]);
+  if (awaitingStatuses.has(itemStatus)) {
+    return {
+      operation: BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION,
+      order_id: expectedOrderId,
+      refund_pending: true,
+      already_refund_pending: true,
+      item_order_status: itemStatus
+    };
+  }
+  if (new Set(["C35","C40"]).has(itemStatus)) {
+    throw new Error("Refusing refund-pending transition because Cafe24 already reports refund completion");
+  }
+  if (itemStatus !== "C10") {
+    throw new Error("Dedicated payment E2E order is not in accepted cancellation state");
+  }
+
+  const [entitlement, enrollment] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id FROM course_entitlements WHERE course_id='system-check-paid-course' AND source_order_id=? LIMIT 1"
+    ).bind(expectedOrderId).first(),
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND source_order_id=? LIMIT 1"
+    ).bind(expectedOrderId).first()
+  ]);
+  if (entitlement?.status !== "revoked" || enrollment?.status !== "withdrawn") {
+    throw new Error("Refusing refund processing until content access is fully revoked");
+  }
+
+  const itemCode = String(item?.order_item_code || "").trim();
+  const quantity = Number(item?.quantity ?? item?.order_quantity ?? 1);
+  if (!itemCode) throw new Error("Dedicated payment E2E order item code is missing");
+
+  // Use Cafe24's native cancellation processing state. With refund processing
+  // separated (D), this creates the refund workflow without falsely marking a
+  // bank-deposit refund as paid before the actual remittance is made.
+  await cafe24AdminRequest("/orders/" + encodeURIComponent(expectedOrderId) + "/cancellation", env, {
+    method: "POST",
+    body: {
+      shop_no: 1,
+      status: "canceling",
+      payment_gateway_cancel: "F",
+      recover_inventory: "F",
+      recover_coupon: "T",
+      add_memo_too: "T",
+      claim_reason_type: "I",
+      reason: "NEVER JUST SELL 고객 취소 승인 후 환불 대기 E2E",
+      items: [{
+        order_item_code: itemCode,
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1
+      }]
+    }
+  });
+
+  let observedStatus = itemStatus;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const refreshed = await paymentE2EOrdersForDate(env, date);
+    const refreshedOrder = refreshed.find(
+      (candidate) => String(candidate?.order_id || "") === expectedOrderId
+    ) || null;
+    const refreshedItem = (Array.isArray(refreshedOrder?.items) ? refreshedOrder.items : [])
+      .find((candidate) => Number(candidate?.product_no || 0) === 13) || null;
+    observedStatus = String(refreshedItem?.order_status || refreshedOrder?.order_status || "").trim();
+    if (awaitingStatuses.has(observedStatus)) break;
+    if (new Set(["C35","C40"]).has(observedStatus)) {
+      throw new Error("Cafe24 unexpectedly reported refund completion before cash settlement");
+    }
+    await sleep(1200);
+  }
+
+  if (!awaitingStatuses.has(observedStatus)) {
+    throw new Error("Cafe24 refund-pending cancellation state was not observed");
+  }
+
+  return {
+    operation: BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION,
+    order_id: expectedOrderId,
+    refund_pending: true,
+    already_refund_pending: false,
     item_order_status: observedStatus
   };
 }
@@ -1521,7 +1624,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION, CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION, RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION, ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION, ADVANCE_CUSTOMER_CANCELLED_E2E_AWAITING_REFUND_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION, CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION, RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION, ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION, ADVANCE_CUSTOMER_CANCELLED_E2E_AWAITING_REFUND_OPERATION, BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -1540,6 +1643,8 @@ export async function runPendingSystemOperations(env) {
             ? await acceptPaymentE2ECustomerCancellation(env, row)
           : row.operation_type === ADVANCE_CUSTOMER_CANCELLED_E2E_AWAITING_REFUND_OPERATION
             ? await advancePaymentE2EToAwaitingRefund(env, row)
+          : row.operation_type === BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION
+            ? await beginPaymentE2ECustomerRefund(env, row)
           : row.operation_type === BOOTSTRAP_CATALOG_OPERATION
             ? await bootstrapCafe24Catalog(env)
             : row.operation_type === CLEANUP_CATALOG_DUPLICATES_OPERATION

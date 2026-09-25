@@ -350,3 +350,7 @@ console.log("PASS: creator-reader program and community operating scaffold");
 assert(!systemOperations.includes('undone: "F"'), "awaiting-refund transition must not send undone=F to Cafe24");
 
 assert(programSchema.includes("0049_supersede_incorrect_awaiting_refund_transition.sql"), "runtime reconciler must retire the incorrect cancellation-change refund transition");
+assert(programSchema.includes("0050_begin_payment_e2e_customer_refund.sql"), "runtime reconciler must start Cafe24 native refund processing");
+assert(systemOperations.includes("begin_payment_e2e_customer_refund"), "native refund-pending operation missing");
+assert(systemOperations.includes('status: "canceling"'), "native refund-pending operation must use Cafe24 canceling status");
+assert(systemOperations.includes('reason: "NEVER JUST SELL 고객 취소 승인 후 환불 대기 E2E"'), "refund-pending operation must stay scoped to the dedicated E2E path");
