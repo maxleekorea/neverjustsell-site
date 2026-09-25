@@ -909,13 +909,15 @@ function customerClaimSettingsSummary(setting) {
     claim_request_button_date_type: String(setting?.claim_request_button_date_type || ""),
     claim_request_button_period: Number(setting?.claim_request_button_period || 0),
     claim_request_auto_accept: String(setting?.claim_request_auto_accept || ""),
-    refund_bank_account_required: String(setting?.refund_bank_account_required || "")
+    refund_bank_account_required: String(setting?.refund_bank_account_required || ""),
+    use_product_prepare_status: String(setting?.use_product_prepare_status || "")
   };
 }
 
 function customerClaimSettingsConfigured(setting) {
   const summary = customerClaimSettingsSummary(setting);
-  const expectedExposure = ["cancel_N10", "cancel_N20", "cancel_N22", "cancel_N21"];
+  const expectedExposure = ["cancel_N20", "cancel_N22", "cancel_N21"];
+  if (summary.use_product_prepare_status === "T") expectedExposure.unshift("cancel_N10");
   const exposure = new Set(summary.claim_request_button_exposure);
   return (
     summary.claim_request === "T" &&
@@ -925,6 +927,7 @@ function customerClaimSettingsConfigured(setting) {
     summary.claim_request_auto_accept === "F" &&
     summary.refund_bank_account_required === "T" &&
     expectedExposure.every((code) => exposure.has(code)) &&
+    (summary.use_product_prepare_status === "T" || !exposure.has("cancel_N10")) &&
     !summary.claim_request_button_exposure.some((code) => code.startsWith("exchange_") || code.startsWith("return_"))
   );
 }
@@ -961,7 +964,10 @@ async function configureCustomerClaimSettings(env, row) {
     ).run();
   }
 
-  const cancelExposure = ["cancel_N10", "cancel_N20", "cancel_N22", "cancel_N21"];
+  const cancelExposure = ["cancel_N20", "cancel_N22", "cancel_N21"];
+  if (String(before?.use_product_prepare_status || "") === "T") {
+    cancelExposure.unshift("cancel_N10");
+  }
   const currentExposure = before?.claim_request_button_exposure;
   const exposureRequest = typeof currentExposure === "string"
     ? cancelExposure.join(",")
