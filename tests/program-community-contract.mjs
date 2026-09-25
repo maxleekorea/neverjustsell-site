@@ -174,8 +174,10 @@ assert(config.includes('"mall.write_category"'), "Cafe24 category write scope mi
 assert(systemOperations.includes('CATALOG_CATEGORY_NAMES = ["강의", "전자책", "프로그램", "일반상품"]'), "canonical Cafe24 product categories missing");
 assert(systemOperations.includes("bootstrapCafe24Catalog"), "Cafe24 catalog bootstrap missing");
 assert(systemOperations.includes("bootstrap_cafe24_catalog"), "Cafe24 catalog bootstrap system operation missing");
-assert(systemOperations.includes("request: {"), "Cafe24 category product assignment must use request wrapper");
+assert(systemOperations.includes("add_category_no"), "Cafe24 category product assignment must use product add_category_no");
 assert(systemOperations.includes("attempt <= 3"), "Cafe24 category creation retry guard missing");
+assert(systemOperations.includes("AUTOMATION_DUPLICATE_CATEGORY_IDS"), "automation-created duplicate category cleanup missing");
+assert(systemOperations.includes("contains_products"), "duplicate category cleanup must protect non-empty categories");
 assert(systemOperations.includes("/categories"), "Cafe24 category creation endpoint missing");
 assert(systemOperations.includes("product_13"), "payment E2E product category assignment missing");
 assert(unified.includes("bootstrapCafe24Catalog"), "Cafe24 reauthorization must bootstrap product categories");
