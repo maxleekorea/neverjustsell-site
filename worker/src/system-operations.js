@@ -5,6 +5,7 @@ import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
 const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
+const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -269,7 +270,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -280,7 +281,9 @@ export async function runPendingSystemOperations(env) {
         ? await openPaymentE2EProduct(env, row)
         : row.operation_type === RECONCILE_E2E_ORDER_OPERATION
           ? await reconcileLatestPaymentE2EOrder(env, row)
-          : await bootstrapCafe24Catalog(env);
+          : row.operation_type === BOOTSTRAP_CATALOG_OPERATION
+            ? await bootstrapCafe24Catalog(env)
+            : { operation: CLEANUP_CATALOG_DUPLICATES_OPERATION, ...(await cleanupAutomationDuplicateCategories(env)) };
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
@@ -458,8 +461,7 @@ async function cleanupAutomationDuplicateCategories(env) {
     }
 
     await cafe24AdminRequest(`/categories/${categoryNo}`, env, {
-      method: "DELETE",
-      params: { shop_no: 1 }
+      method: "DELETE"
     });
     removed.push(categoryNo);
     await sleep(250);
