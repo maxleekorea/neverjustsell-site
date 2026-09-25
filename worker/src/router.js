@@ -21,6 +21,7 @@ import {
 } from "./course-store.js";
 
 import { getCustomerSession } from "./session-orders.js";
+import { getProgramCommunityProjection } from "./program-access.js";
 import {
   getCourseAccessDecision,
   getAccessiblePaidProductNos
@@ -89,7 +90,7 @@ function classroomShell(title, content) {
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#0b0b0b;color:#f5f5f5;font-family:Arial,"Noto Sans KR",sans-serif}a{color:inherit}.wrap{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:34px 0 64px}.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:48px}.brand{font-size:14px;letter-spacing:.18em;font-weight:700;text-decoration:none}.home{font-size:13px;color:#aaa;text-decoration:none}.card{background:#151515;border:1px solid #292929;border-radius:18px;padding:28px}.eyebrow{font-size:12px;letter-spacing:.12em;color:#999;margin-bottom:10px}.title{font-size:clamp(26px,4vw,42px);margin:0 0 14px;line-height:1.2}.desc{color:#aaa;line-height:1.75;margin:0}.video{position:relative;width:100%;aspect-ratio:16/9;margin-top:26px;background:#000;border-radius:14px;overflow:hidden}.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.action{display:inline-block;margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;text-decoration:none;font-weight:700}.secondary{background:transparent;color:#ddd;border:1px solid #3b3b3b;margin-left:8px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:20px}.course{display:block;background:#151515;border:1px solid #292929;border-radius:18px;padding:24px;text-decoration:none}.course h2{font-size:20px;margin:6px 0 10px}.course p{font-size:14px;color:#999;line-height:1.6;margin:0}.note{margin-top:18px;color:#888;font-size:13px;line-height:1.6}.lesson-list{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.lesson-link{display:inline-block;padding:10px 14px;border:1px solid #343434;border-radius:999px;color:#bbb;text-decoration:none;font-size:14px}.lesson-link.active{background:#f5f5f5;color:#111;border-color:#f5f5f5}.lesson-link.locked{opacity:.52;cursor:not-allowed}.preview-badge{color:#a8e6a8;border-color:#31513a}.lock-badge{color:#777}.preview-panel{margin-top:24px;padding-top:22px;border-top:1px solid #292929}.preview-panel h2{font-size:22px;margin:0 0 8px}.preview-panel .video{margin-top:16px}.sales-hero{padding:34px}.sales-hero .title{max-width:800px}.sales-hero .desc{max-width:760px}.sales-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;margin-top:20px;align-items:start}.sales-main{display:grid;gap:16px}.sales-section{background:#151515;border:1px solid #292929;border-radius:18px;padding:26px}.sales-section h2{font-size:22px;margin:0 0 14px}.sales-section h3{font-size:17px;margin:0 0 8px}.sales-section p{color:#aaa;line-height:1.75;white-space:pre-line}.sales-list{margin:0;padding-left:20px;color:#ddd}.sales-list li{margin:9px 0;line-height:1.55}.sales-side{position:sticky;top:20px;background:#151515;border:1px solid #292929;border-radius:18px;padding:22px}.sales-price{font-size:28px;font-weight:800;margin:6px 0 4px}.sales-side .action{width:100%;text-align:center;margin-top:16px}.sales-bottom-cta{text-align:center;padding:28px}.sales-bottom-cta .action{min-width:220px}.sales-note{font-size:12px;color:#777;line-height:1.6;margin-top:10px}.progress{height:8px;background:#252525;border-radius:999px;overflow:hidden;margin:14px 0 6px}.progress span{display:block;height:100%;background:#f5f5f5}.progress-label{font-size:12px;color:#999}.dashboard-section{margin-top:34px}.dashboard-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.dashboard-head h2{font-size:22px;margin:0}.dashboard-head p{margin:0;color:#777;font-size:13px}.course-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.badge{display:inline-block;padding:4px 8px;border:1px solid #343434;border-radius:999px;font-size:11px;color:#aaa}.course-cta{margin-top:14px;font-size:13px;font-weight:700;color:#ddd}.curriculum{margin-top:22px;border-top:1px solid #292929}.module-title{font-size:12px;color:#888;letter-spacing:.08em;margin:18px 0 8px}.lesson-row{display:flex;align-items:center;gap:8px}.lesson-row .lesson-link{flex:1}.done{font-size:12px;color:#a8e6a8}.nav-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.complete-form{display:inline}.complete-form button{margin-top:24px;padding:13px 18px;border-radius:999px;background:#f5f5f5;color:#111;border:0;font-weight:700;cursor:pointer}@media(max-width:760px){.sales-layout{grid-template-columns:1fr}.sales-side{position:static}.sales-hero{padding:22px}.sales-section{padding:20px}}@media(max-width:560px){.wrap{width:calc(100% - 20px);padding:20px 0 44px}.top{margin-bottom:24px;align-items:flex-start}.brand{font-size:12px}.card{padding:18px;border-radius:14px}.title{font-size:clamp(25px,8vw,34px)}.grid{grid-template-columns:1fr}.course{padding:20px}.lesson-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lesson-link{text-align:center;padding:11px 8px}.video{margin-top:18px;border-radius:10px}.action{width:100%;text-align:center}.secondary{margin-left:0}.top span{gap:10px!important;flex-wrap:wrap;justify-content:flex-end}}
 </style>
 </head>
-<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/classroom">학습 홈</a><a class="home" href="/library">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
+<body><main class="wrap"><div class="top"><a class="brand" href="${SITE_ORIGIN}/">NEVER JUST SELL</a><span style="display:flex;gap:16px;align-items:center"><a class="home" href="/my-space">내 공간</a><a class="home" href="/classroom">학습 홈</a><a class="home" href="/library">내 강의</a><a class="home" href="/courses">강의 찾기</a><a class="home" href="${COMMUNITY_ORIGIN}/">커뮤니티</a><a class="home" href="${SITE_ORIGIN}/">홈</a></span></div>${content}</main></body>
 </html>`;
 }
 
@@ -752,6 +753,50 @@ async function buildLearnerCourseRows(request, env, memberId) {
   return rows;
 }
 
+async function renderMySpace(request, env) {
+  const session = await getCustomerSession(request, env);
+  if (!session?.record?.member_id) return redirectToCustomerAuth();
+
+  const memberId = session.record.member_id;
+  const [courseRows, programProjection] = await Promise.all([
+    buildLearnerCourseRows(request, env, memberId),
+    getProgramCommunityProjection(env, memberId, { syncPurchases: true })
+  ]);
+
+  const courseCards = courseRows.slice(0, 4).map(({ course, playerCourse, progress }) =>
+    learnerCourseCard(course, playerCourse, progress)
+  );
+
+  const programCards = (Array.isArray(programProjection?.program_access) ? programProjection.program_access : [])
+    .slice(0, 4)
+    .map((program) =>
+      '<a class="course" href="' + escapeHtml(COMMUNITY_ORIGIN + '/') + '">' +
+      '<div class="eyebrow">참여 프로그램</div>' +
+      '<h2>' + escapeHtml(program.program_title || program.run_title || "프로그램") + '</h2>' +
+      '<p>' + escapeHtml(program.run_title || "") + '</p>' +
+      '<div class="course-meta"><span class="badge">' +
+        escapeHtml(program.participant_status === "completed" ? "완료" : "참여 중") +
+      '</span></div><div class="course-cta">프로그램 공간으로 →</div></a>'
+    );
+
+  const ebookEmpty =
+    '<section class="card"><div class="eyebrow">EBOOK</div><h2 style="margin:0 0 10px">내 전자책</h2>' +
+    '<p class="desc">구매한 전자책은 이곳에서 바로 열람하게 됩니다. 현재 연결된 전자책은 없습니다.</p></section>';
+
+  const sections = [
+    dashboardSection("내 강의", "구매하거나 신청한 강의를 바로 이어서 학습합니다.", courseCards, "/library", "전체 내 강의"),
+    dashboardSection("참여 프로그램", "결제 또는 초대로 참여 권한이 있는 프로그램입니다.", programCards, COMMUNITY_ORIGIN + "/", "커뮤니티"),
+    ebookEmpty
+  ].join("");
+
+  return html(classroomShell(
+    "내 공간",
+    '<section class="card"><div class="eyebrow">MY SPACE</div><h1 class="title">내 공간</h1>' +
+    '<p class="desc">구매 후 주문 배송상태를 찾을 필요 없이, 사용할 수 있는 디지털 콘텐츠와 프로그램을 바로 엽니다.</p></section>' +
+    sections
+  ));
+}
+
 async function renderLearnerLibrary(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) return redirectToCustomerAuth();
@@ -884,6 +929,14 @@ export default {
           },
           { status: 502 }
         );
+      }
+    }
+
+    if (url.pathname === "/my-space" && request.method === "GET") {
+      try {
+        return await renderMySpace(request, env);
+      } catch {
+        return renderClassroomError("내 공간");
       }
     }
 
