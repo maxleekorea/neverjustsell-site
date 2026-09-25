@@ -149,6 +149,7 @@ assert(host.includes("ensureProgramSchema"), "program host must self-heal schema
 
 assert(programSchema.includes("0029_program_payment_e2e_fixture.sql"), "runtime reconciler must apply program payment fixture");
 assert(programSchema.includes("0030_open_payment_e2e_product.sql"), "runtime reconciler must apply one-time payment product operation");
+assert(programSchema.includes("0031_reopen_payment_e2e_product_without_group_lock.sql"), "runtime reconciler must apply logged-in E2E fallback operation");
 assert(systemOperations.includes("open_payment_e2e_product_13"), "one-time payment E2E operation missing");
 assert(systemOperations.includes("price: 1000"), "one-time operation must force 1,000 KRW");
 assert(systemOperations.includes('display: "T"'), "one-time operation must expose the product");
