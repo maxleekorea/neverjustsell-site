@@ -792,7 +792,7 @@ async function renderMySpace(request, env) {
   return html(classroomShell(
     "내 공간",
     '<section class="card"><div class="eyebrow">MY SPACE</div><h1 class="title">내 공간</h1>' +
-    '<p class="desc">구매 후 주문 배송상태를 찾을 필요 없이, 사용할 수 있는 디지털 콘텐츠와 프로그램을 바로 엽니다.</p></section>' +
+    '<p class="desc">구매하거나 신청한 디지털 콘텐츠와 프로그램을 이곳에서 바로 이용합니다.</p></section>' +
     sections
   ));
 }
