@@ -4,6 +4,9 @@ import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
 
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
+const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
+
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
 function normalizeProduct(payload) {
   return payload?.product || payload?.products?.[0] || payload?.resource || payload || {};
@@ -266,7 +269,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -275,7 +278,9 @@ export async function runPendingSystemOperations(env) {
       await markRunning(env.COURSE_DB, row.id);
       const detail = row.operation_type === OPEN_E2E_OPERATION
         ? await openPaymentE2EProduct(env, row)
-        : await reconcileLatestPaymentE2EOrder(env, row);
+        : row.operation_type === RECONCILE_E2E_ORDER_OPERATION
+          ? await reconcileLatestPaymentE2EOrder(env, row)
+          : await bootstrapCafe24Catalog(env);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
@@ -320,18 +325,30 @@ async function findOrCreateRootCategory(env, categoryName) {
   );
   if (found?.category_no) return found;
 
-  await cafe24AdminRequest("/categories", env, {
-    method: "POST",
-    body: {
-      shop_no: 1,
-      parent_category_no: 1,
-      category_name: categoryName,
-      display_type: "A",
-      use_main: "F",
-      use_display: "T"
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await cafe24AdminRequest("/categories", env, {
+        method: "POST",
+        body: {
+          shop_no: 1,
+          parent_category_no: 1,
+          category_name: categoryName,
+          display_type: "A",
+          use_main: "F",
+          use_display: "T"
+        }
+      });
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) await sleep(700 * attempt);
     }
-  });
+  }
+  if (lastError) throw lastError;
 
+  await sleep(500);
   categories = await listRootCategories(env);
   found = categories.find((category) =>
     String(category?.category_name || "").trim() === categoryName &&
