@@ -1,6 +1,9 @@
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
+import { findValidCoursePurchase, syncPaidCourseEntitlementForPurchase } from "./access.js";
+import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
 
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
+const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
 
 function normalizeProduct(payload) {
   return payload?.product || payload?.products?.[0] || payload?.resource || payload || {};
@@ -116,6 +119,63 @@ async function openPaymentE2EProduct(env, row) {
   };
 }
 
+async function reconcileLatestPaymentE2EOrder(env, row) {
+  let payload = {};
+  try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
+
+  const productNo = Number(payload.product_no || 13);
+  const date = String(payload.date || "").trim();
+  if (productNo !== 13) throw new Error("payment E2E reconciliation must target product 13");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("payment E2E reconciliation date is invalid");
+
+  const orderPayload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    start_date: date,
+    end_date: date,
+    date_type: "order_date",
+    product_no: 13,
+    embed: "items",
+    limit: 100,
+    offset: 0
+  });
+
+  const orders = Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
+  const purchase = findValidCoursePurchase(orders, 13);
+  if (!purchase) throw new Error("No confirmed product #13 order found for the requested date");
+
+  const memberId = String(purchase?.order?.member_id || "").trim();
+  if (!memberId) throw new Error("Latest confirmed product #13 order is not linked to a Cafe24 member");
+
+  const entitlement = await syncPaidCourseEntitlementForPurchase(
+    env,
+    memberId,
+    13,
+    purchase
+  );
+
+  const programSync = await reconcilePurchasedProgramEnrollments(env, memberId);
+  const enrollment = await env.COURSE_DB.prepare(
+    "SELECT run_id,member_id,status,source,source_order_id,source_order_item_code,joined_at,started_at,updated_at " +
+    "FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+  ).bind(memberId).first();
+
+  if (entitlement?.status !== "active") {
+    throw new Error("Course entitlement did not become active");
+  }
+  if (enrollment?.status !== "active") {
+    throw new Error("Program enrollment did not become active");
+  }
+
+  return {
+    operation: RECONCILE_E2E_ORDER_OPERATION,
+    order_id: String(purchase?.order?.order_id || ""),
+    member_id: memberId,
+    course_entitlement: entitlement?.status || null,
+    program_enrollment: enrollment?.status || null,
+    program_sync
+  };
+}
+
 export async function getPaymentE2EProductStatus(env) {
   const payload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
   const product = normalizeProduct(payload);
@@ -159,14 +219,16 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (row.operation_type !== OPEN_E2E_OPERATION) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
 
     try {
       await markRunning(env.COURSE_DB, row.id);
-      const detail = await openPaymentE2EProduct(env, row);
+      const detail = row.operation_type === OPEN_E2E_OPERATION
+        ? await openPaymentE2EProduct(env, row)
+        : await reconcileLatestPaymentE2EOrder(env, row);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
