@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T12:36:00+09:00
-reason=retry-auto-reconcile-latest-paid-e2e-order
-expected_head=36ec7b633c81bc4810e6f3544c87c3d5405ddce5
+deploy_at=2026-09-25T12:40:00+09:00
+reason=retry-e2e-reconcile-after-propagation-guard
+expected_head=c2a007c1bfb3002fe4c118d1bda96e3f1cd54105
