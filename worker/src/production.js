@@ -10,7 +10,7 @@ import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-25-refund-e2e-v3";
+const PRODUCTION_BUILD = "2026-09-25-refund-e2e-v4";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
