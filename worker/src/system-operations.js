@@ -330,19 +330,23 @@ async function cancelPaymentE2EOrder(env, row) {
   const requestPaymentGatewayCancel = PAYMENT_E2E_PG_CANCEL_METHODS.has(meta.paymentMethod);
   let cancellationRequested = false;
   if (!alreadyRevoked) {
+    const cancellationBody = {
+      shop_no: 1,
+      status: "canceled",
+      payment_gateway_cancel: requestPaymentGatewayCancel ? "T" : "F",
+      recover_inventory: "F",
+      recover_coupon: "T",
+      add_memo_too: "T",
+      claim_reason_type: "I",
+      reason: "NEVER JUST SELL 결제 E2E 취소·환불 검증",
+      items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
+    };
+    if (!requestPaymentGatewayCancel) {
+      cancellationBody.refund_method_code = "I";
+    }
     await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
       method: "POST",
-      body: {
-        shop_no: 1,
-        status: "canceled",
-        payment_gateway_cancel: requestPaymentGatewayCancel ? "T" : "F",
-        recover_inventory: "F",
-        recover_coupon: "T",
-        add_memo_too: "T",
-        claim_reason_type: "I",
-        reason: "NEVER JUST SELL 결제 E2E 취소·환불 검증",
-        items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
-      }
+      body: cancellationBody
     });
     cancellationRequested = true;
 
