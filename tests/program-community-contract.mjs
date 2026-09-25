@@ -20,6 +20,10 @@ const refundMigration = await readFile(
   new URL("../worker/migrations/0040_cancel_payment_e2e_order.sql", import.meta.url),
   "utf8"
 );
+const refundRetryMigration = await readFile(
+  new URL("../worker/migrations/0041_retry_final_payment_e2e_consistency.sql", import.meta.url),
+  "utf8"
+);
 const community = await readFile(
   new URL("../community/migrations/0002_program_spaces.sql", import.meta.url),
   "utf8"
@@ -186,6 +190,9 @@ assert(programSchema.includes("0032_reconcile_latest_payment_e2e_order.sql"), "r
 assert(programSchema.includes("0040_cancel_payment_e2e_order.sql"), "runtime reconciler must apply final paid order cancellation");
 assert(refundMigration.includes("'cancel_payment_e2e_order'"), "final payment E2E cancellation migration missing");
 assert(refundMigration.includes('{"product_no":13,"date":"2026-09-25"}'), "final cancellation must target only the known E2E order date and product");
+assert(programSchema.includes("0041_retry_final_payment_e2e_consistency.sql"), "runtime reconciler must apply final E2E consistency retry");
+assert(refundRetryMigration.includes("'cancel_payment_e2e_order'"), "final consistency retry must reuse guarded cancellation operation");
+assert(refundRetryMigration.includes('{"product_no":13,"date":"2026-09-25"}'), "final consistency retry must stay scoped to the known E2E order");
 assert(systemOperations.includes("reconcile_latest_payment_e2e_order"), "latest paid E2E order reconciliation operation missing");
 assert(systemOperations.includes("syncPaidCourseEntitlementForPurchase"), "automatic E2E reconciliation must create course entitlement");
 assert(systemOperations.includes("reconcilePurchasedProgramEnrollments"), "automatic E2E reconciliation must create Program enrollment");
