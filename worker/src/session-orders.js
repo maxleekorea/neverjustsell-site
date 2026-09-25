@@ -13,6 +13,41 @@ const ADMIN_TOKEN_KEY = "cafe24:admin-token";
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const ACCESS_TOKEN_LIFETIME_MS = 2 * 60 * 60 * 1000;
 
+const CAFE24_SENSITIVE_ERROR_KEYS = new Set([
+  "refund_bank_name",
+  "refund_bank_account_no",
+  "refund_bank_account_holder",
+  "refund_bank_account_owner_name",
+  "bank_account_no",
+  "bank_account_holder",
+  "bank_account_owner_name",
+  "account_no",
+  "account_number",
+  "account_holder",
+  "owner_name"
+]);
+
+function redactCafe24ErrorPayload(value, depth = 0) {
+  if (depth > 8) return "[REDACTED]";
+  if (Array.isArray(value)) {
+    return value.map((item) => redactCafe24ErrorPayload(item, depth + 1));
+  }
+  if (value && typeof value === "object") {
+    const redacted = {};
+    for (const [key, child] of Object.entries(value)) {
+      redacted[key] = CAFE24_SENSITIVE_ERROR_KEYS.has(String(key).toLowerCase())
+        ? "[REDACTED]"
+        : redactCafe24ErrorPayload(child, depth + 1);
+    }
+    return redacted;
+  }
+  return value;
+}
+
+function cafe24ErrorPayloadText(payload) {
+  return JSON.stringify(redactCafe24ErrorPayload(payload));
+}
+
 function json(data, init = {}) {
   const headers = new Headers(init.headers || {});
   headers.set("Content-Type", "application/json; charset=utf-8");
@@ -127,7 +162,7 @@ async function refreshAdminToken(refreshToken, env) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(
-      `Cafe24 admin token refresh failed (${response.status}): ${JSON.stringify(payload)}`
+      `Cafe24 admin token refresh failed (${response.status}): ${cafe24ErrorPayloadText(payload)}`
     );
   }
   return payload;
@@ -211,7 +246,7 @@ export async function cafe24AdminGet(path, env, params = {}) {
 
   if (!result.response.ok) {
     throw new Error(
-      `Cafe24 Admin API failed (${result.response.status}): ${JSON.stringify(result.payload)}`
+      `Cafe24 Admin API failed (${result.response.status}): ${cafe24ErrorPayloadText(result.payload)}`
     );
   }
 
@@ -250,7 +285,7 @@ export async function cafe24AdminRequest(path, env, init = {}) {
 
   if (!result.response.ok) {
     throw new Error(
-      `Cafe24 Admin API failed (${result.response.status}): ${JSON.stringify(result.payload)}`
+      `Cafe24 Admin API failed (${result.response.status}): ${cafe24ErrorPayloadText(result.payload)}`
     );
   }
 

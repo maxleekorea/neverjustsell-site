@@ -114,6 +114,10 @@ const router = await readFile(
   new URL("../worker/src/router.js", import.meta.url),
   "utf8"
 );
+const sessionOrders = await readFile(
+  new URL("../worker/src/session-orders.js", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -363,3 +367,8 @@ assert(systemOperations.includes('return CAFE24_REFUND_BANK_CODE_BY_NAME.get(nor
 assert(systemOperations.includes("refund_bank_code_resolvable_from_name"), "claim diagnostics must verify bank-code recovery without exposing bank details");
 
 assert(programSchema.includes("0051_delegate_refund_workflow_to_cafe24.sql"), "runtime reconciler must retire custom Cafe24 refund mutation jobs");
+assert(sessionOrders.includes("CAFE24_SENSITIVE_ERROR_KEYS"), "Cafe24 API errors must redact sensitive refund account fields");
+assert(sessionOrders.includes('"refund_bank_account_no"'), "refund account number must be on the Cafe24 error redaction list");
+assert(sessionOrders.includes('"refund_bank_account_owner_name"'), "refund account owner must be on the Cafe24 error redaction list");
+assert(!sessionOrders.includes('${JSON.stringify(result.payload)}'), "Cafe24 API errors must never stringify raw provider payloads");
+

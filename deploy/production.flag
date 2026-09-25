@@ -27,3 +27,4 @@ reason=begin-cafe24-native-refund-pending-workflow
 reason=reuse-cafe24-cancellation-refund-account-data
 reason=resolve-missing-refund-bank-code-from-cafe24-official-table
 reason=delegate-refund-workflow-to-cafe24-native-commerce
+reason=redact-sensitive-cafe24-provider-errors
