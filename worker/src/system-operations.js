@@ -14,6 +14,7 @@ const HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION = "hide_digital_product_shippin
 const APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION = "apply_digital_product_detail_ux";
 const CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION = "configure_customer_claim_settings";
 const RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION = "reconcile_customer_cancelled_payment_e2e_access";
+const ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION = "accept_payment_e2e_customer_cancellation";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -385,6 +386,100 @@ async function reconcileCustomerCancelledPaymentE2EAccess(env, row) {
     identity_consistent:
       String(reconciled.entitlement?.member_id || "") === meta.memberId &&
       String(reconciled.enrollment?.member_id || "") === meta.memberId
+  };
+}
+
+async function acceptPaymentE2ECustomerCancellation(env, row) {
+  let payload = {};
+  try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
+
+  const productNo = Number(payload.product_no || 13);
+  const date = String(payload.date || "").trim();
+  const expectedOrderId = String(payload.order_id || "").trim();
+  if (productNo !== 13 || date !== "2026-09-25" || expectedOrderId !== "20260925-0000013") {
+    throw new Error("Cancellation acceptance is restricted to the dedicated payment E2E order");
+  }
+
+  const orders = await paymentE2EOrdersForDate(env, date);
+  const order = orders.find((candidate) => String(candidate?.order_id || "") === expectedOrderId) || null;
+  const item = (Array.isArray(order?.items) ? order.items : [])
+    .find((candidate) => Number(candidate?.product_no || 0) === 13) || null;
+  if (!order || !item) throw new Error("Dedicated payment E2E order item was not found");
+
+  const itemStatus = String(item?.order_status || order?.order_status || "").trim();
+  const alreadyAccepted = new Set(["C10","C34","C35","C36","C40","C41","C42","C43"]).has(itemStatus);
+  if (alreadyAccepted) {
+    return {
+      operation: ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION,
+      order_id: expectedOrderId,
+      accepted: true,
+      already_accepted: true,
+      item_order_status: itemStatus
+    };
+  }
+  if (itemStatus !== "C00") {
+    throw new Error("Dedicated payment E2E order is not in customer cancellation request state");
+  }
+
+  const [entitlement, enrollment] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id,source_order_id FROM course_entitlements " +
+      "WHERE course_id='system-check-paid-course' AND source_order_id=? LIMIT 1"
+    ).bind(expectedOrderId).first(),
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id,source_order_id FROM program_enrollments " +
+      "WHERE run_id='system-check-payment-program-run' AND source_order_id=? LIMIT 1"
+    ).bind(expectedOrderId).first()
+  ]);
+  if (entitlement?.status !== "revoked" || enrollment?.status !== "withdrawn") {
+    throw new Error("Refusing cancellation acceptance until content access is fully revoked");
+  }
+  if (String(entitlement?.member_id || "") !== String(enrollment?.member_id || "")) {
+    throw new Error("Refusing cancellation acceptance because E2E identity is inconsistent");
+  }
+
+  const quantity = Number(item?.quantity ?? item?.order_quantity ?? 1);
+  await cafe24AdminRequest("/orders/" + encodeURIComponent(expectedOrderId) + "/cancellation", env, {
+    method: "POST",
+    body: {
+      shop_no: 1,
+      status: "accepted",
+      payment_gateway_cancel: "F",
+      recover_inventory: "F",
+      recover_coupon: "T",
+      add_memo_too: "T",
+      claim_reason_type: "I",
+      reason: "NEVER JUST SELL 고객 취소 신청 접수 E2E",
+      items: [{
+        order_item_code: String(item?.order_item_code || ""),
+        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1
+      }]
+    }
+  });
+
+  let observedStatus = itemStatus;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const refreshed = await paymentE2EOrdersForDate(env, date);
+    const refreshedOrder = refreshed.find(
+      (candidate) => String(candidate?.order_id || "") === expectedOrderId
+    ) || null;
+    const refreshedItem = (Array.isArray(refreshedOrder?.items) ? refreshedOrder.items : [])
+      .find((candidate) => Number(candidate?.product_no || 0) === 13) || null;
+    observedStatus = String(refreshedItem?.order_status || refreshedOrder?.order_status || "").trim();
+    if (observedStatus !== "C00") break;
+    await sleep(1200);
+  }
+
+  if (!new Set(["C10","C34","C35","C36","C40","C41","C42","C43"]).has(observedStatus)) {
+    throw new Error("Cafe24 cancellation acceptance was not observed");
+  }
+
+  return {
+    operation: ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION,
+    order_id: expectedOrderId,
+    accepted: true,
+    already_accepted: false,
+    item_order_status: observedStatus
   };
 }
 
@@ -1242,7 +1337,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION, CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION, RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION, CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION, RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION, ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -1257,6 +1352,8 @@ export async function runPendingSystemOperations(env) {
             ? await cancelPaymentE2EOrder(env, row)
           : row.operation_type === RECONCILE_CUSTOMER_CANCELLED_E2E_ACCESS_OPERATION
             ? await reconcileCustomerCancelledPaymentE2EAccess(env, row)
+          : row.operation_type === ACCEPT_CUSTOMER_CANCELLED_E2E_OPERATION
+            ? await acceptPaymentE2ECustomerCancellation(env, row)
           : row.operation_type === BOOTSTRAP_CATALOG_OPERATION
             ? await bootstrapCafe24Catalog(env)
             : row.operation_type === CLEANUP_CATALOG_DUPLICATES_OPERATION
