@@ -692,7 +692,14 @@ async function reconcileAllCourseProductFulfillment(env) {
 }
 
 export async function getPaymentE2EFlowStatus(env) {
-  const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const ledger = await env.COURSE_DB.prepare(
+    "SELECT source_order_id FROM course_entitlements WHERE course_id='system-check-paid-course' AND source_order_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1"
+  ).first();
+  const sourceOrderId = String(ledger?.source_order_id || "").trim();
+  const match = sourceOrderId.match(/^(\d{4})(\d{2})(\d{2})-/);
+  const kstToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const date = match ? `${match[1]}-${match[2]}-${match[3]}` : kstToday;
+
   const orderPayload = await cafe24AdminGet("/orders", env, {
     shop_no: 1,
     start_date: date,
