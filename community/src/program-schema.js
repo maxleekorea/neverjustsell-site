@@ -250,6 +250,16 @@ async function ensureInternal(db) {
     applied.push(migrationName);
   }
 
+  const accessRefreshMigration = "0003_session_access_refresh.sql";
+  if (!(await migrationApplied(db, accessRefreshMigration))) {
+    const sessionCols = await columnNames(db, "sessions");
+    if (!sessionCols.has("access_checked_at")) {
+      await db.prepare("ALTER TABLE sessions ADD COLUMN access_checked_at TEXT").run();
+    }
+    await markMigration(db, accessRefreshMigration);
+    applied.push(accessRefreshMigration);
+  }
+
   const check = await db.prepare(
     "SELECT " +
     "(SELECT COUNT(*) FROM spaces) AS space_count," +
