@@ -1,12 +1,14 @@
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
 import { findValidCoursePurchase, syncPaidCourseEntitlementForPurchase } from "./access.js";
 import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
+import { digitalCafe24ProductPatch, fulfillmentProfileForProductType } from "./fulfillment.js";
 
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
 const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
 const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates";
 const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_shipping";
+const RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION = "reconcile_all_course_product_fulfillment";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -287,6 +289,62 @@ export async function getAllCurrentProductsShippingStatus(env) {
   };
 }
 
+async function reconcileAllCourseProductFulfillment(env) {
+  const result = await env.COURSE_DB.prepare(
+    "SELECT id,title,cafe24_product_no FROM courses WHERE cafe24_product_no IS NOT NULL AND cafe24_product_no>0 ORDER BY id"
+  ).all();
+  const courses = Array.isArray(result?.results) ? result.results : [];
+  const profile = fulfillmentProfileForProductType("course");
+  const patch = digitalCafe24ProductPatch("course");
+  const reconciled = [];
+
+  for (const course of courses) {
+    const productNo = Number(course?.cafe24_product_no || 0);
+    if (!productNo) continue;
+
+    await cafe24AdminRequest(`/products/${productNo}`, env, {
+      method: "PUT",
+      body: { shop_no: 1, ...patch }
+    });
+
+    const productPayload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,product_name,shipping_method,shipping_fee_by_product"
+    });
+    const product = normalizeProduct(productPayload);
+    if (
+      Number(product?.product_no || 0) !== productNo ||
+      String(product?.shipping_method || "") !== "09" ||
+      String(product?.shipping_fee_by_product || "") !== "T"
+    ) {
+      throw new Error(`Course fulfillment verification failed for product ${productNo}`);
+    }
+
+    const categoryPayload = await cafe24AdminGet(`/categories/${profile.categoryNo}/products`, env, {
+      shop_no: 1,
+      display_group: 1,
+      limit: 50000
+    });
+    const categoryProducts = Array.isArray(categoryPayload?.products) ? categoryPayload.products : [];
+    if (!categoryProducts.some((item) => Number(item?.product_no || 0) === productNo)) {
+      throw new Error(`Course category verification failed for product ${productNo}`);
+    }
+
+    reconciled.push({
+      course_id: String(course.id),
+      product_no: productNo,
+      shipping_method: "09",
+      category_no: profile.categoryNo
+    });
+  }
+
+  return {
+    operation: RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION,
+    course_product_count: reconciled.length,
+    reconciled
+  };
+}
+
 export async function getPaymentE2EFlowStatus(env) {
   const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const orderPayload = await cafe24AdminGet("/orders", env, {
@@ -377,7 +435,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -392,7 +450,9 @@ export async function runPendingSystemOperations(env) {
             ? await bootstrapCafe24Catalog(env)
             : row.operation_type === CLEANUP_CATALOG_DUPLICATES_OPERATION
               ? { operation: CLEANUP_CATALOG_DUPLICATES_OPERATION, ...(await cleanupAutomationDuplicateCategories(env)) }
-              : await setAllCurrentProductsNoShipping(env);
+              : row.operation_type === SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION
+                ? await setAllCurrentProductsNoShipping(env)
+                : await reconcileAllCourseProductFulfillment(env);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
