@@ -381,14 +381,20 @@ async function ensureProductInCategory(env, categoryNo, productNo) {
     return { added: false };
   }
 
-  await cafe24AdminRequest(`/categories/${categoryNo}/products`, env, {
-    method: "POST",
+  // Cafe24 Products API officially supports add_category_no when updating
+  // an existing product. This is more stable than the category relation POST
+  // across API versions.
+  await cafe24AdminRequest(`/products/${productNo}`, env, {
+    method: "PUT",
     body: {
-      request: {
-        shop_no: 1,
-        display_group: 1,
-        product_no: Number(productNo)
-      }
+      shop_no: 1,
+      add_category_no: [
+        {
+          category_no: Number(categoryNo),
+          recommend: "F",
+          new: "F"
+        }
+      ]
     }
   });
 
@@ -407,6 +413,61 @@ async function ensureProductInCategory(env, categoryNo, productNo) {
   throw new Error(`Cafe24 product category assignment could not be verified: category=${categoryNo} product=${productNo}`);
 }
 
+const AUTOMATION_DUPLICATE_CATEGORY_IDS = new Map([
+  [44, "전자책"], [45, "전자책"], [46, "전자책"], [47, "전자책"],
+  [49, "프로그램"], [50, "프로그램"], [51, "프로그램"], [52, "프로그램"],
+  [54, "일반상품"], [55, "일반상품"], [56, "일반상품"], [57, "일반상품"],
+  [58, "일반상품"], [59, "일반상품"], [60, "일반상품"], [61, "일반상품"]
+]);
+
+async function categoryHasProducts(env, categoryNo) {
+  for (const displayGroup of [1, 2, 3]) {
+    const payload = await cafe24AdminGet(`/categories/${categoryNo}/products/count`, env, {
+      shop_no: 1,
+      display_group: displayGroup
+    });
+    const count = Number(
+      payload?.count ??
+      payload?.products_count ??
+      payload?.product_count ??
+      0
+    );
+    if (Number.isFinite(count) && count > 0) return true;
+  }
+  return false;
+}
+
+async function cleanupAutomationDuplicateCategories(env) {
+  const roots = await listRootCategories(env);
+  const removed = [];
+  const skipped = [];
+
+  for (const [categoryNo, expectedName] of AUTOMATION_DUPLICATE_CATEGORY_IDS.entries()) {
+    const category = roots.find((item) => Number(item?.category_no || 0) === categoryNo);
+    if (!category) continue;
+
+    const actualName = String(category?.category_name || "").trim();
+    if (actualName !== expectedName || Number(category?.parent_category_no || 1) !== 1) {
+      skipped.push({ category_no: categoryNo, reason: "identity_mismatch" });
+      continue;
+    }
+
+    if (await categoryHasProducts(env, categoryNo)) {
+      skipped.push({ category_no: categoryNo, reason: "contains_products" });
+      continue;
+    }
+
+    await cafe24AdminRequest(`/categories/${categoryNo}`, env, {
+      method: "DELETE",
+      params: { shop_no: 1 }
+    });
+    removed.push(categoryNo);
+    await sleep(250);
+  }
+
+  return { removed, skipped };
+}
+
 export async function bootstrapCafe24Catalog(env) {
   const categories = {};
   for (const categoryName of CATALOG_CATEGORY_NAMES) {
@@ -416,6 +477,7 @@ export async function bootstrapCafe24Catalog(env) {
 
   const courseCategoryNo = categories["강의"];
   const productAssignment = await ensureProductInCategory(env, courseCategoryNo, 13);
+  const duplicateCleanup = await cleanupAutomationDuplicateCategories(env);
 
   return {
     ok: true,
@@ -425,7 +487,8 @@ export async function bootstrapCafe24Catalog(env) {
       category_no: courseCategoryNo,
       assigned: true,
       added_now: productAssignment.added
-    }
+    },
+    duplicate_cleanup: duplicateCleanup
   };
 }
 
