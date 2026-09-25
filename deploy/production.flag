@@ -6,3 +6,4 @@ reason=use-cafe24-default-bank-deposit-refund-workflow
 reason=use-stored-refund-bank-for-payment-e2e
 reason=deploy-store-scope-request-and-log-live-token-scopes
 reason=configure-customer-initiated-cancellation-settings-v9
+reason=register-runtime-migration-0042-customer-claim-settings
