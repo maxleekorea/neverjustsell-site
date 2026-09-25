@@ -1,3 +1,4 @@
+import { WorkerEntrypoint } from "cloudflare:workers";
 import authApp from "./unified.js";
 import diagnosticsApp from "./diagnostics.js";
 import ticketApp from "./runtime.js";
@@ -8,6 +9,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
+import { getProgramCommunityProjection } from "./program-access.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-25-auto-order-v2";
@@ -74,7 +76,7 @@ const BASE_ROUTES = new Set([
   "/cafe24/api-check"
 ]);
 
-export default {
+const productionWorker = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
@@ -219,3 +221,74 @@ export default {
     return json({ ok: false, error: "not_found" }, { status: 404 });
   }
 };
+
+
+export class CommunityAuthRpc extends WorkerEntrypoint {
+  async fetch(request) {
+    return productionWorker.fetch(request, this.env, this.ctx);
+  }
+
+  async communityAccessHealth() {
+    return {
+      ok: true,
+      runtime: "community-auth-rpc-v1",
+      production_build: PRODUCTION_BUILD
+    };
+  }
+
+  async getCommunityIdentity(memberId) {
+    const normalized = String(memberId || "").trim();
+    if (!normalized || normalized.length > 128) {
+      throw new Error("invalid_member_id");
+    }
+
+    const projection = await getProgramCommunityProjection(
+      this.env,
+      normalized,
+      { syncPurchases: true }
+    );
+    return {
+      ok: true,
+      member_id: normalized,
+      ...projection
+    };
+  }
+
+  async getPaymentE2ECommunityIdentity() {
+    if (!this.env.COURSE_DB) {
+      return { ok: false, error: "course_db_binding_missing" };
+    }
+
+    await ensureProgramSchema(this.env);
+    const initial = await this.env.COURSE_DB.prepare(
+      "SELECT member_id FROM program_enrollments " +
+      "WHERE run_id='system-check-payment-program-run' AND source='purchase' " +
+      "ORDER BY updated_at DESC LIMIT 1"
+    ).first();
+
+    const memberId = String(initial?.member_id || "").trim();
+    if (!memberId) {
+      return { ok: false, error: "payment_e2e_member_not_found" };
+    }
+
+    const projection = await getProgramCommunityProjection(
+      this.env,
+      memberId,
+      { syncPurchases: true }
+    );
+    const current = await this.env.COURSE_DB.prepare(
+      "SELECT status,source_order_id,updated_at FROM program_enrollments " +
+      "WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+    ).bind(memberId).first();
+
+    return {
+      ok: true,
+      member_id: memberId,
+      enrollment_status: current?.status || null,
+      source_order_present: Boolean(current?.source_order_id),
+      ...projection
+    };
+  }
+}
+
+export default productionWorker;
