@@ -568,7 +568,6 @@ async function advancePaymentE2EToAwaitingRefund(env, row) {
         shop_no: 1,
         status: "canceling",
         recover_inventory: "F",
-        undone: "F",
         add_memo_too: "T"
       }
     }
