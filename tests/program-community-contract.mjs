@@ -235,6 +235,11 @@ assert(fulfillmentMigration.includes("(43,'전자책','ebook','entitlement',0"),
 assert(fulfillmentMigration.includes("(48,'프로그램','program','entitlement',0"), "program fulfillment seed missing");
 assert(fulfillmentMigration.includes("(53,'일반상품','physical','shipment',1"), "physical fulfillment seed missing");
 assert(programSchema.includes("0036_commerce_fulfillment_profiles.sql"), "runtime reconciler must apply commerce fulfillment profiles");
+assert(programSchema.includes("0037_reconcile_all_course_product_fulfillment.sql"), "runtime reconciler must apply linked-course fulfillment reconciliation");
+assert(systemOperations.includes("reconcile_all_course_product_fulfillment"), "linked-course fulfillment operation missing");
+assert(systemOperations.includes("Course fulfillment verification failed"), "linked-course fulfillment must fail closed on shipping drift");
+assert(systemOperations.includes("Course category verification failed"), "linked-course fulfillment must fail closed on category drift");
+
 assert(admin.includes("ensureCafe24CourseDigitalProfile"), "course admin must enforce digital fulfillment profile");
 assert(admin.includes("digitalCafe24ProductPatch"), "course admin must use canonical digital Cafe24 patch");
 assert(admin.includes("강의 상품의 배송 없음 설정을 확인하지 못했습니다."), "course sales must fail closed when no-shipping verification fails");
