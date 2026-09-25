@@ -346,3 +346,5 @@ assert(communityDeploy.includes("/auth/db-health"), "community deploy must recon
 assert(!communityDeploy.includes('"d1"'), "community deploy must not depend on D1 management API");
 
 console.log("PASS: creator-reader program and community operating scaffold");
+
+assert(!systemOperations.includes('undone: "F"'), "awaiting-refund transition must not send undone=F to Cafe24");
