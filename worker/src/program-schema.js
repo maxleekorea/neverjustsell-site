@@ -759,6 +759,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0040 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-cancel-payment-e2e-order',
+  'cancel_payment_e2e_order',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -868,6 +879,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0039);
     await markMigration(db, "0039_apply_digital_product_detail_ux.sql");
     applied.push("0039_apply_digital_product_detail_ux.sql");
+  }
+
+  if (!(await migrationApplied(db, "0040_cancel_payment_e2e_order.sql"))) {
+    await executeStatements(db, MIGRATION_0040);
+    await markMigration(db, "0040_cancel_payment_e2e_order.sql");
+    applied.push("0040_cancel_payment_e2e_order.sql");
   }
 
   const check = await db.prepare(
