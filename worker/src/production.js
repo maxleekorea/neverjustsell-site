@@ -50,6 +50,7 @@ const CLASSROOM_ROUTES = new Set([
   "/classroom",
   "/classroom/progress",
   "/library",
+  "/my-space",
   "/course-access"
 ]);
 
