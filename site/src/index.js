@@ -106,6 +106,12 @@ function pageData(pathname) {
       description: "온라인 커머스, 판로, 마케팅, 브랜드와 AI를 주제로 한 맥작가의 강연 안내.",
       body: "lecture",
       image: media.lecture
+    },
+    "/store": {
+      title: "스토어 | NEVER JUST SELL",
+      description: "강의, 전자책, 저자 참여 프로그램과 앞으로 선보일 상품을 한곳에서 안내합니다.",
+      body: "store",
+      image: media.profile
     }
   };
   return pages[pathname] || null;
@@ -289,7 +295,7 @@ function detailBody(type, env) {
         ["BRAND", "단기 판매 기술과 장기 브랜드 자산을 따로 떼어 보지 않습니다."],
         ["AI", "AI를 도구가 아니라 조사, 판단, 협업과 운영 체계의 일부로 연결합니다."]
       ],
-      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(bookPurchaseUrl)}">종이책 구매</a><a class="njs-btn njs-btn-line" href="/class">관련 강의 보기</a>`
+      action: `<a class="njs-btn njs-btn-dark" href="/store">스토어 보기</a><a class="njs-btn njs-btn-line" href="/class">관련 강의 보기</a>`
     },
     class: {
       eyebrow: "CLASS",
@@ -300,7 +306,7 @@ function detailBody(type, env) {
         ["02", "키워드와 롱테일, 탐색 행동"],
         ["03", "인포먼스, 브랜드, 고객 경험과 AI"]
       ],
-      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(authOrigin(env))}/courses/online-commerce-basics">무료 강의 수강 신청</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/classroom">내 강의실</a>`
+      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(authOrigin(env))}/courses/online-commerce-basics">무료 강의 수강 신청</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/my-space">내 공간</a>`
     },
     content: {
       eyebrow: "CONTENT",
@@ -312,6 +318,18 @@ function detailBody(type, env) {
         ["COMMUNITY", "질문과 실행 경험이 축적되는 검색 가능한 지식 공간을 만듭니다."]
       ],
       action: `<a class="njs-btn njs-btn-dark" href="/community">커뮤니티 보기</a><a class="njs-btn njs-btn-line" href="/book">책 보기</a>`
+    },
+    store: {
+      eyebrow: "STORE",
+      title: "구매한 콘텐츠를 바로 이용하는 스토어",
+      intro: "필요한 콘텐츠를 선택하고 결제한 뒤 내 공간에서 바로 이어서 이용합니다.",
+      blocks: [
+        ["강의", "온라인 강의는 강의 상세 페이지에서 내용을 확인하고 구매할 수 있습니다."],
+        ["전자책", "전자책 판매 기능은 준비 중이며 구매한 전자책은 내 공간에서 바로 열람하게 됩니다."],
+        ["프로그램", "저자·강사 참여형 완독, 챌린지, 코호트 프로그램을 이곳에서 연결합니다."],
+        ["일반상품", "실물 상품은 출시 시 별도의 상품 안내와 주문 흐름으로 제공합니다."]
+      ],
+      action: `<a class="njs-btn njs-btn-dark" href="/class">강의 보기</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/my-space">내 공간</a>`
     },
     lecture: {
       eyebrow: "LECTURE",
@@ -448,7 +466,7 @@ ${footer(env)}
 
 function sitemap(env) {
   const origin = siteOrigin(env);
-  const paths = ["/", "/about", "/book", "/class", "/content", "/lecture"];
+  const paths = ["/", "/about", "/book", "/class", "/content", "/store", "/lecture"];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map((path) => `  <url><loc>${origin}${path === "/" ? "/" : path}</loc></url>`).join("\n")}\n</urlset>`;
 }
 
@@ -478,7 +496,7 @@ export default {
     }
 
     if (url.pathname === "/llms.txt") {
-      return text(`NEVER JUST SELL\n\n온라인 판매를 사업의 관점에서 설명하는 맥작가의 공식 사이트입니다.\n\nMain: ${siteOrigin(env)}/\nAbout: ${siteOrigin(env)}/about\nBook: ${siteOrigin(env)}/book\nClass: ${siteOrigin(env)}/class\nContent: ${siteOrigin(env)}/content\nLecture: ${siteOrigin(env)}/lecture\nCommunity: ${communityOrigin(env)}/\n`);
+      return text(`NEVER JUST SELL\n\n온라인 판매를 사업의 관점에서 설명하는 맥작가의 공식 사이트입니다.\n\nMain: ${siteOrigin(env)}/\nAbout: ${siteOrigin(env)}/about\nBook: ${siteOrigin(env)}/book\nClass: ${siteOrigin(env)}/class\nContent: ${siteOrigin(env)}/content\nStore: ${siteOrigin(env)}/store\nLecture: ${siteOrigin(env)}/lecture\nCommunity: ${communityOrigin(env)}/\n`);
     }
 
     if (url.pathname === "/community") return redirect(`${communityOrigin(env)}/${url.search}`);
@@ -495,7 +513,6 @@ export default {
         `${authOrigin(env)}/session/logout-sync?return_to=${encodeURIComponent(returnTo)}`
       );
     }
-    if (url.pathname === "/store") return redirect(`${shopOrigin(env)}/`);
     if (url.pathname === "/cart") return redirect(`${shopOrigin(env)}/order/basket.html`);
 
     const data = pageData(url.pathname);
