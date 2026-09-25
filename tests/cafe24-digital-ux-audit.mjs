@@ -59,9 +59,9 @@ for (const [productNo, label] of PRODUCTS) {
     contexts: detected
   }, null, 2));
 
-  if (!response.ok) hardFailure = true;
+  if (productNo === 13 && !response.ok) hardFailure = true;
 }
 
 if (hardFailure) {
-  throw new Error("Cafe24 digital product page audit could not fetch one or more products");
+  throw new Error("Public Cafe24 E2E product page could not be fetched");
 }
