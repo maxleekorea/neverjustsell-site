@@ -949,6 +949,19 @@ export async function getPaymentE2EClaimStatus(env) {
   const targetItem = (Array.isArray(order?.items) ? order.items : [])
     .find((item) => Number(item?.product_no || 0) === 13) || null;
 
+  let itemPayload = null;
+  try {
+    itemPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId) + "/items", env, {
+      shop_no: 1
+    });
+  } catch {
+    itemPayload = null;
+  }
+  const detailedItems = Array.isArray(itemPayload?.items) ? itemPayload.items : [];
+  const detailedTargetItem = detailedItems.find(
+    (item) => Number(item?.product_no || 0) === 13
+  ) || null;
+
   let detailPayload = null;
   try {
     detailPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId), env, {
@@ -970,7 +983,7 @@ export async function getPaymentE2EClaimStatus(env) {
   const firstRefund = refunds[0] || null;
 
   const pick = (key) => {
-    for (const source of [targetItem, order, cancellation, firstRefund, detail]) {
+    for (const source of [detailedTargetItem, targetItem, order, cancellation, firstRefund, detail]) {
       const value = source?.[key];
       if (value !== undefined && value !== null && String(value).trim() !== "") {
         return String(value).trim();
@@ -986,6 +999,11 @@ export async function getPaymentE2EClaimStatus(env) {
     Boolean(pick("refund_bank_account_no")) &&
     Boolean(pick("refund_bank_account_holder"));
 
+  const acceptanceOperation = await env.COURSE_DB.prepare(
+    "SELECT status,last_error,completed_at,updated_at FROM system_operations " +
+    "WHERE id='2026-09-26-accept-payment-e2e-customer-cancellation' LIMIT 1"
+  ).first();
+
   return {
     ok: true,
     order_detected: Boolean(order),
@@ -997,6 +1015,18 @@ export async function getPaymentE2EClaimStatus(env) {
     cancellation_status: String(cancellation?.status || "").trim() || null,
     refund_method_code: firstRefund?.refund_method_code ?? cancellation?.refund_method_code ?? null,
     refund_bank_account_complete: refundBankComplete,
+    refund_bank_code_present: Boolean(pick("refund_bank_code")),
+    refund_bank_name_present: Boolean(pick("refund_bank_name")),
+    refund_bank_account_no_present: Boolean(pick("refund_bank_account_no")),
+    refund_bank_account_holder_present: Boolean(pick("refund_bank_account_holder")),
+    claim_reason_type_present: Boolean(pick("claim_reason_type")),
+    claim_reason_present: Boolean(pick("claim_reason")),
+    detailed_item_found: Boolean(detailedTargetItem),
+    acceptance_operation: acceptanceOperation ? {
+      status: String(acceptanceOperation.status || ""),
+      last_error: acceptanceOperation.last_error || null,
+      completed: Boolean(acceptanceOperation.completed_at)
+    } : null,
     customer_cancellation_requested:
       itemStatus === "C00" ||
       String(cancellation?.status || "").trim() === "accepted" ||
