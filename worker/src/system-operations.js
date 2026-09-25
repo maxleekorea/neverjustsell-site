@@ -6,6 +6,7 @@ const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
 const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
 const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates";
+const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_shipping";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -180,6 +181,93 @@ async function reconcileLatestPaymentE2EOrder(env, row) {
   };
 }
 
+async function listAllCurrentProducts(env) {
+  const products = [];
+  for (let offset = 0; offset <= 5000; offset += 100) {
+    const payload = await cafe24AdminGet("/products", env, {
+      shop_no: 1,
+      limit: 100,
+      offset,
+      fields: "product_no,product_name,shipping_method,shipping_fee_by_product,shipping_fee_type"
+    });
+    const page = Array.isArray(payload?.products) ? payload.products : [];
+    products.push(...page);
+    if (page.length < 100) break;
+  }
+  return products;
+}
+
+async function setAllCurrentProductsNoShipping(env) {
+  const products = await listAllCurrentProducts(env);
+  const updated = [];
+
+  for (const product of products) {
+    const productNo = Number(product?.product_no || 0);
+    if (!productNo) continue;
+
+    await cafe24AdminRequest(`/products/${productNo}`, env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        shipping_fee_by_product: "T",
+        shipping_method: "09",
+        shipping_fee_type: "T"
+      }
+    });
+
+    const verifyPayload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,product_name,shipping_method,shipping_fee_by_product,shipping_fee_type"
+    });
+    const verified = normalizeProduct(verifyPayload);
+
+    if (
+      String(verified?.shipping_method || "") !== "09" ||
+      String(verified?.shipping_fee_by_product || "") !== "T"
+    ) {
+      throw new Error(
+        `Cafe24 no-shipping verification failed: product_no=${productNo} shipping_method=${verified?.shipping_method ?? ""} shipping_fee_by_product=${verified?.shipping_fee_by_product ?? ""}`
+      );
+    }
+
+    updated.push({
+      product_no: productNo,
+      product_name: String(verified?.product_name || product?.product_name || ""),
+      shipping_method: "09",
+      shipping_fee_by_product: "T",
+      shipping_fee_type: String(verified?.shipping_fee_type || "")
+    });
+  }
+
+  return {
+    operation: SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION,
+    product_count: products.length,
+    updated_count: updated.length,
+    products: updated
+  };
+}
+
+export async function getAllCurrentProductsShippingStatus(env) {
+  const products = await listAllCurrentProducts(env);
+  const normalized = products.map((product) => ({
+    product_no: Number(product?.product_no || 0),
+    product_name: String(product?.product_name || ""),
+    shipping_method: String(product?.shipping_method || ""),
+    shipping_fee_by_product: String(product?.shipping_fee_by_product || ""),
+    shipping_fee_type: String(product?.shipping_fee_type || ""),
+    no_shipping:
+      String(product?.shipping_method || "") === "09" &&
+      String(product?.shipping_fee_by_product || "") === "T"
+  }));
+
+  return {
+    ok: true,
+    product_count: normalized.length,
+    all_no_shipping: normalized.every((product) => product.no_shipping),
+    products: normalized
+  };
+}
+
 export async function getPaymentE2EFlowStatus(env) {
   const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const orderPayload = await cafe24AdminGet("/orders", env, {
@@ -270,7 +358,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -283,7 +371,9 @@ export async function runPendingSystemOperations(env) {
           ? await reconcileLatestPaymentE2EOrder(env, row)
           : row.operation_type === BOOTSTRAP_CATALOG_OPERATION
             ? await bootstrapCafe24Catalog(env)
-            : { operation: CLEANUP_CATALOG_DUPLICATES_OPERATION, ...(await cleanupAutomationDuplicateCategories(env)) };
+            : row.operation_type === CLEANUP_CATALOG_DUPLICATES_OPERATION
+              ? { operation: CLEANUP_CATALOG_DUPLICATES_OPERATION, ...(await cleanupAutomationDuplicateCategories(env)) }
+              : await setAllCurrentProductsNoShipping(env);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
