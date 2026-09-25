@@ -239,6 +239,13 @@ assert(programSchema.includes("0037_reconcile_all_course_product_fulfillment.sql
 assert(systemOperations.includes("reconcile_all_course_product_fulfillment"), "linked-course fulfillment operation missing");
 assert(systemOperations.includes("Course fulfillment verification failed"), "linked-course fulfillment must fail closed on shipping drift");
 assert(systemOperations.includes("Course category verification failed"), "linked-course fulfillment must fail closed on category drift");
+assert(programSchema.includes("0038_hide_digital_product_shipping_properties.sql"), "runtime reconciler must apply product-detail shipping visibility migration");
+assert(systemOperations.includes("hide_digital_product_shipping_properties"), "digital product shipping-property operation missing");
+assert(systemOperations.includes("products_properties_before_digital_shipping_hide"), "Cafe24 product-property snapshot missing");
+assert(systemOperations.includes('display: "F"'), "digital shipping fields must be hidden");
+assert(systemOperations.includes("all_shipping_properties_hidden"), "shipping-property visibility verification missing");
+assert(production.includes("/system-check/product-detail-properties-status"), "product-detail property visibility status route missing");
+
 
 assert(admin.includes("ensureCafe24CourseDigitalProfile"), "course admin must enforce digital fulfillment profile");
 assert(admin.includes("digitalCafe24ProductPatch"), "course admin must use canonical digital Cafe24 patch");
