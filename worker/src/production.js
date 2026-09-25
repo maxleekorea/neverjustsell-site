@@ -8,6 +8,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
+import { runPendingSystemOperations } from "./system-operations.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -125,6 +126,9 @@ export default {
         const programSchema = env.COURSE_DB
           ? await ensureProgramSchema(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
+        const systemOperations = env.COURSE_DB
+          ? await runPendingSystemOperations(env)
+          : { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
         return json({
           ok: true,
           host: url.hostname,
@@ -133,7 +137,8 @@ export default {
           community_origins: [...allowedCommunityOrigins(env)],
           admin_scopes: CAFE24_ADMIN_SCOPES,
           route_owner: "production-dispatch-v3",
-          program_schema: programSchema
+          program_schema: programSchema,
+          system_operations: systemOperations
         });
       } catch (error) {
         return json({
