@@ -29,6 +29,11 @@ const context = await browser.newContext({
   viewport: { width: 1440, height: 1200 }
 });
 const page = await context.newPage();
+const dialogs = [];
+page.on("dialog", async (dialog) => {
+  dialogs.push({ type: dialog.type(), message: dialog.message() });
+  await dialog.accept().catch(() => {});
+});
 
 try {
   const response = await page.goto(PRODUCT_URL, {
@@ -74,7 +79,11 @@ try {
     }, null, 2));
 
     await buy.click({ timeout: 15000, force: true }).catch(() => {});
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(3500);
+
+    if (dialogs.length) {
+      console.log(JSON.stringify({ phase: "checkout_dialogs", dialogs }, null, 2));
+    }
 
     const checkoutUrl = page.url();
     const checkoutText = await page.locator("body").innerText().catch(() => "");
