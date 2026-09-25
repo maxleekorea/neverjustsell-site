@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T16:12:00+09:00
-reason=retry-hide-shipping-fields-with-nested-properties-response
-expected_head=749f72269ffdf31e192ea7d0a4158f79a74ec850
+deploy_at=2026-09-25T16:18:00+09:00
+reason=finalize-digital-commerce-ux-and-my-space-routing
+expected_head=7309d18c6c586bf80a666b6bb192f18d99c9fd23
