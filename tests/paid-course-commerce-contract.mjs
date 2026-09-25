@@ -64,6 +64,8 @@ assert(admin.includes("관리자 전용 수강생 화면 미리보기"), "admin 
 assert(admin.includes("frame-src https://player.vimeo.com"), "admin preview CSP must allow Vimeo playback");
 assert(admin.includes("COURSE_ADMIN_VERSION"), "course admin health must expose a deployable version marker");
 assert(admin.includes("real_paid_course_check"), "course admin health must expose real paid course readiness");
+assert(admin.includes("real_paid_courses_check"), "course admin health must expose both real paid courses");
+assert(admin.includes("paid-naver-keyword-strategy"), "course admin health must inspect the second real paid course");
 assert(admin.includes("duration_count"), "course admin health must expose Vimeo duration readiness");
 assert(admin.includes("Vimeo 처리 완료"), "course launch must verify Vimeo processing");
 assert(admin.includes("영상 길이 확인"), "course launch must verify duration evidence for refunds");

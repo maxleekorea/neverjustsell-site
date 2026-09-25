@@ -15,7 +15,7 @@ const ADMIN_TTL_SECONDS = 60 * 60 * 12;
 const VIMEO_API_ORIGIN = "https://api.vimeo.com";
 const TUS_VERSION = "1.0.0";
 const CAFE24_ADMIN_TOKEN_KEY = "cafe24:admin-token";
-const COURSE_ADMIN_VERSION = "2026-09-24-preflight-preview-v1";
+const COURSE_ADMIN_VERSION = "2026-09-26-real-paid-course-state-v2";
 
 const ONLINE_COMMERCE_BASICS = {
   slug: "online-commerce-basics",
@@ -1608,14 +1608,37 @@ async function health(env) {
       ? result.results.map(function (row) { return row.name; }).filter(Boolean)
       : [];
     const missing = expected.filter(function (name) { return !tables.includes(name); });
-    const [realCourse, realLessons] = await Promise.all([
+    const realCourseIds = ["paid-naver-search-algorithm", "paid-naver-keyword-strategy"];
+    const [realCoursesResult, realLessonsResult] = await Promise.all([
       env.COURSE_DB.prepare(
-        "SELECT id,status,visible,catalog_visible,price_krw,cafe24_product_no,sales_state FROM courses WHERE id='paid-naver-search-algorithm' LIMIT 1"
-      ).first(),
+        "SELECT id,title,status,visible,catalog_visible,price_krw,cafe24_product_no,sales_state FROM courses WHERE id IN (?,?) ORDER BY sort_order,created_at"
+      ).bind(realCourseIds[0], realCourseIds[1]).all(),
       env.COURSE_DB.prepare(
-        "SELECT COUNT(*) AS lesson_count,SUM(CASE WHEN vimeo_id IS NOT NULL THEN 1 ELSE 0 END) AS video_count,SUM(CASE WHEN status IN ('ready','published') THEN 1 ELSE 0 END) AS ready_count,SUM(CASE WHEN duration_seconds>0 THEN 1 ELSE 0 END) AS duration_count FROM lessons WHERE course_id='paid-naver-search-algorithm' AND status!='archived'"
-      ).first()
+        "SELECT course_id,COUNT(*) AS lesson_count,SUM(CASE WHEN vimeo_id IS NOT NULL THEN 1 ELSE 0 END) AS video_count,SUM(CASE WHEN status IN ('ready','published') THEN 1 ELSE 0 END) AS ready_count,SUM(CASE WHEN duration_seconds>0 THEN 1 ELSE 0 END) AS duration_count FROM lessons WHERE course_id IN (?,?) AND status!='archived' GROUP BY course_id"
+      ).bind(realCourseIds[0], realCourseIds[1]).all()
     ]);
+    const realCourseRows = Array.isArray(realCoursesResult?.results) ? realCoursesResult.results : [];
+    const realLessonRows = Array.isArray(realLessonsResult?.results) ? realLessonsResult.results : [];
+    const realLessonMap = new Map(realLessonRows.map(function (row) { return [row.course_id, row]; }));
+    const realPaidCourseChecks = realCourseIds.map(function (courseId) {
+      const realCourse = realCourseRows.find(function (row) { return row.id === courseId; });
+      if (!realCourse) return { id: courseId, missing: true };
+      const realLessons = realLessonMap.get(courseId) || {};
+      return {
+        id: realCourse.id,
+        title: realCourse.title || "",
+        status: realCourse.status,
+        visible: Number(realCourse.visible || 0),
+        catalog_visible: Number(realCourse.catalog_visible || 0),
+        price_krw: Number(realCourse.price_krw || 0),
+        cafe24_product_no: realCourse.cafe24_product_no == null ? null : Number(realCourse.cafe24_product_no),
+        sales_state: realCourse.sales_state || "preparing",
+        lesson_count: Number(realLessons.lesson_count || 0),
+        video_count: Number(realLessons.video_count || 0),
+        ready_count: Number(realLessons.ready_count || 0),
+        duration_count: Number(realLessons.duration_count || 0)
+      };
+    });
     return json({
       ok: missing.length === 0,
       connected: true,
@@ -1625,18 +1648,10 @@ async function health(env) {
       missing_tables: missing,
       admin_secret_configured: Boolean(env.COURSE_ADMIN_PASSWORD),
       vimeo_configured: Boolean(env.VIMEO_ACCESS_TOKEN),
-      real_paid_course_check: realCourse ? {
-        status: realCourse.status,
-        visible: Number(realCourse.visible || 0),
-        catalog_visible: Number(realCourse.catalog_visible || 0),
-        price_krw: Number(realCourse.price_krw || 0),
-        cafe24_product_no: realCourse.cafe24_product_no == null ? null : Number(realCourse.cafe24_product_no),
-        sales_state: realCourse.sales_state || "preparing",
-        lesson_count: Number(realLessons?.lesson_count || 0),
-        video_count: Number(realLessons?.video_count || 0),
-        ready_count: Number(realLessons?.ready_count || 0),
-        duration_count: Number(realLessons?.duration_count || 0)
-      } : null
+      real_paid_courses_check: realPaidCourseChecks,
+      real_paid_course_check: realPaidCourseChecks.find(function (course) {
+        return course.id === "paid-naver-search-algorithm";
+      }) || null
     }, { status: missing.length === 0 ? 200 : 503 });
   } catch (error) {
     return json({

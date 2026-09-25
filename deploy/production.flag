@@ -29,3 +29,4 @@ reason=resolve-missing-refund-bank-code-from-cafe24-official-table
 reason=delegate-refund-workflow-to-cafe24-native-commerce
 reason=redact-sensitive-cafe24-provider-errors
 reason=accept-unreachable-disabled-workers-dev-smoke
+reason=inspect-real-paid-course-production-state
