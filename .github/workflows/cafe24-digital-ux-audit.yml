@@ -8,6 +8,7 @@ on:
     paths:
       - "audit/cafe24-digital-ux.flag"
       - "tests/cafe24-digital-ux-audit.mjs"
+      - "tests/cafe24-digital-browser-audit.mjs"
       - ".github/workflows/cafe24-digital-ux-audit.yml"
 
 jobs:
@@ -20,3 +21,9 @@ jobs:
           node-version: 22
       - name: Audit visible Cafe24 digital product text
         run: node tests/cafe24-digital-ux-audit.mjs
+      - name: Install browser audit dependencies
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Audit rendered Cafe24 digital purchase UX
+        run: node tests/cafe24-digital-browser-audit.mjs
