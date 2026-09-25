@@ -52,6 +52,19 @@ for (const [productNo, label] of PRODUCTS) {
     headers: { "user-agent": "neverjustsell-digital-ux-audit/1.0" }
   });
   const html = await response.text();
+
+  if (!response.ok) {
+    console.log(JSON.stringify({
+      product_no: productNo,
+      label,
+      status: response.status,
+      final_url: response.url,
+      skipped: true,
+      reason: "not_publicly_accessible"
+    }, null, 2));
+    continue;
+  }
+
   const text = visibleText(html);
   const shippingTerms = ["배송", "수령인", "배송지", "택배", "송장", "배송비", "배송방법"];
   const hits = Object.fromEntries(
@@ -70,8 +83,4 @@ for (const [productNo, label] of PRODUCTS) {
     shipping_terms_detected: Object.keys(detected),
     contexts: detected
   }, null, 2));
-
-  if (!response.ok) {
-    throw new Error(`Public Cafe24 digital product ${productNo} could not be fetched`);
-  }
 }
