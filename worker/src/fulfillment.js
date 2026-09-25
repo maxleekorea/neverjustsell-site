@@ -93,3 +93,27 @@ export function fulfillmentTypeForProductType(productType) {
 export function isDigitalProductType(productType) {
   return fulfillmentTypeForProductType(productType) === FULFILLMENT_TYPES.ENTITLEMENT;
 }
+
+
+export function classifyFulfillmentCategories(categoryNos) {
+  const profiles = [...new Set(
+    (Array.isArray(categoryNos) ? categoryNos : [])
+      .map((categoryNo) => fulfillmentProfileForCategory(categoryNo))
+      .filter(Boolean)
+  )];
+
+  if (profiles.length === 0) {
+    return { ok: false, reason: "unmapped_category", profile: null };
+  }
+
+  const fulfillmentTypes = new Set(profiles.map((profile) => profile.fulfillmentType));
+  if (fulfillmentTypes.size > 1) {
+    return { ok: false, reason: "mixed_fulfillment_categories", profile: null, profiles };
+  }
+
+  if (profiles.length > 1) {
+    return { ok: false, reason: "multiple_primary_product_categories", profile: null, profiles };
+  }
+
+  return { ok: true, reason: "classified", profile: profiles[0] };
+}
