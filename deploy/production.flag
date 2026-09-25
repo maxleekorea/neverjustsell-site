@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T22:26:00+09:00
-reason=execute-final-payment-refund-and-access-revocation-e2e
-expected_head=34eb0d7319e595b5d5859157d1b484bdfa4da352
+deploy_at=2026-09-25T22:35:00+09:00
+reason=retry-final-refund-with-cafe24-non-pg-refund-method
+expected_head=ed76d8f0c1b946ce4f031ce03c1cfd61e8aa84c6

@@ -199,6 +199,7 @@ assert(systemOperations.includes("cancel_payment_e2e_order"), "guarded payment E
 assert(systemOperations.includes("revokePaidCourseEntitlementForPurchase"), "payment E2E cancellation must revoke course entitlement");
 assert(systemOperations.includes('PAYMENT_E2E_PG_CANCEL_METHODS'), "payment E2E cancellation must decide PG cancellation by payment method");
 assert(systemOperations.includes('payment_gateway_cancel: requestPaymentGatewayCancel ? "T" : "F"'), "payment E2E cancellation must not request PG cancellation for bank deposit");
+assert(systemOperations.includes('cancellationBody.refund_method_code = "I"'), "non-PG bank-deposit cancellation must use Cafe24 refund method I without inventing bank details");
 assert(systemOperations.includes('recover_inventory: "F"'), "digital payment E2E cancellation must not restore physical inventory");
 assert(systemOperations.includes('display: "F", selling: "F"'), "completed payment E2E must hide the test product");
 assert(systemOperations.includes("e2e_refund_verified_hidden"), "hidden post-refund fixture state missing");
