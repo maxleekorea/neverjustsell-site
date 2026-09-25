@@ -68,13 +68,7 @@ for (const [productNo, label] of PRODUCTS) {
     final_url: response.url,
     visible_text_length: text.length,
     shipping_terms_detected: Object.keys(detected),
-    contexts: detected,
-    raw_markup: productNo === 13 ? {
-      overseas_shipping_label: rawContexts(html, "해외배송 가능상품"),
-      shipping_tab: rawContexts(html, "배송/교환/환불 안내"),
-      delivery_info: rawContexts(html, "DELIVERY INFO"),
-      recurring_shipping: rawContexts(html, "정기배송")
-    } : undefined
+    contexts: detected
   }, null, 2));
 
   if (productNo === 13 && !response.ok) hardFailure = true;
