@@ -250,8 +250,9 @@ expect(
   r.response.status === 200 &&
     payload.ok === true &&
     payload.binding_present === true &&
+    payload.rpc_ready === true &&
     payload.upstream_ok === true,
-  `status=${r.response.status} binding=${payload.binding_present} upstream=${payload.upstream_status}`
+  `status=${r.response.status} binding=${payload.binding_present} rpc=${payload.rpc_ready} upstream=${payload.upstream_status}`
 );
 
 r = await request("https://community.neverjustsell.com/auth/db-health");
@@ -263,6 +264,23 @@ expect(
     payload.program_schema?.ok === true &&
     Number(payload.program_schema?.pilot_space_count || 0) >= 4,
   `status=${r.response.status} program_schema=${JSON.stringify(payload.program_schema || null)} error=${payload.error || ""}`
+);
+
+r = await request("https://community.neverjustsell.com/auth/payment-e2e-space-status");
+payload = JSON.parse(r.body || "{}");
+const paymentE2ECommunityObservable =
+  (r.response.status === 200 &&
+    payload.ok === true &&
+    payload.logged_in_once === true &&
+    payload.access_consistent === true) ||
+  (r.response.status === 409 &&
+    payload.ok === false &&
+    payload.logged_in_once === false &&
+    payload.error === "community_login_required");
+expect(
+  "payment E2E Community projection state is observable",
+  paymentE2ECommunityObservable,
+  `status=${r.response.status} payload=${JSON.stringify(payload)}`
 );
 
 r = await request("https://www.neverjustsell.com/board/index.html");
