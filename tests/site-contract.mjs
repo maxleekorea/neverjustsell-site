@@ -41,4 +41,20 @@ assert(r.status === 302 && r.headers.get("location") === "https://classroom.neve
 r = await request("https://www.neverjustsell.com/community");
 assert(r.status === 302 && r.headers.get("location") === "https://community.neverjustsell.com/", "community bridge must use canonical community origin");
 
+r = await request("https://www.neverjustsell.com/support");
+assert(r.status === 200, "customer support page must be available");
+const supportHtml = await r.text();
+assert(supportHtml.includes("고객지원"), "customer support page must identify its purpose");
+assert(supportHtml.includes("취소·환불"), "customer support page must expose cancellation/refund help");
+assert(
+  supportHtml.includes("https://neverjustsell.cafe24.com/myshop/order/list.html"),
+  "customer support cancellation entry must use Cafe24 order history"
+);
+
+r = await request("https://www.neverjustsell.com/");
+const homeHtml = await r.text();
+const headerHtml = homeHtml.split("</header>")[0] || "";
+assert(!headerHtml.includes("취소·환불"), "refund action must not be promoted in the primary navigation");
+assert(homeHtml.includes('href="/support">고객지원</a>'), "customer support must remain discoverable in the footer");
+
 console.log("PASS: public-site responsibility contract");

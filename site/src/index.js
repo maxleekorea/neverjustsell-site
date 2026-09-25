@@ -112,6 +112,12 @@ function pageData(pathname) {
       description: "강의, 전자책, 저자 참여 프로그램과 앞으로 선보일 상품을 한곳에서 안내합니다.",
       body: "store",
       image: media.profile
+    },
+    "/support": {
+      title: "고객지원 | NEVER JUST SELL",
+      description: "강의·전자책·프로그램 이용, 주문·결제, 취소·환불 관련 절차를 안내합니다.",
+      body: "support",
+      image: media.profile
     }
   };
   return pages[pathname] || null;
@@ -162,6 +168,7 @@ function footer(env) {
         </nav>
         <div class="njs-footer-links">
           <a href="${escapeHtml(shopOrigin(env))}/member/agreement.html">회원가입</a>
+          <a href="/support">고객지원</a>
           <a href="${escapeHtml(shopOrigin(env))}/member/privacy.html">개인정보처리방침</a>
           <a href="/sitemap.xml">사이트맵</a>
         </div>
@@ -341,6 +348,17 @@ function detailBody(type, env) {
         ["MARKETING & BRAND", "고객 접점, 브랜드와 사업 구조"],
         ["GLOBAL & AI", "글로벌 플랫폼, AI 활용과 협업"]
       ]
+    },
+    support: {
+      eyebrow: "CUSTOMER SUPPORT",
+      title: "이용 중 필요한 도움을 확인하세요.",
+      intro: "강의·전자책·프로그램 이용과 주문·결제, 취소·환불 관련 절차를 안내합니다.",
+      blocks: [
+        ["이용 문의", "강의 재생이나 내 공간 이용에 문제가 있다면 먼저 내 공간에서 이용 상태를 확인해 주세요."],
+        ["주문·결제", "구매한 상품과 결제 상태는 주문 내역에서 확인할 수 있습니다."],
+        ["취소·환불", "취소가 필요한 경우 주문 내역에서 해당 주문의 취소 신청을 진행할 수 있습니다."]
+      ],
+      action: `<a class="njs-btn njs-btn-dark" href="${escapeHtml(shopOrigin(env))}/myshop/order/list.html">주문 내역 · 취소 신청</a><a class="njs-btn njs-btn-line" href="${escapeHtml(authOrigin(env))}/my-space">내 공간</a>`
     }
   }[type];
 
@@ -466,7 +484,7 @@ ${footer(env)}
 
 function sitemap(env) {
   const origin = siteOrigin(env);
-  const paths = ["/", "/about", "/book", "/class", "/content", "/store", "/lecture"];
+  const paths = ["/", "/about", "/book", "/class", "/content", "/store", "/lecture", "/support"];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${paths.map((path) => `  <url><loc>${origin}${path === "/" ? "/" : path}</loc></url>`).join("\n")}\n</urlset>`;
 }
 
