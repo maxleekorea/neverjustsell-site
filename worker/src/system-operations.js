@@ -7,7 +7,9 @@ function normalizeProduct(payload) {
 }
 
 function numericPrice(value) {
-  const n = Number(String(value ?? "").replaceAll(",", ""));
+  const raw = String(value ?? "").replaceAll(",", "").trim();
+  if (!raw) return NaN;
+  const n = Number(raw);
   return Number.isFinite(n) ? n : NaN;
 }
 
@@ -45,24 +47,27 @@ async function openPaymentE2EProduct(env, row) {
   try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
   const price = Number(payload.price || 1000);
   if (price !== 1000) throw new Error("payment E2E price must remain 1000 KRW");
+  const requireMemberOnly = payload.member_only !== false;
 
-  // Configure policy while hidden, then expose the product for the real checkout test.
-  await cafe24AdminRequest("/products/13", env, {
-    method: "PUT",
-    body: {
-      shop_no: 1,
-      display: "F",
-      selling: "F",
-      price: 1000,
-      buy_limit_by_product: "T",
-      buy_limit_type: "M"
+  if (requireMemberOnly) {
+    // Configure policy while hidden, then expose the product for the real checkout test.
+    await cafe24AdminRequest("/products/13", env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        display: "F",
+        selling: "F",
+        price: 1000,
+        buy_limit_by_product: "T",
+        buy_limit_type: "M"
+      }
+    });
+
+    const policyPayload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
+    const policyProduct = normalizeProduct(policyPayload);
+    if (policyProduct?.buy_limit_by_product !== "T" || String(policyProduct?.buy_limit_type || "") !== "M") {
+      throw new Error("Cafe24 member-only purchase policy verification failed");
     }
-  });
-
-  let verifyPayload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
-  let product = normalizeProduct(verifyPayload);
-  if (product?.buy_limit_by_product !== "T" || String(product?.buy_limit_type || "") !== "M") {
-    throw new Error("Cafe24 member-only purchase policy verification failed");
   }
 
   await cafe24AdminRequest("/products/13", env, {
@@ -75,12 +80,15 @@ async function openPaymentE2EProduct(env, row) {
     }
   });
 
-  verifyPayload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
-  product = normalizeProduct(verifyPayload);
+  const verifyPayload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
+  const product = normalizeProduct(verifyPayload);
 
   const display = String(product?.display || "");
   const selling = String(product?.selling || "");
   const currentPrice = numericPrice(product?.price);
+  const memberOnly =
+    product?.buy_limit_by_product === "T" &&
+    String(product?.buy_limit_type || "") === "M";
 
   if (display !== "T" || selling !== "T" || currentPrice !== 1000) {
     throw new Error(
@@ -88,9 +96,13 @@ async function openPaymentE2EProduct(env, row) {
     );
   }
 
+  if (requireMemberOnly && !memberOnly) {
+    throw new Error("Cafe24 member-only purchase policy verification failed after sale activation");
+  }
+
   await env.COURSE_DB.prepare(
-    "UPDATE courses SET price_krw=1000,sales_enabled=1,cafe24_sync_status='e2e_selling_member_only',updated_at=CURRENT_TIMESTAMP WHERE id='system-check-paid-course'"
-  ).run();
+    "UPDATE courses SET price_krw=1000,sales_enabled=1,cafe24_sync_status=?,updated_at=CURRENT_TIMESTAMP WHERE id='system-check-paid-course'"
+  ).bind(memberOnly ? "e2e_selling_member_only" : "e2e_selling_login_required").run();
 
   return {
     operation: OPEN_E2E_OPERATION,
@@ -98,7 +110,8 @@ async function openPaymentE2EProduct(env, row) {
     price_krw: 1000,
     display,
     selling,
-    member_only: true,
+    member_only: memberOnly,
+    login_required_for_test: !memberOnly,
     purchase_url: "https://neverjustsell.cafe24.com/product/detail.html?product_no=13"
   };
 }
