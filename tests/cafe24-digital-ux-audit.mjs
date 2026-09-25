@@ -1,5 +1,6 @@
+// Audit only public digital products. Product #13 is a dedicated payment
+// E2E fixture and is intentionally hidden after the checkout test.
 const PRODUCTS = [
-  [13, "E2E 강의"],
   [16, "온라인 커머스 역사와 네이버 검색 알고리즘"],
   [17, "네이버 쇼핑 - 키워드 전략"]
 ];
@@ -44,7 +45,6 @@ function contexts(text, keyword, radius = 90) {
   return out;
 }
 
-let hardFailure = false;
 for (const [productNo, label] of PRODUCTS) {
   const url = `https://neverjustsell.cafe24.com/product/detail.html?product_no=${productNo}`;
   const response = await fetch(url, {
@@ -68,18 +68,10 @@ for (const [productNo, label] of PRODUCTS) {
     final_url: response.url,
     visible_text_length: text.length,
     shipping_terms_detected: Object.keys(detected),
-    contexts: detected,
-    raw_markup: productNo === 13 ? {
-      overseas_shipping_label: rawContexts(html, "해외배송 가능상품"),
-      shipping_tab: rawContexts(html, "배송/교환/환불 안내"),
-      delivery_info: rawContexts(html, "DELIVERY INFO"),
-      recurring_shipping: rawContexts(html, "정기배송")
-    } : undefined
+    contexts: detected
   }, null, 2));
 
-  if (productNo === 13 && !response.ok) hardFailure = true;
-}
-
-if (hardFailure) {
-  throw new Error("Public Cafe24 E2E product page could not be fetched");
+  if (!response.ok) {
+    throw new Error(`Public Cafe24 digital product ${productNo} could not be fetched`);
+  }
 }
