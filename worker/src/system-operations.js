@@ -120,6 +120,9 @@ export async function getPaymentE2EProductStatus(env) {
     display,
     selling,
     member_only: memberOnly,
+    buy_limit_by_product: String(product?.buy_limit_by_product || ""),
+    buy_limit_type: String(product?.buy_limit_type || ""),
+    buy_group_list: product?.buy_group_list ?? null,
     ready_for_test: price === 1000 && display === "T" && selling === "T" && memberOnly,
     purchase_url: "https://neverjustsell.cafe24.com/product/detail.html?product_no=13"
   };
