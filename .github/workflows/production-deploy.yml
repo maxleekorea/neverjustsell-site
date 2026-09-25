@@ -30,6 +30,16 @@ jobs:
       - name: Deploy course Worker
         working-directory: worker
         run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Inspect Cafe24 Admin OAuth scopes
+        run: |
+          node -e '
+          const r=await fetch("https://classroom.neverjustsell.com/oauth/cafe24/status?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          const scopes=Array.isArray(j?.scopes)?j.scopes:[];
+          console.log(JSON.stringify({store_read:scopes.includes("mall.read_store"),store_write:scopes.includes("mall.write_store"),scopes},null,2));
+          '
+
       - name: Inspect payment E2E product before reconciliation
         run: |
           node -e '
