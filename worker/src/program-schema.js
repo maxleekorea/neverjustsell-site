@@ -667,6 +667,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0034 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-cleanup-cafe24-catalog-duplicates',
+  'cleanup_cafe24_catalog_duplicates',
+  'pending',
+  '{}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -740,6 +751,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0033);
     await markMigration(db, "0033_bootstrap_cafe24_catalog.sql");
     applied.push("0033_bootstrap_cafe24_catalog.sql");
+  }
+
+  if (!(await migrationApplied(db, "0034_cleanup_cafe24_catalog_duplicates.sql"))) {
+    await executeStatements(db, MIGRATION_0034);
+    await markMigration(db, "0034_cleanup_cafe24_catalog_duplicates.sql");
+    applied.push("0034_cleanup_cafe24_catalog_duplicates.sql");
   }
 
   const check = await db.prepare(
