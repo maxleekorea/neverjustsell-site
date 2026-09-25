@@ -239,6 +239,8 @@ async function paymentE2EOrdersForDate(env, date) {
   return Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
 }
 
+const PAYMENT_E2E_PG_CANCEL_METHODS = new Set(["card", "tcash", "icash", "cell", "cvs"]);
+
 function paymentE2EPurchaseMeta(purchase) {
   const order = purchase?.order || {};
   const item = purchase?.item || {};
@@ -325,6 +327,7 @@ async function cancelPaymentE2EOrder(env, row) {
     throw new Error("Refusing cancellation because program enrollment does not match the target order");
   }
 
+  const requestPaymentGatewayCancel = PAYMENT_E2E_PG_CANCEL_METHODS.has(meta.paymentMethod);
   let cancellationRequested = false;
   if (!alreadyRevoked) {
     await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
@@ -332,7 +335,7 @@ async function cancelPaymentE2EOrder(env, row) {
       body: {
         shop_no: 1,
         status: "canceled",
-        payment_gateway_cancel: "T",
+        payment_gateway_cancel: requestPaymentGatewayCancel ? "T" : "F",
         recover_inventory: "F",
         recover_coupon: "T",
         add_memo_too: "T",
@@ -363,6 +366,21 @@ async function cancelPaymentE2EOrder(env, row) {
   }
 
   const reconciled = await reconcileRevokedPaymentE2EAccess(env, purchase);
+
+  await cafe24AdminRequest("/products/13", env, {
+    method: "PUT",
+    body: { shop_no: 1, display: "F", selling: "F" }
+  });
+  await env.COURSE_DB.prepare(
+    "UPDATE courses SET sales_enabled=0,cafe24_sync_status='e2e_refund_verified_hidden',updated_at=CURRENT_TIMESTAMP " +
+    "WHERE id='system-check-paid-course' AND cafe24_product_no=13"
+  ).run();
+
+  const productStatus = await getPaymentE2EProductStatus(env);
+  if (productStatus.display !== "F" || productStatus.selling !== "F") {
+    throw new Error("Payment E2E order was revoked but test product could not be hidden");
+  }
+
   return {
     operation: CANCEL_E2E_ORDER_OPERATION,
     order_state: "revoked",
@@ -370,7 +388,8 @@ async function cancelPaymentE2EOrder(env, row) {
     already_revoked: alreadyRevoked,
     payment_method: meta.paymentMethod || null,
     payment_gateway_names: meta.paymentGatewayNames,
-    payment_gateway_cancel_requested: cancellationRequested,
+    payment_gateway_cancel_requested: cancellationRequested && requestPaymentGatewayCancel,
+    product_hidden: true,
     course_entitlement: reconciled.entitlement?.status || null,
     program_enrollment: reconciled.enrollment?.status || null,
     identity_consistent:
