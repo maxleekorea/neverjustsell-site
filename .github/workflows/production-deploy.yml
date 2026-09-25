@@ -94,7 +94,8 @@ jobs:
             !r.ok ||
             !j?.ok ||
             j?.all_categories_present!==true ||
-            j?.product_13_in_course!==true
+            j?.product_13_in_course!==true ||
+            j?.duplicates_present!==false
           ) process.exit(1);
           '
 
