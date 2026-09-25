@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T13:38:00+09:00
-reason=expand-cafe24-category-scopes-and-bootstrap-catalog
-expected_head=ec3c4fc5098e3efa7feebac957611cbe31c9343a
+deploy_at=2026-09-25T13:44:00+09:00
+reason=fix-cafe24-oauth-scope-separator
+expected_head=a9ce3bf1507b561cb3f234f4105e3b5579e6497a
