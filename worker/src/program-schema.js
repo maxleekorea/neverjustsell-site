@@ -632,6 +632,19 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0031 = String.raw`
+-- Re-run the existing E2E product opening operation without forcing Cafe24
+-- customer-tier restrictions. The operator must purchase while logged in.
+UPDATE system_operations
+SET status='pending',
+    payload_json='{"product_no":13,"price":1000,"member_only":false}',
+    last_error=NULL,
+    started_at=NULL,
+    completed_at=NULL,
+    updated_at=CURRENT_TIMESTAMP
+WHERE id='2026-09-25-open-payment-e2e-product-13';
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -687,6 +700,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0030);
     await markMigration(db, "0030_open_payment_e2e_product.sql");
     applied.push("0030_open_payment_e2e_product.sql");
+  }
+
+  if (!(await migrationApplied(db, "0031_reopen_payment_e2e_product_without_group_lock.sql"))) {
+    await executeStatements(db, MIGRATION_0031);
+    await markMigration(db, "0031_reopen_payment_e2e_product_without_group_lock.sql");
+    applied.push("0031_reopen_payment_e2e_product_without_group_lock.sql");
   }
 
   const check = await db.prepare(
