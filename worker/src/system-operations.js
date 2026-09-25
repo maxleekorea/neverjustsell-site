@@ -1,7 +1,7 @@
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
 import { findValidCoursePurchase, syncPaidCourseEntitlementForPurchase } from "./access.js";
 import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
-import { digitalCafe24ProductPatch, fulfillmentProfileForProductType } from "./fulfillment.js";
+import { digitalCafe24ProductPatch, fulfillmentProfileForProductType, digitalProductDescriptionHtml, hasDigitalProductUx } from "./fulfillment.js";
 
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
@@ -10,6 +10,7 @@ const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates"
 const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_shipping";
 const RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION = "reconcile_all_course_product_fulfillment";
 const HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION = "hide_digital_product_shipping_properties";
+const APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION = "apply_digital_product_detail_ux";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -540,6 +541,128 @@ export async function getPaymentE2EProductStatus(env) {
   };
 }
 
+async function applyDigitalProductDetailUx(env) {
+  const listed = await listAllCurrentProducts(env);
+  const updated = [];
+  const skipped = [];
+
+  for (const item of listed) {
+    const productNo = Number(item?.product_no || 0);
+    if (!productNo) continue;
+
+    const detailPayload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,product_name,description,mobile_description,separated_mobile_description,shipping_method,shipping_fee_by_product"
+    });
+    const product = normalizeProduct(detailPayload);
+
+    if (
+      String(product?.shipping_method || "") !== "09" ||
+      String(product?.shipping_fee_by_product || "") !== "T"
+    ) {
+      skipped.push({ product_no: productNo, reason: "requires_shipping" });
+      continue;
+    }
+
+    const description = String(product?.description || "");
+    const mobileDescription = String(product?.mobile_description || "");
+    const separatedMobile = String(product?.separated_mobile_description || "") === "T";
+
+    if (!hasDigitalProductUx(description)) {
+      const snapshotKey = `product_description_before_digital_ux_${productNo}`;
+      const snapshot = await env.COURSE_DB.prepare(
+        "SELECT snapshot_key FROM cafe24_setting_snapshots WHERE snapshot_key=? LIMIT 1"
+      ).bind(snapshotKey).first();
+
+      if (!snapshot?.snapshot_key) {
+        await env.COURSE_DB.prepare(
+          "INSERT INTO cafe24_setting_snapshots(snapshot_key,payload_json) VALUES (?,?)"
+        ).bind(
+          snapshotKey,
+          JSON.stringify({
+            product_no: productNo,
+            product_name: String(product?.product_name || ""),
+            description,
+            mobile_description: mobileDescription,
+            separated_mobile_description: separatedMobile ? "T" : "F"
+          })
+        ).run();
+      }
+
+      const body = {
+        shop_no: 1,
+        description: digitalProductDescriptionHtml(description)
+      };
+      if (separatedMobile) {
+        body.mobile_description = digitalProductDescriptionHtml(mobileDescription);
+      }
+
+      await cafe24AdminRequest(`/products/${productNo}`, env, {
+        method: "PUT",
+        body
+      });
+    }
+
+    const verifyPayload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,description"
+    });
+    const verify = normalizeProduct(verifyPayload);
+    if (!hasDigitalProductUx(verify?.description)) {
+      throw new Error(`Digital product UX verification failed for product ${productNo}`);
+    }
+
+    updated.push({
+      product_no: productNo,
+      product_name: String(product?.product_name || ""),
+      digital_ux: true
+    });
+  }
+
+  return {
+    operation: APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION,
+    updated_count: updated.length,
+    skipped_count: skipped.length,
+    updated,
+    skipped
+  };
+}
+
+export async function getDigitalProductDetailUxStatus(env) {
+  const listed = await listAllCurrentProducts(env);
+  const products = [];
+
+  for (const item of listed) {
+    const productNo = Number(item?.product_no || 0);
+    if (!productNo) continue;
+    const payload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,product_name,description,shipping_method,shipping_fee_by_product"
+    });
+    const product = normalizeProduct(payload);
+    const digital =
+      String(product?.shipping_method || "") === "09" &&
+      String(product?.shipping_fee_by_product || "") === "T";
+
+    products.push({
+      product_no: productNo,
+      product_name: String(product?.product_name || ""),
+      digital,
+      ux_applied: digital ? hasDigitalProductUx(product?.description) : null
+    });
+  }
+
+  const digitalProducts = products.filter((product) => product.digital);
+  return {
+    ok: true,
+    digital_product_count: digitalProducts.length,
+    all_digital_ux_applied:
+      digitalProducts.length > 0 &&
+      digitalProducts.every((product) => product.ux_applied === true),
+    products
+  };
+}
+
 export async function runPendingSystemOperations(env) {
   if (!env.COURSE_DB) return { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
 
@@ -558,7 +681,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -577,7 +700,9 @@ export async function runPendingSystemOperations(env) {
                 ? await setAllCurrentProductsNoShipping(env)
                 : row.operation_type === RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION
                   ? await reconcileAllCourseProductFulfillment(env)
-                  : await hideDigitalProductShippingProperties(env);
+                  : row.operation_type === HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION
+                    ? await hideDigitalProductShippingProperties(env)
+                    : await applyDigitalProductDetailUx(env);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
