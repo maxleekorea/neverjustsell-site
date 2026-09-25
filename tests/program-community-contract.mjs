@@ -240,6 +240,11 @@ assert(systemOperations.includes("reconcile_all_course_product_fulfillment"), "l
 assert(systemOperations.includes("Course fulfillment verification failed"), "linked-course fulfillment must fail closed on shipping drift");
 assert(systemOperations.includes("Course category verification failed"), "linked-course fulfillment must fail closed on category drift");
 assert(programSchema.includes("0038_hide_digital_product_shipping_properties.sql"), "runtime reconciler must apply product-detail shipping visibility migration");
+assert(programSchema.includes("0039_apply_digital_product_detail_ux.sql"), "runtime reconciler must apply digital product detail UX migration");
+assert(systemOperations.includes("apply_digital_product_detail_ux"), "digital product detail UX operation missing");
+assert(fulfillment.includes("DIGITAL_PRODUCT_UX_MARKER"), "digital product UX marker missing");
+assert(fulfillment.includes("결제 후 바로 이용할 수 있습니다."), "digital post-purchase guidance missing");
+assert(production.includes("/system-check/digital-product-ux-status"), "digital product UX status route missing");
 assert(systemOperations.includes("hide_digital_product_shipping_properties"), "digital product shipping-property operation missing");
 assert(systemOperations.includes("products_properties_before_digital_shipping_hide"), "Cafe24 product-property snapshot missing");
 assert(systemOperations.includes('display: "F"'), "digital shipping fields must be hidden");
