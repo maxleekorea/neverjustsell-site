@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T16:06:00+09:00
-reason=hide-shipping-fields-from-digital-product-detail
-expected_head=f98e199d12b63c734bc8b5a4d55978aecbf8bebc
+deploy_at=2026-09-25T16:12:00+09:00
+reason=retry-hide-shipping-fields-with-nested-properties-response
+expected_head=749f72269ffdf31e192ea7d0a4158f79a74ec850
