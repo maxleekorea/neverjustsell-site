@@ -3,6 +3,7 @@ import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
 import { isPaymentConfirmed, isItemRevoked } from "./access.js";
 import { COMMERCE_ORIGIN, CAFE24_ADMIN_SCOPES } from "./config.js";
 import { getProgramCommunityProjection } from "./program-access.js";
+import { digitalCafe24ProductPatch, fulfillmentProfileForProductType } from "./fulfillment.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
 const DEFAULT_PAID_ACCESS_DAYS = 180;
@@ -1706,6 +1707,49 @@ async function getAdminCourse(env, courseId) {
   ).bind(courseId).first();
 }
 
+async function ensureCafe24CourseDigitalProfile(productNo, env) {
+  const profile = fulfillmentProfileForProductType("course");
+  const patch = digitalCafe24ProductPatch("course");
+
+  await cafe24AdminRequest("/products/" + productNo, env, {
+    method: "PUT",
+    body: {
+      shop_no: 1,
+      ...patch
+    }
+  });
+
+  const productPayload = await cafe24AdminGet("/products/" + productNo, env, {
+    shop_no: 1,
+    fields: "product_no,shipping_method,shipping_fee_by_product"
+  });
+  const product =
+    productPayload?.product ||
+    productPayload?.products?.[0] ||
+    productPayload?.resource ||
+    productPayload;
+
+  if (
+    Number(product?.product_no || 0) !== Number(productNo) ||
+    String(product?.shipping_method || "") !== "09" ||
+    String(product?.shipping_fee_by_product || "") !== "T"
+  ) {
+    throw new Error("강의 상품의 배송 없음 설정을 확인하지 못했습니다.");
+  }
+
+  const categoryPayload = await cafe24AdminGet("/categories/" + profile.categoryNo + "/products", env, {
+    shop_no: 1,
+    display_group: 1,
+    limit: 50000
+  });
+  const categoryProducts = Array.isArray(categoryPayload?.products) ? categoryPayload.products : [];
+  if (!categoryProducts.some((item) => Number(item?.product_no || 0) === Number(productNo))) {
+    throw new Error("강의 상품이 Cafe24 강의 분류에 배치되지 않았습니다.");
+  }
+
+  return profile;
+}
+
 async function createCafe24CourseProductById(courseId, env) {
   const course = await getAdminCourse(env, courseId);
   if (!course) throw new Error("강의를 찾을 수 없습니다.");
@@ -1716,6 +1760,8 @@ async function createCafe24CourseProductById(courseId, env) {
   if (!Number.isFinite(price) || price <= 0) throw new Error("판매가를 먼저 확정해 주세요.");
 
   const summary = String(course.summary || "").trim();
+  const fullDigitalPatch = digitalCafe24ProductPatch("course");
+  const { add_category_no: _categoryPatch, ...digitalShippingPatch } = fullDigitalPatch;
   const payload = await cafe24AdminRequest("/products", env, {
     method: "POST",
     body: {
@@ -1730,9 +1776,7 @@ async function createCafe24CourseProductById(courseId, env) {
       has_option: "F",
       summary_description: summary.slice(0, 255),
       description: summary,
-      shipping_fee_by_product: "T",
-      shipping_method: "09",
-      shipping_fee_type: "T",
+      ...digitalShippingPatch
     }
   });
 
@@ -1740,6 +1784,8 @@ async function createCafe24CourseProductById(courseId, env) {
   if (!Number.isInteger(productNo) || productNo <= 0) {
     throw new Error("Cafe24 상품번호를 응답에서 확인하지 못했습니다.");
   }
+
+  await ensureCafe24CourseDigitalProfile(productNo, env);
 
   const salesUrl = cafe24ProductDetailUrl(productNo);
   await env.COURSE_DB.prepare(
@@ -1766,6 +1812,8 @@ async function linkExistingCafe24CourseProduct(form, env) {
   const payload = await cafe24AdminGet("/products/" + productNo, env, { shop_no: 1 });
   const remote = payload?.product || payload?.products?.[0] || payload?.resource || payload;
   if (Number(remote?.product_no || 0) !== productNo) throw new Error("Cafe24 상품을 확인하지 못했습니다.");
+
+  await ensureCafe24CourseDigitalProfile(productNo, env);
 
   const remoteSelling = remote?.selling === "T";
   const initialSalesState = remoteSelling
@@ -1813,6 +1861,8 @@ async function updateCafe24CourseSales(form, env) {
     if (desiredState === "selling" && course.status !== "published") {
       throw new Error("정식 판매는 강의를 먼저 게시한 뒤 시작할 수 있습니다.");
     }
+
+    await ensureCafe24CourseDigitalProfile(productNo, env);
 
     // Never expose the product until member-only purchase policy has been applied and verified.
     await cafe24AdminRequest("/products/" + productNo, env, {
