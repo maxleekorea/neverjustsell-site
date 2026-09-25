@@ -9,6 +9,8 @@ import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus } from "./system-operations.js";
+
+const PRODUCTION_BUILD = "2026-09-25-auto-order-v2";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -150,6 +152,7 @@ export default {
           community_origins: [...allowedCommunityOrigins(env)],
           admin_scopes: CAFE24_ADMIN_SCOPES,
           route_owner: "production-dispatch-v3",
+          production_build: PRODUCTION_BUILD,
           program_schema: programSchema,
           system_operations: systemOperations
         });
