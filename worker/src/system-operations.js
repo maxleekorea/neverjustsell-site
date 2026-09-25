@@ -172,7 +172,7 @@ async function reconcileLatestPaymentE2EOrder(env, row) {
     member_id: memberId,
     course_entitlement: entitlement?.status || null,
     program_enrollment: enrollment?.status || null,
-    program_sync
+    program_sync: programSync
   };
 }
 
