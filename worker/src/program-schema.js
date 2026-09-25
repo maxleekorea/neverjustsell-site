@@ -645,6 +645,17 @@ SET status='pending',
 WHERE id='2026-09-25-open-payment-e2e-product-13';
 `;
 
+const MIGRATION_0032 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-reconcile-latest-payment-e2e-order',
+  'reconcile_latest_payment_e2e_order',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -706,6 +717,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0031);
     await markMigration(db, "0031_reopen_payment_e2e_product_without_group_lock.sql");
     applied.push("0031_reopen_payment_e2e_product_without_group_lock.sql");
+  }
+
+  if (!(await migrationApplied(db, "0032_reconcile_latest_payment_e2e_order.sql"))) {
+    await executeStatements(db, MIGRATION_0032);
+    await markMigration(db, "0032_reconcile_latest_payment_e2e_order.sql");
+    applied.push("0032_reconcile_latest_payment_e2e_order.sql");
   }
 
   const check = await db.prepare(
