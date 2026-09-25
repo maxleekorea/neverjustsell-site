@@ -678,6 +678,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0035 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-set-all-current-products-no-shipping',
+  'set_all_current_products_no_shipping',
+  'pending',
+  '{}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -757,6 +768,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0034);
     await markMigration(db, "0034_cleanup_cafe24_catalog_duplicates.sql");
     applied.push("0034_cleanup_cafe24_catalog_duplicates.sql");
+  }
+
+  if (!(await migrationApplied(db, "0035_set_all_current_products_no_shipping.sql"))) {
+    await executeStatements(db, MIGRATION_0035);
+    await markMigration(db, "0035_set_all_current_products_no_shipping.sql");
+    applied.push("0035_set_all_current_products_no_shipping.sql");
   }
 
   const check = await db.prepare(
