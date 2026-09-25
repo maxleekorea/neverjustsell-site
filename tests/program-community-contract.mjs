@@ -178,6 +178,11 @@ assert(systemOperations.includes("add_category_no"), "Cafe24 category product as
 assert(systemOperations.includes("attempt <= 3"), "Cafe24 category creation retry guard missing");
 assert(systemOperations.includes("AUTOMATION_DUPLICATE_CATEGORY_IDS"), "automation-created duplicate category cleanup missing");
 assert(systemOperations.includes("cleanup_cafe24_catalog_duplicates"), "one-time duplicate category cleanup operation missing");
+assert(programSchema.includes("0035_set_all_current_products_no_shipping.sql"), "runtime reconciler must apply current-product no-shipping migration");
+assert(systemOperations.includes("set_all_current_products_no_shipping"), "current-product no-shipping operation missing");
+assert(systemOperations.includes('shipping_method: "09"'), "no-shipping operation must use Cafe24 shipping method 09");
+assert(systemOperations.includes('shipping_fee_by_product: "T"'), "no-shipping operation must use individual product shipping mode");
+assert(production.includes("/system-check/shipping-status"), "shipping status route missing");
 assert(systemOperations.includes("contains_products"), "duplicate category cleanup must protect non-empty categories");
 assert(systemOperations.includes("/categories"), "Cafe24 category creation endpoint missing");
 assert(systemOperations.includes("product_13"), "payment E2E product category assignment missing");
