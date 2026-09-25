@@ -357,6 +357,15 @@ const productionWorker = await readFile(
 );
 assert(!productionWorker.includes("async scheduled"), "course Worker should not need a presale cron");
 
+const systemOperations = await readFile(
+  new URL("../worker/src/system-operations.js", import.meta.url),
+  "utf8"
+);
+assert(
+  systemOperations.includes('cancellationBody.refund_method_code = ["I"];'),
+  "Cafe24 non-PG cancellation refund_method_code must be sent as an array"
+);
+
 const wranglerConfig = await readFile(
   new URL("../worker/wrangler.jsonc", import.meta.url),
   "utf8"
