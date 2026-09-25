@@ -9,6 +9,7 @@ const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
 const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates";
 const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_shipping";
 const RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION = "reconcile_all_course_product_fulfillment";
+const HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION = "hide_digital_product_shipping_properties";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -21,6 +22,30 @@ function numericPrice(value) {
   if (!raw) return NaN;
   const n = Number(raw);
   return Number.isFinite(n) ? n : NaN;
+}
+
+function normalizeProductProperties(payload) {
+  return Array.isArray(payload?.properties)
+    ? payload.properties
+    : Array.isArray(payload?.property)
+      ? payload.property
+      : [];
+}
+
+function productPropertyName(property) {
+  const names = Array.isArray(property?.multishop_display_names)
+    ? property.multishop_display_names
+    : [];
+  const primary = names.find((item) => Number(item?.shop_no || 1) === 1) || names[0] || null;
+  return String(primary?.name || property?.name || "");
+}
+
+function isShippingProductProperty(property) {
+  const key = String(property?.key || "").toLowerCase();
+  const name = productPropertyName(property);
+  return key.startsWith("shipping") ||
+    key.includes("_shipping") ||
+    /배송|택배|송장/.test(name);
 }
 
 async function markRunning(db, id) {
@@ -289,6 +314,89 @@ export async function getAllCurrentProductsShippingStatus(env) {
   };
 }
 
+async function hideDigitalProductShippingProperties(env) {
+  const payload = await cafe24AdminGet("/products/properties", env, { shop_no: 1 });
+  const properties = normalizeProductProperties(payload);
+  if (!properties.length) throw new Error("Cafe24 product detail properties could not be retrieved");
+
+  const existingSnapshot = await env.COURSE_DB.prepare(
+    "SELECT snapshot_key FROM cafe24_setting_snapshots WHERE snapshot_key='products_properties_before_digital_shipping_hide' LIMIT 1"
+  ).first();
+
+  if (!existingSnapshot?.snapshot_key) {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO cafe24_setting_snapshots(snapshot_key,payload_json) VALUES (?,?)"
+    ).bind(
+      "products_properties_before_digital_shipping_hide",
+      JSON.stringify(payload)
+    ).run();
+  }
+
+  const targets = properties.filter(isShippingProductProperty);
+  if (!targets.length) {
+    throw new Error("No shipping-related Cafe24 product detail properties were found");
+  }
+
+  const updates = targets.map((property) => ({
+    key: String(property.key),
+    display: "F",
+    ...(property?.font_type ? { font_type: property.font_type } : {}),
+    ...(property?.font_size ? { font_size: property.font_size } : {}),
+    ...(property?.font_color ? { font_color: property.font_color } : {})
+  }));
+
+  await cafe24AdminRequest("/products/properties", env, {
+    method: "PUT",
+    body: {
+      shop_no: 1,
+      properties: updates
+    }
+  });
+
+  await sleep(800);
+  const verifyPayload = await cafe24AdminGet("/products/properties", env, { shop_no: 1 });
+  const verifyProperties = normalizeProductProperties(verifyPayload);
+  const verifyMap = new Map(
+    verifyProperties.map((property) => [String(property?.key || ""), property])
+  );
+
+  const stillVisible = updates
+    .map((update) => verifyMap.get(update.key))
+    .filter((property) => property && String(property?.display || "") !== "F")
+    .map((property) => String(property.key));
+
+  if (stillVisible.length) {
+    throw new Error(`Cafe24 shipping properties are still visible: ${stillVisible.join(",")}`);
+  }
+
+  return {
+    operation: HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION,
+    hidden_count: updates.length,
+    hidden_keys: updates.map((item) => item.key),
+    snapshot_saved: !existingSnapshot?.snapshot_key
+  };
+}
+
+export async function getDigitalProductPropertyVisibilityStatus(env) {
+  const payload = await cafe24AdminGet("/products/properties", env, { shop_no: 1 });
+  const properties = normalizeProductProperties(payload);
+  const shippingProperties = properties.filter(isShippingProductProperty).map((property) => ({
+    key: String(property?.key || ""),
+    name: productPropertyName(property),
+    display: String(property?.display || "")
+  }));
+
+  return {
+    ok: properties.length > 0,
+    property_count: properties.length,
+    shipping_property_count: shippingProperties.length,
+    all_shipping_properties_hidden:
+      shippingProperties.length > 0 &&
+      shippingProperties.every((property) => property.display === "F"),
+    shipping_properties: shippingProperties
+  };
+}
+
 async function reconcileAllCourseProductFulfillment(env) {
   const result = await env.COURSE_DB.prepare(
     "SELECT id,title,cafe24_product_no FROM courses WHERE cafe24_product_no IS NOT NULL AND cafe24_product_no>0 ORDER BY id"
@@ -435,7 +543,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -452,7 +560,9 @@ export async function runPendingSystemOperations(env) {
               ? { operation: CLEANUP_CATALOG_DUPLICATES_OPERATION, ...(await cleanupAutomationDuplicateCategories(env)) }
               : row.operation_type === SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION
                 ? await setAllCurrentProductsNoShipping(env)
-                : await reconcileAllCourseProductFulfillment(env);
+                : row.operation_type === RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION
+                  ? await reconcileAllCourseProductFulfillment(env)
+                  : await hideDigitalProductShippingProperties(env);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
