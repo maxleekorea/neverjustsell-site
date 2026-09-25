@@ -30,6 +30,16 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const dialogs = [];
+const checkoutRequests = [];
+const popupPages = [];
+page.on("request", (request) => {
+  if (/\/exec\/front\/order\/basket|\/order\/orderform/i.test(request.url())) {
+    checkoutRequests.push({ method: request.method(), url: request.url() });
+  }
+});
+context.on("page", (popup) => {
+  if (popup !== page) popupPages.push(popup);
+});
 page.on("dialog", async (dialog) => {
   dialogs.push({ type: dialog.type(), message: dialog.message() });
   await dialog.accept().catch(() => {});
@@ -84,9 +94,19 @@ try {
     if (dialogs.length) {
       console.log(JSON.stringify({ phase: "checkout_dialogs", dialogs }, null, 2));
     }
+    if (checkoutRequests.length) {
+      console.log(JSON.stringify({ phase: "checkout_requests", requests: checkoutRequests }, null, 2));
+    }
 
-    const checkoutUrl = page.url();
-    const checkoutText = await page.locator("body").innerText().catch(() => "");
+    let checkoutPage = page;
+    if (popupPages.length) {
+      checkoutPage = popupPages[popupPages.length - 1];
+      await checkoutPage.waitForLoadState("domcontentloaded").catch(() => {});
+      console.log(JSON.stringify({ phase: "checkout_popup", url: checkoutPage.url() }, null, 2));
+    }
+
+    const checkoutUrl = checkoutPage.url();
+    const checkoutText = await checkoutPage.locator("body").innerText().catch(() => "");
     const isOrderForm = /\/order\//i.test(checkoutUrl) || /주문서|주문결제|결제하기/.test(checkoutText);
     const isLogin = /\/member\/login|로그인/.test(checkoutUrl) || /회원 로그인/.test(checkoutText);
 
