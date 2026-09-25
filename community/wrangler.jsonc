@@ -25,7 +25,8 @@
   "services": [
     {
       "binding": "AUTH_BRIDGE",
-      "service": "neverjustsell-course-access"
+      "service": "neverjustsell-course-access",
+      "entrypoint": "CommunityAuthRpc"
     }
   ],
   "vars": {
