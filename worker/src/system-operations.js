@@ -239,6 +239,41 @@ async function paymentE2EOrdersForDate(env, date) {
   return Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
 }
 
+function normalizeOrder(payload) {
+  return payload?.order || payload?.orders?.[0] || payload?.resource || payload || {};
+}
+
+async function paymentE2ERefundBank(env, orderId) {
+  const detailPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId), env, {
+    shop_no: 1,
+    embed: "buyer,refunds,cancellation"
+  });
+  const order = normalizeOrder(detailPayload);
+  const candidates = [
+    order,
+    order?.buyer,
+    order?.refunds,
+    Array.isArray(order?.refunds) ? order.refunds[0] : null,
+    order?.cancellation,
+    Array.isArray(order?.cancellation) ? order.cancellation[0] : null
+  ].filter(Boolean);
+
+  const pick = (key) => {
+    for (const candidate of candidates) {
+      const value = String(candidate?.[key] || "").trim();
+      if (value) return value;
+    }
+    return "";
+  };
+
+  return {
+    bankCode: pick("refund_bank_code"),
+    bankName: pick("refund_bank_name"),
+    accountNo: pick("refund_bank_account_no"),
+    accountHolder: pick("refund_bank_account_holder")
+  };
+}
+
 const PAYMENT_E2E_PG_CANCEL_METHODS = new Set(["card", "tcash", "icash", "cell", "cvs"]);
 
 function paymentE2EPurchaseMeta(purchase) {
@@ -341,10 +376,17 @@ async function cancelPaymentE2EOrder(env, row) {
       reason: "NEVER JUST SELL 결제 E2E 취소·환불 검증",
       items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
     };
-    // For non-PG payments such as bank deposit, do not invent a refund method
-    // or bank account. Cafe24 can create the cancellation without
-    // refund_method_code and determine the applicable refund workflow from
-    // the order's payment state.
+    if (!requestPaymentGatewayCancel) {
+      const refundBank = await paymentE2ERefundBank(env, meta.orderId);
+      if (!refundBank.bankCode || !refundBank.accountNo || !refundBank.accountHolder) {
+        throw new Error("Cafe24 cash refund requires the buyer refund account; no complete refund account is stored on this order");
+      }
+      cancellationBody.refund_method_code = ["T"];
+      cancellationBody.refund_bank_code = refundBank.bankCode;
+      if (refundBank.bankName) cancellationBody.refund_bank_name = refundBank.bankName;
+      cancellationBody.refund_bank_account_no = refundBank.accountNo;
+      cancellationBody.refund_bank_account_holder = refundBank.accountHolder;
+    }
     await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
       method: "POST",
       body: cancellationBody
