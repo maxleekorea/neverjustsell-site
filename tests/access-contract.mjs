@@ -30,6 +30,12 @@ const canceledItemOrder = {
   items: [{ product_no: 13, order_status: "C34" }]
 };
 
+const customerCancelRequestedOrder = {
+  paid: "T",
+  canceled: "F",
+  items: [{ product_no: 13, order_status: "C00" }]
+};
+
 const unrelatedPaidOrder = {
   paid: "T",
   canceled: "F",
@@ -41,9 +47,11 @@ assert(!isItemRevoked(paidCourseOrder, paidCourseOrder.items[0]), "normal paid i
 assert(hasValidCourseItem(paidCourseOrder, 13), "paid active course item must grant course access");
 assert(!hasValidCourseItem(refundedCourseOrder, 13), "refunded course must not grant access");
 assert(!hasValidCourseItem(canceledItemOrder, 13), "cancelled course item must not grant access");
+assert(!hasValidCourseItem(customerCancelRequestedOrder, 13), "customer cancellation request must suspend course access");
 assert(!hasValidCourseItem(unrelatedPaidOrder, 13), "other product purchase must not grant course access");
 assert(findValidCoursePurchase([paidCourseOrder], 13)?.order === paidCourseOrder, "valid purchase fact must be identifiable");
 assert(findRevokedCoursePurchase([canceledItemOrder], 13)?.order === canceledItemOrder, "revoked purchase fact must be identifiable");
+assert(findRevokedCoursePurchase([customerCancelRequestedOrder], 13)?.order === customerCancelRequestedOrder, "customer cancellation request must be identifiable as revoked access state");
 
 const valid = getValidPaidProductNos(
   [paidCourseOrder, unrelatedPaidOrder, canceledItemOrder],
