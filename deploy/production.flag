@@ -19,3 +19,4 @@ reason=rerun-payment-e2e-withdrawal-after-source-pin
 reason=accept-payment-e2e-customer-cancellation
 reason=inspect-customer-refund-item-data
 reason=separate-cancellation-acceptance-from-refund-processing
+reason=reassert-separated-refund-processing
