@@ -30,6 +30,13 @@ jobs:
       - name: Deploy course Worker
         working-directory: worker
         run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Inspect payment E2E product before reconciliation
+        run: |
+          node -e '
+          const r=await fetch("https://classroom.neverjustsell.com/system-check/payment-e2e/status");
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          '
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
