@@ -3,7 +3,7 @@ import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
 import { isPaymentConfirmed, isItemRevoked } from "./access.js";
 import { COMMERCE_ORIGIN, CAFE24_ADMIN_SCOPES } from "./config.js";
 import { getProgramCommunityProjection } from "./program-access.js";
-import { digitalCafe24ProductPatch, fulfillmentProfileForProductType } from "./fulfillment.js";
+import { digitalCafe24ProductPatch, fulfillmentProfileForProductType, digitalProductDescriptionHtml, hasDigitalProductUx } from "./fulfillment.js";
 
 const ADMIN_COOKIE = "njs_course_admin";
 const DEFAULT_PAID_ACCESS_DAYS = 180;
@@ -1721,7 +1721,7 @@ async function ensureCafe24CourseDigitalProfile(productNo, env) {
 
   const productPayload = await cafe24AdminGet("/products/" + productNo, env, {
     shop_no: 1,
-    fields: "product_no,shipping_method,shipping_fee_by_product"
+    fields: "product_no,description,mobile_description,separated_mobile_description,shipping_method,shipping_fee_by_product"
   });
   const product =
     productPayload?.product ||
@@ -1735,6 +1735,35 @@ async function ensureCafe24CourseDigitalProfile(productNo, env) {
     String(product?.shipping_fee_by_product || "") !== "T"
   ) {
     throw new Error("강의 상품의 배송 없음 설정을 확인하지 못했습니다.");
+  }
+
+  if (!hasDigitalProductUx(product?.description)) {
+    const description = digitalProductDescriptionHtml(product?.description || "");
+    const body = {
+      shop_no: 1,
+      description
+    };
+    if (String(product?.separated_mobile_description || "") === "T") {
+      body.mobile_description = digitalProductDescriptionHtml(product?.mobile_description || "");
+    }
+    await cafe24AdminRequest("/products/" + productNo, env, {
+      method: "PUT",
+      body
+    });
+
+    const uxVerifyPayload = await cafe24AdminGet("/products/" + productNo, env, {
+      shop_no: 1,
+      fields: "product_no,description"
+    });
+    const uxVerify =
+      uxVerifyPayload?.product ||
+      uxVerifyPayload?.products?.[0] ||
+      uxVerifyPayload?.resource ||
+      uxVerifyPayload;
+
+    if (!hasDigitalProductUx(uxVerify?.description)) {
+      throw new Error("강의 상품의 디지털 상세 UX 적용을 확인하지 못했습니다.");
+    }
   }
 
   const categoryPayload = await cafe24AdminGet("/categories/" + profile.categoryNo + "/products", env, {
@@ -1775,7 +1804,7 @@ async function createCafe24CourseProductById(courseId, env) {
       supply_price: Math.trunc(price),
       has_option: "F",
       summary_description: summary.slice(0, 255),
-      description: summary,
+      description: digitalProductDescriptionHtml(summary),
       ...digitalShippingPatch
     }
   });
