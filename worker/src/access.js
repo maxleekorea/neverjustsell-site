@@ -550,3 +550,24 @@ export async function getAccessiblePaidProductNos(request, env, productNos) {
 
   return { authenticated: true, productNos: accessible };
 }
+
+
+export async function syncPaidCourseEntitlementForPurchase(env, memberId, productNo, purchase) {
+  const courseId = await courseIdForProduct(env, productNo);
+  if (!courseId) throw new Error("paid course mapping not found for product");
+  await persistEntitlement(env, memberId, courseId, productNo, purchase, true);
+  return env.COURSE_DB.prepare(
+    "SELECT member_id,course_id,product_no,status,source_order_id,source_order_item_code,purchase_price_krw,purchased_at,access_starts_at,access_expires_at,updated_at " +
+    "FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
+}
+
+export async function revokePaidCourseEntitlementForPurchase(env, memberId, productNo, purchase) {
+  const courseId = await courseIdForProduct(env, productNo);
+  if (!courseId) throw new Error("paid course mapping not found for product");
+  await persistEntitlement(env, memberId, courseId, productNo, purchase, false);
+  return env.COURSE_DB.prepare(
+    "SELECT member_id,course_id,product_no,status,source_order_id,source_order_item_code,revoked_at,updated_at " +
+    "FROM course_entitlements WHERE member_id=? AND course_id=? LIMIT 1"
+  ).bind(memberId, courseId).first();
+}
