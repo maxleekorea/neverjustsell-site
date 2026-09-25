@@ -117,3 +117,52 @@ export function classifyFulfillmentCategories(categoryNos) {
 
   return { ok: true, reason: "classified", profile: profiles[0] };
 }
+
+
+export const DIGITAL_PRODUCT_UX_MARKER = "njs-digital-product-ux-v1";
+
+export function digitalProductDescriptionHtml(existingDescription = "") {
+  const source = String(existingDescription || "");
+  if (source.includes(DIGITAL_PRODUCT_UX_MARKER)) return source;
+
+  const digitalUx = `
+<style id="${DIGITAL_PRODUCT_UX_MARKER}">
+.headingArea .delivery,
+.regularDelivery,
+.detail_tab .title_detail li:last-child,
+#prdInfo,
+#guide {
+  display: none !important;
+}
+.njs-digital-access-guide {
+  margin: 24px 0 32px;
+  padding: 18px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafafa;
+  color: #18181b;
+  font-family: Arial, "Noto Sans KR", sans-serif;
+  line-height: 1.65;
+}
+.njs-digital-access-guide strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 15px;
+}
+.njs-digital-access-guide p {
+  margin: 0;
+  font-size: 14px;
+  color: #52525b;
+}
+</style>
+<div class="njs-digital-access-guide">
+  <strong>결제 후 바로 이용할 수 있습니다.</strong>
+  <p>구매한 콘텐츠와 참여 중인 프로그램은 NEVER JUST SELL의 내 공간에서 확인합니다.</p>
+</div>`.trim();
+
+  return `${digitalUx}\n${source}`;
+}
+
+export function hasDigitalProductUx(description) {
+  return String(description || "").includes(DIGITAL_PRODUCT_UX_MARKER);
+}
