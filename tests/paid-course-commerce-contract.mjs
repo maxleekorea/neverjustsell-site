@@ -362,8 +362,8 @@ const systemOperations = await readFile(
   "utf8"
 );
 assert(
-  systemOperations.includes('cancellationBody.refund_method_code = ["I"];'),
-  "Cafe24 non-PG cancellation refund_method_code must be sent as an array"
+  !systemOperations.includes("cancellationBody.refund_method_code"),
+  "Cafe24 non-PG cancellation must not invent a refund method without refund account data"
 );
 
 const wranglerConfig = await readFile(
