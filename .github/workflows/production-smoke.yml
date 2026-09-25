@@ -56,6 +56,9 @@ jobs:
       - name: Verify current production routes
         if: github.event_name != 'pull_request'
         run: node tests/live-smoke.mjs
+      - name: Audit Cafe24 digital product UX
+        if: github.event_name != 'pull_request'
+        run: node tests/cafe24-digital-ux-audit.mjs
       - name: Crawl launch public site
         if: github.event_name != 'pull_request'
         run: node tests/public-site-crawl.mjs
