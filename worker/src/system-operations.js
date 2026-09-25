@@ -176,6 +176,53 @@ async function reconcileLatestPaymentE2EOrder(env, row) {
   };
 }
 
+export async function getPaymentE2EFlowStatus(env) {
+  const date = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const orderPayload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    start_date: date,
+    end_date: date,
+    date_type: "order_date",
+    product_no: 13,
+    embed: "items",
+    limit: 100,
+    offset: 0
+  });
+  const orders = Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
+  const purchase = findValidCoursePurchase(orders, 13);
+  if (!purchase) {
+    return {
+      ok: true,
+      order_detected: false,
+      course_entitlement: null,
+      program_enrollment: null
+    };
+  }
+
+  const orderId = String(purchase?.order?.order_id || "");
+  const memberId = String(purchase?.order?.member_id || "");
+  const [entitlement, enrollment] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id FROM course_entitlements WHERE course_id='system-check-paid-course' AND source_order_id=? ORDER BY updated_at DESC LIMIT 1"
+    ).bind(orderId).first(),
+    env.COURSE_DB.prepare(
+      "SELECT status,member_id FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND source_order_id=? ORDER BY updated_at DESC LIMIT 1"
+    ).bind(orderId).first()
+  ]);
+
+  return {
+    ok: true,
+    order_detected: true,
+    paid_member_order: Boolean(memberId),
+    course_entitlement: entitlement?.status || null,
+    program_enrollment: enrollment?.status || null,
+    identity_consistent:
+      Boolean(memberId) &&
+      String(entitlement?.member_id || "") === memberId &&
+      String(enrollment?.member_id || "") === memberId
+  };
+}
+
 export async function getPaymentE2EProductStatus(env) {
   const payload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
   const product = normalizeProduct(payload);
