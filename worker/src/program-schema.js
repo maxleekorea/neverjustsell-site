@@ -781,6 +781,29 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0042 = String.raw`
+UPDATE system_operations
+SET
+  status='completed',
+  completed_at=COALESCE(completed_at, CURRENT_TIMESTAMP),
+  last_error='superseded_by_customer_initiated_refund_flow',
+  updated_at=CURRENT_TIMESTAMP
+WHERE id IN (
+  '2026-09-25-cancel-payment-e2e-order',
+  '2026-09-25-retry-final-payment-e2e-consistency'
+)
+AND status IN ('pending','failed','running');
+
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-configure-customer-claim-settings',
+  'configure_customer_claim_settings',
+  'pending',
+  '{"period_days":7}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -902,6 +925,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0041);
     await markMigration(db, "0041_retry_final_payment_e2e_consistency.sql");
     applied.push("0041_retry_final_payment_e2e_consistency.sql");
+  }
+
+  if (!(await migrationApplied(db, "0042_configure_customer_claim_settings.sql"))) {
+    await executeStatements(db, MIGRATION_0042);
+    await markMigration(db, "0042_configure_customer_claim_settings.sql");
+    applied.push("0042_configure_customer_claim_settings.sql");
   }
 
   const check = await db.prepare(
