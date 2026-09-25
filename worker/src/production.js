@@ -8,7 +8,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
-import { runPendingSystemOperations } from "./system-operations.js";
+import { runPendingSystemOperations, getPaymentE2EProductStatus } from "./system-operations.js";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -119,6 +119,19 @@ export default {
 
     if (url.pathname === "/program-host" || url.pathname.startsWith("/program-host/")) {
       return programHostApp.fetch(request, env, ctx);
+    }
+
+    if (url.pathname === "/system-check/payment-e2e/status" && request.method === "GET") {
+      try {
+        const product = await getPaymentE2EProductStatus(env);
+        return json(product, { status: product.ok ? 200 : 503 });
+      } catch (error) {
+        return json({
+          ok: false,
+          product_no: 13,
+          error: String(error?.message || error)
+        }, { status: 503 });
+      }
     }
 
     if (url.pathname === "/migration-health") {
