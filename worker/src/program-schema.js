@@ -748,6 +748,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0039 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-25-apply-digital-product-detail-ux',
+  'apply_digital_product_detail_ux',
+  'pending',
+  '{}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -851,6 +862,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0038);
     await markMigration(db, "0038_hide_digital_product_shipping_properties.sql");
     applied.push("0038_hide_digital_product_shipping_properties.sql");
+  }
+
+  if (!(await migrationApplied(db, "0039_apply_digital_product_detail_ux.sql"))) {
+    await executeStatements(db, MIGRATION_0039);
+    await markMigration(db, "0039_apply_digital_product_detail_ux.sql");
+    applied.push("0039_apply_digital_product_detail_ux.sql");
   }
 
   const check = await db.prepare(
