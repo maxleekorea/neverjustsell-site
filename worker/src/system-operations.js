@@ -254,17 +254,30 @@ async function setAllCurrentProductsNoShipping(env) {
 }
 
 export async function getAllCurrentProductsShippingStatus(env) {
-  const products = await listAllCurrentProducts(env);
-  const normalized = products.map((product) => ({
-    product_no: Number(product?.product_no || 0),
-    product_name: String(product?.product_name || ""),
-    shipping_method: String(product?.shipping_method || ""),
-    shipping_fee_by_product: String(product?.shipping_fee_by_product || ""),
-    shipping_fee_type: String(product?.shipping_fee_type || ""),
-    no_shipping:
-      String(product?.shipping_method || "") === "09" &&
-      String(product?.shipping_fee_by_product || "") === "T"
-  }));
+  const listed = await listAllCurrentProducts(env);
+  const normalized = [];
+
+  for (const item of listed) {
+    const productNo = Number(item?.product_no || 0);
+    if (!productNo) continue;
+
+    const detailPayload = await cafe24AdminGet(`/products/${productNo}`, env, {
+      shop_no: 1,
+      fields: "product_no,product_name,shipping_method,shipping_fee_by_product,shipping_fee_type"
+    });
+    const product = normalizeProduct(detailPayload);
+
+    normalized.push({
+      product_no: productNo,
+      product_name: String(product?.product_name || item?.product_name || ""),
+      shipping_method: String(product?.shipping_method || ""),
+      shipping_fee_by_product: String(product?.shipping_fee_by_product || ""),
+      shipping_fee_type: String(product?.shipping_fee_type || ""),
+      no_shipping:
+        String(product?.shipping_method || "") === "09" &&
+        String(product?.shipping_fee_by_product || "") === "T"
+    });
+  }
 
   return {
     ok: true,
