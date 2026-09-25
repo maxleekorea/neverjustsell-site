@@ -36,7 +36,7 @@ jobs:
           const r=await fetch("https://classroom.neverjustsell.com/migration-health");
           const j=await r.json().catch(()=>null);
           console.log(JSON.stringify(j,null,2));
-          if(!r.ok || !j?.ok || !j?.program_schema?.ok) process.exit(1);
+          if(!r.ok || !j?.ok || !j?.program_schema?.ok || !j?.system_operations?.ok || Number(j?.system_operations?.pending_count || 0) !== 0) process.exit(1);
           '
 
   deploy-community:
