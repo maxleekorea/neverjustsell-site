@@ -77,6 +77,13 @@ for (const expected of [
 }
 if (body.includes("workers.dev")) throw new Error("production-facing homepage contains workers.dev");
 
+if (!body.includes('href="https://classroom.neverjustsell.com/my-space">내 공간</a>')) {
+  throw new Error("primary navigation must expose My Space");
+}
+if (body.includes(">장바구니</a>")) {
+  throw new Error("digital-first primary navigation must not expose cart");
+}
+
 response = await fetchPath("/book");
 body = await response.text();
 if (!body.includes('"@type":"Book"')) throw new Error("book JSON-LD missing");
