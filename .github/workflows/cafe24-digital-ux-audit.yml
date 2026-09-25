@@ -1,0 +1,22 @@
+name: Cafe24 digital UX audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "audit/cafe24-digital-ux.flag"
+      - "tests/cafe24-digital-ux-audit.mjs"
+      - ".github/workflows/cafe24-digital-ux-audit.yml"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Audit visible Cafe24 digital product text
+        run: node tests/cafe24-digital-ux-audit.mjs
