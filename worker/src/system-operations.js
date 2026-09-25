@@ -25,11 +25,26 @@ function numericPrice(value) {
 }
 
 function normalizeProductProperties(payload) {
-  return Array.isArray(payload?.properties)
-    ? payload.properties
-    : Array.isArray(payload?.property)
-      ? payload.property
-      : [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.properties)) return payload.properties;
+  if (Array.isArray(payload?.property)) return payload.property;
+  if (Array.isArray(payload?.properties?.property)) return payload.properties.property;
+
+  const candidates = [];
+  const visit = (value, depth = 0) => {
+    if (depth > 3 || value == null) return;
+    if (Array.isArray(value)) {
+      if (value.some((item) => item && typeof item === "object" && ("key" in item || "display" in item))) {
+        candidates.push(value);
+      }
+      return;
+    }
+    if (typeof value === "object") {
+      for (const child of Object.values(value)) visit(child, depth + 1);
+    }
+  };
+  visit(payload);
+  return candidates.sort((a, b) => b.length - a.length)[0] || [];
 }
 
 function productPropertyName(property) {
