@@ -211,7 +211,13 @@ async function setAllCurrentProductsNoShipping(env) {
         shop_no: 1,
         shipping_fee_by_product: "T",
         shipping_method: "09",
-        shipping_fee_type: "T"
+        shipping_fee_type: "T",
+        shipping_scope: "A",
+        shipping_period: {
+          minimum: 1,
+          maximum: 7
+        },
+        prepaid_shipping_fee: "P"
       }
     });
 
