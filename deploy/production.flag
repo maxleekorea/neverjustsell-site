@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T15:18:00+09:00
-reason=cleanup-automation-created-cafe24-category-duplicates
-expected_head=275e4be12cbeca2e3309108f2e4c21a32b571be4
+deploy_at=2026-09-25T15:24:00+09:00
+reason=set-all-current-products-no-shipping
+expected_head=a96f4eec25f1cdb09fa46c5cecbe2d3ec3ab3222
