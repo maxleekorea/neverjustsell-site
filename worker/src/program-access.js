@@ -8,6 +8,8 @@ const ORDER_WINDOW_DAYS = 89;
 const ORDER_PAGE_LIMIT = 1000;
 const ORDER_MAX_OFFSET = 15000;
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const PAYMENT_E2E_RUN_ID = "system-check-payment-program-run";
+const PAYMENT_E2E_ORDER_ID = "20260925-0000013";
 
 function isoDate(date) {
   return date.toISOString().slice(0, 10);
@@ -129,13 +131,39 @@ export async function reconcilePurchasedProgramEnrollments(env, memberId) {
 
   for (const run of runs) {
     const existing = await enrollmentRow(env, run.run_id, memberId);
-    const valid = findValidCoursePurchase(orders, Number(run.cafe24_product_no));
+    const productNo = Number(run.cafe24_product_no);
+
+    // The internal payment E2E Program is permanently tied to one dedicated
+    // source order. Do not let unrelated historical purchases of product #13
+    // reactivate this fixture after that source order enters cancellation.
+    if (String(run.run_id) === PAYMENT_E2E_RUN_ID) {
+      const sourceOrder = orders.find(
+        (order) => String(order?.order_id || "") === PAYMENT_E2E_ORDER_ID
+      ) || null;
+      const sourceValid = sourceOrder
+        ? findValidCoursePurchase([sourceOrder], productNo)
+        : null;
+      if (sourceValid) {
+        await activatePurchaseEnrollment(env, run, memberId, sourceValid, existing);
+        continue;
+      }
+
+      const sourceRevoked = sourceOrder
+        ? findRevokedCoursePurchase([sourceOrder], productNo)
+        : null;
+      if (sourceRevoked || existing?.source === "purchase") {
+        await revokePurchaseEnrollment(env, run.run_id, memberId, sourceRevoked, existing);
+      }
+      continue;
+    }
+
+    const valid = findValidCoursePurchase(orders, productNo);
     if (valid) {
       await activatePurchaseEnrollment(env, run, memberId, valid, existing);
       continue;
     }
 
-    const revoked = findRevokedCoursePurchase(orders, Number(run.cafe24_product_no));
+    const revoked = findRevokedCoursePurchase(orders, productNo);
     if (revoked || existing?.source === "purchase") {
       await revokePurchaseEnrollment(env, run.run_id, memberId, revoked, existing);
     }
