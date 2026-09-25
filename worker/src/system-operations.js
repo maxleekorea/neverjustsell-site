@@ -342,7 +342,7 @@ async function cancelPaymentE2EOrder(env, row) {
       items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
     };
     if (!requestPaymentGatewayCancel) {
-      cancellationBody.refund_method_code = "I";
+      cancellationBody.refund_method_code = ["I"];
     }
     await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
       method: "POST",
