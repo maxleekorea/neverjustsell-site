@@ -20,6 +20,18 @@ function visibleText(html) {
     .trim();
 }
 
+function rawContexts(html, keyword, radius = 700) {
+  const out = [];
+  let from = 0;
+  while (out.length < 6) {
+    const index = html.indexOf(keyword, from);
+    if (index < 0) break;
+    out.push(html.slice(Math.max(0, index - radius), Math.min(html.length, index + keyword.length + radius)));
+    from = index + keyword.length;
+  }
+  return out;
+}
+
 function contexts(text, keyword, radius = 90) {
   const out = [];
   let from = 0;
@@ -56,7 +68,13 @@ for (const [productNo, label] of PRODUCTS) {
     final_url: response.url,
     visible_text_length: text.length,
     shipping_terms_detected: Object.keys(detected),
-    contexts: detected
+    contexts: detected,
+    raw_markup: productNo === 13 ? {
+      overseas_shipping_label: rawContexts(html, "해외배송 가능상품"),
+      shipping_tab: rawContexts(html, "배송/교환/환불 안내"),
+      delivery_info: rawContexts(html, "DELIVERY INFO"),
+      recurring_shipping: rawContexts(html, "정기배송")
+    } : undefined
   }, null, 2));
 
   if (productNo === 13 && !response.ok) hardFailure = true;
