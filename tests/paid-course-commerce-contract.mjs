@@ -374,3 +374,5 @@ const wranglerConfig = await readFile(
 assert(!wranglerConfig.includes('"crons"'), "course Worker should not carry presale cron triggers");
 
 console.log("PASS: paid course commerce and entitlement scaffold");
+
+assert(systemOperations.includes('refund_processing_setting: "D"') || systemOperations.includes('refund_processing_setting === "D"'), "customer cancellation acceptance must be separated from refund processing");
