@@ -113,6 +113,7 @@ function pageData(pathname) {
 
 function nav(env) {
   const classroom = `${authOrigin(env)}/classroom`;
+  const mySpace = `${authOrigin(env)}/my-space`;
   return `
     <header class="njs-header">
       <div class="njs-shell njs-header-inner">
@@ -131,14 +132,12 @@ function nav(env) {
           <a href="/community">커뮤니티</a>
           <span class="njs-mobile-services" aria-label="회원 메뉴">
             <a data-njs-auth-link href="/login">로그인</a>
-            <a href="${escapeHtml(classroom)}">내 강의실</a>
-            <a href="/cart">장바구니</a>
+            <a href="${escapeHtml(mySpace)}">내 공간</a>
           </span>
         </nav>
         <div class="njs-utility">
           <a data-njs-auth-link href="/login">로그인</a>
-          <a href="${escapeHtml(classroom)}">내 강의실</a>
-          <a href="/cart">장바구니</a>
+          <a href="${escapeHtml(mySpace)}">내 공간</a>
         </div>
       </div>
     </header>`;
@@ -166,6 +165,7 @@ function footer(env) {
 
 function homeBody(env) {
   const classroom = `${authOrigin(env)}/classroom`;
+  const mySpace = `${authOrigin(env)}/my-space`;
   const freeLesson = `${authOrigin(env)}/courses/online-commerce-basics`;
   return `
     <main id="main-content">
@@ -229,7 +229,7 @@ function homeBody(env) {
             <article><span>02</span><h3>검색 · 키워드 · 롱테일</h3><p>검색 노출을 세팅값이 아니라 고객의 탐색 행동과 수요의 관점에서 봅니다.</p></article>
             <article><span>03</span><h3>마케팅 · 브랜드 · AI</h3><p>단기 판매와 장기 경쟁력을 함께 만드는 방법을 실제 사업의 관점에서 다룹니다.</p></article>
           </div>
-          <div class="njs-section-actions"><a class="njs-btn njs-btn-dark" href="/class">강의 안내</a><a class="njs-btn njs-btn-line" href="${escapeHtml(classroom)}">내 강의실</a></div>
+          <div class="njs-section-actions"><a class="njs-btn njs-btn-dark" href="/class">강의 안내</a><a class="njs-btn njs-btn-line" href="${escapeHtml(mySpace)}">내 공간</a></div>
         </div>
       </section>
 
