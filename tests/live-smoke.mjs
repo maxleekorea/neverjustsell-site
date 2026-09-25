@@ -10,7 +10,7 @@ async function request(url, init = {}) {
   return { response, body };
 }
 
-async function requestUntil(url, predicate, { attempts = 30, delayMs = 10000 } = {}) {
+async function requestUntil(url, predicate, { attempts = 12, delayMs = 5000 } = {}) {
   let last = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     last = await request(url);
@@ -61,7 +61,7 @@ expect(
 
 let launchHealth = null;
 let launchHealthStatus = null;
-for (let attempt = 1; attempt <= 30; attempt += 1) {
+for (let attempt = 1; attempt <= 12; attempt += 1) {
   r = await request("https://www.neverjustsell.com/health");
   launchHealthStatus = r.response.status;
   if (r.response.status === 200) {
@@ -80,7 +80,7 @@ for (let attempt = 1; attempt <= 30; attempt += 1) {
       // Cloudflare may still be serving the prior deployment during cutover.
     }
   }
-  if (attempt < 30) await new Promise((resolve) => setTimeout(resolve, 10000));
+  if (attempt < 12) await new Promise((resolve) => setTimeout(resolve, 5000));
 }
 expect(
   "public-site health reports canonical launch services",
