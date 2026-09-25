@@ -24,3 +24,4 @@ reason=advance-payment-e2e-to-awaiting-refund
 reason=fix-awaiting-refund-undo-payload
 reason=inspect-refund-record-after-c10
 reason=begin-cafe24-native-refund-pending-workflow
+reason=reuse-cafe24-cancellation-refund-account-data

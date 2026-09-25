@@ -248,6 +248,29 @@ function normalizeOrder(payload) {
   return payload?.order || payload?.orders?.[0] || payload?.resource || payload || {};
 }
 
+function findStringByKeyDeep(value, key, depth = 0) {
+  if (depth > 7 || value == null) return "";
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findStringByKeyDeep(item, key, depth + 1);
+      if (found) return found;
+    }
+    return "";
+  }
+  if (typeof value !== "object") return "";
+  if (Object.prototype.hasOwnProperty.call(value, key)) {
+    const raw = value[key];
+    if (raw !== undefined && raw !== null && String(raw).trim() !== "") {
+      return String(raw).trim();
+    }
+  }
+  for (const child of Object.values(value)) {
+    const found = findStringByKeyDeep(child, key, depth + 1);
+    if (found) return found;
+  }
+  return "";
+}
+
 async function paymentE2ERefundBank(env, orderId) {
   const detailPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId), env, {
     shop_no: 1,
@@ -653,25 +676,68 @@ async function beginPaymentE2ECustomerRefund(env, row) {
   const quantity = Number(item?.quantity ?? item?.order_quantity ?? 1);
   if (!itemCode) throw new Error("Dedicated payment E2E order item code is missing");
 
-  // Use Cafe24's native cancellation processing state. With refund processing
-  // separated (D), this creates the refund workflow without falsely marking a
-  // bank-deposit refund as paid before the actual remittance is made.
+  const itemPayload = await cafe24AdminGet(
+    "/orders/" + encodeURIComponent(expectedOrderId) + "/items",
+    env,
+    { shop_no: 1 }
+  );
+  const detailedItems = Array.isArray(itemPayload?.items) ? itemPayload.items : [];
+  const detailedItem = detailedItems.find(
+    (candidate) => String(candidate?.order_item_code || "") === itemCode
+  ) || detailedItems.find(
+    (candidate) => Number(candidate?.product_no || 0) === 13
+  ) || null;
+  const claimCode = String(detailedItem?.claim_code || item?.claim_code || "").trim();
+  if (!claimCode) throw new Error("Cafe24 cancellation claim code is missing before refund processing");
+
+  const cancellationDetail = await cafe24AdminGet(
+    "/cancellation/" + encodeURIComponent(claimCode),
+    env,
+    { shop_no: 1 }
+  );
+  const storedBank = await paymentE2ERefundBank(env, expectedOrderId);
+  const claimBankCode = findStringByKeyDeep(cancellationDetail, "refund_bank_code");
+  const claimBankName = findStringByKeyDeep(cancellationDetail, "refund_bank_name");
+  const claimAccountNo = findStringByKeyDeep(cancellationDetail, "refund_bank_account_no");
+  const claimAccountHolder = findStringByKeyDeep(cancellationDetail, "refund_bank_account_holder");
+  const bankCode = claimBankCode || storedBank.bankCode;
+  const bankName = claimBankName || storedBank.bankName;
+  const accountNo = claimAccountNo || storedBank.accountNo;
+  const accountHolder = claimAccountHolder || storedBank.accountHolder;
+
+  if (!bankCode) {
+    throw new Error("Cafe24 cancellation detail does not contain the required cash-refund bank code");
+  }
+  if (!accountNo || !accountHolder) {
+    throw new Error("Cafe24 cancellation detail does not contain a complete cash-refund account");
+  }
+
+  // Use Cafe24's native cancellation processing state and the refund account
+  // already submitted by the customer. The actual bank remittance remains
+  // separate, so this must not mark a cash refund as completed.
+  const cancellationBody = {
+    shop_no: 1,
+    status: "canceling",
+    payment_gateway_cancel: "F",
+    recover_inventory: "F",
+    recover_coupon: "T",
+    add_memo_too: "T",
+    claim_reason_type: "I",
+    reason: "NEVER JUST SELL 고객 취소 승인 후 환불 대기 E2E",
+    refund_method_code: ["T"],
+    refund_bank_code: bankCode,
+    refund_bank_account_no: accountNo,
+    refund_bank_account_holder: accountHolder,
+    items: [{
+      order_item_code: itemCode,
+      quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1
+    }]
+  };
+  if (bankName) cancellationBody.refund_bank_name = bankName;
+
   await cafe24AdminRequest("/orders/" + encodeURIComponent(expectedOrderId) + "/cancellation", env, {
     method: "POST",
-    body: {
-      shop_no: 1,
-      status: "canceling",
-      payment_gateway_cancel: "F",
-      recover_inventory: "F",
-      recover_coupon: "T",
-      add_memo_too: "T",
-      claim_reason_type: "I",
-      reason: "NEVER JUST SELL 고객 취소 승인 후 환불 대기 E2E",
-      items: [{
-        order_item_code: itemCode,
-        quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1
-      }]
-    }
+    body: cancellationBody
   });
 
   let observedStatus = itemStatus;
@@ -697,8 +763,11 @@ async function beginPaymentE2ECustomerRefund(env, row) {
   return {
     operation: BEGIN_CUSTOMER_CANCELLED_E2E_REFUND_OPERATION,
     order_id: expectedOrderId,
+    claim_code: claimCode,
     refund_pending: true,
     already_refund_pending: false,
+    refund_method: "cash",
+    refund_bank_code_source: claimBankCode ? "cancellation_detail" : "order_detail",
     item_order_status: observedStatus
   };
 }
@@ -1235,10 +1304,37 @@ export async function getPaymentE2EClaimStatus(env) {
 
   const claimCode = pick("claim_code");
   const itemStatus = pick("order_status");
+
+  let cancellationDetailPayload = null;
+  if (claimCode) {
+    try {
+      cancellationDetailPayload = await cafe24AdminGet(
+        "/cancellation/" + encodeURIComponent(claimCode),
+        env,
+        { shop_no: 1 }
+      );
+    } catch {
+      cancellationDetailPayload = null;
+    }
+  }
+  const cancellationDetailBankCode = findStringByKeyDeep(
+    cancellationDetailPayload,
+    "refund_bank_code"
+  );
+  const cancellationDetailRefundMethod =
+    findStringByKeyDeep(cancellationDetailPayload, "refund_method_code") ||
+    findStringByKeyDeep(cancellationDetailPayload, "refund_method");
+  const effectiveBankCode = cancellationDetailBankCode || pick("refund_bank_code");
+  const effectiveAccountNo =
+    findStringByKeyDeep(cancellationDetailPayload, "refund_bank_account_no") ||
+    pick("refund_bank_account_no");
+  const effectiveAccountHolder =
+    findStringByKeyDeep(cancellationDetailPayload, "refund_bank_account_holder") ||
+    pick("refund_bank_account_holder");
   const refundBankComplete =
-    Boolean(pick("refund_bank_code")) &&
-    Boolean(pick("refund_bank_account_no")) &&
-    Boolean(pick("refund_bank_account_holder"));
+    Boolean(effectiveBankCode) &&
+    Boolean(effectiveAccountNo) &&
+    Boolean(effectiveAccountHolder);
 
   const acceptanceOperation = await env.COURSE_DB.prepare(
     "SELECT status,last_error,completed_at,updated_at FROM system_operations " +
@@ -1269,10 +1365,15 @@ export async function getPaymentE2EClaimStatus(env) {
       : null,
     refund_payment_methods: refundRecord?.refund_payment_methods ?? null,
     refund_bank_account_complete: refundBankComplete,
-    refund_bank_code_present: Boolean(pick("refund_bank_code")),
-    refund_bank_name_present: Boolean(pick("refund_bank_name")),
-    refund_bank_account_no_present: Boolean(pick("refund_bank_account_no")),
-    refund_bank_account_holder_present: Boolean(pick("refund_bank_account_holder")),
+    refund_bank_code_present: Boolean(effectiveBankCode),
+    refund_bank_name_present:
+      Boolean(findStringByKeyDeep(cancellationDetailPayload, "refund_bank_name")) ||
+      Boolean(pick("refund_bank_name")),
+    refund_bank_account_no_present: Boolean(effectiveAccountNo),
+    refund_bank_account_holder_present: Boolean(effectiveAccountHolder),
+    cancellation_detail_found: Boolean(cancellationDetailPayload),
+    cancellation_detail_refund_method: cancellationDetailRefundMethod || null,
+    cancellation_detail_refund_bank_code_present: Boolean(cancellationDetailBankCode),
     claim_reason_type_present: Boolean(pick("claim_reason_type")),
     claim_reason_present: Boolean(pick("claim_reason")),
     detailed_item_found: Boolean(detailedTargetItem),

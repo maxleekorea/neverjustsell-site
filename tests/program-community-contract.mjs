@@ -354,3 +354,7 @@ assert(programSchema.includes("0050_begin_payment_e2e_customer_refund.sql"), "ru
 assert(systemOperations.includes("begin_payment_e2e_customer_refund"), "native refund-pending operation missing");
 assert(systemOperations.includes('status: "canceling"'), "native refund-pending operation must use Cafe24 canceling status");
 assert(systemOperations.includes('reason: "NEVER JUST SELL 고객 취소 승인 후 환불 대기 E2E"'), "refund-pending operation must stay scoped to the dedicated E2E path");
+assert(systemOperations.includes('"/cancellation/" + encodeURIComponent(claimCode)'), "refund processing must read Cafe24 cancellation detail");
+assert(systemOperations.includes('refund_method_code: ["T"]'), "bank-deposit refund processing must explicitly use Cafe24 cash refund");
+assert(systemOperations.includes("findStringByKeyDeep"), "refund processing must recover nested Cafe24 cancellation data without guessing");
+assert(systemOperations.includes("cancellation_detail_refund_bank_code_present"), "claim diagnostics must report bank-code availability without exposing the value");
