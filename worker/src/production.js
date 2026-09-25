@@ -8,9 +8,9 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
-import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
+import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-26-customer-claim-v12";
+const PRODUCTION_BUILD = "2026-09-26-customer-claim-v13";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -173,6 +173,15 @@ export default {
       try {
         const flow = await getPaymentE2EFlowStatus(env);
         return json(flow, { status: flow.ok ? 200 : 503 });
+      } catch (error) {
+        return json({ ok: false, error: String(error?.message || error) }, { status: 503 });
+      }
+    }
+
+    if (url.pathname === "/system-check/payment-e2e/claim-status" && request.method === "GET") {
+      try {
+        const claim = await getPaymentE2EClaimStatus(env);
+        return json(claim, { status: claim.ok ? 200 : 503 });
       } catch (error) {
         return json({ ok: false, error: String(error?.message || error) }, { status: 503 });
       }
