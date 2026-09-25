@@ -68,6 +68,22 @@ jobs:
           console.log(JSON.stringify(j,null,2));
           if(!r.ok || !j?.ok || Number(j?.price_krw)!==1000 || j?.display!=="T" || j?.selling!=="T") process.exit(1);
           '
+      - name: Verify paid E2E order and access state
+        run: |
+          node -e '
+          const r=await fetch("https://classroom.neverjustsell.com/system-check/payment-e2e/flow-status?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const j=await r.json().catch(()=>null);
+          console.log(JSON.stringify(j,null,2));
+          if(
+            !r.ok ||
+            !j?.ok ||
+            j?.order_detected!==true ||
+            j?.paid_member_order!==true ||
+            j?.course_entitlement!=="active" ||
+            j?.program_enrollment!=="active" ||
+            j?.identity_consistent!==true
+          ) process.exit(1);
+          '
 
   deploy-community:
     needs: deploy-course
