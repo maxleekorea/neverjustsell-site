@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T14:51:00+09:00
-reason=verify-cafe24-category-bootstrap-after-reauthorization
-expected_head=f4654037b97275d5c306bd07a4eda0fe18f1088c
+deploy_at=2026-09-25T14:56:00+09:00
+reason=retry-cafe24-catalog-bootstrap-after-reauth
+expected_head=463fd8b685972ff7f9b88d2a56ee0b07b55cf269
