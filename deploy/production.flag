@@ -3,3 +3,4 @@ reason=retry-final-payment-e2e-consistency-and-close-test-product
 expected_head=846b8a27a4401290ec2fce042a65d4c09f600408
 reason=fix-cafe24-refund-method-array-and-complete-final-e2e
 reason=use-cafe24-default-bank-deposit-refund-workflow
+reason=use-stored-refund-bank-for-payment-e2e
