@@ -294,3 +294,105 @@ export async function runPendingSystemOperations(env) {
     results
   };
 }
+
+
+const CATALOG_CATEGORY_NAMES = ["강의", "전자책", "프로그램", "일반상품"];
+
+function categoryList(payload) {
+  return Array.isArray(payload?.categories) ? payload.categories : [];
+}
+
+async function listRootCategories(env) {
+  const payload = await cafe24AdminGet("/categories", env, {
+    shop_no: 1,
+    parent_category_no: 1,
+    limit: 100,
+    offset: 0
+  });
+  return categoryList(payload);
+}
+
+async function findOrCreateRootCategory(env, categoryName) {
+  let categories = await listRootCategories(env);
+  let found = categories.find((category) =>
+    String(category?.category_name || "").trim() === categoryName &&
+    Number(category?.parent_category_no || 1) === 1
+  );
+  if (found?.category_no) return found;
+
+  await cafe24AdminRequest("/categories", env, {
+    method: "POST",
+    body: {
+      shop_no: 1,
+      parent_category_no: 1,
+      category_name: categoryName,
+      display_type: "A",
+      use_main: "F",
+      use_display: "T"
+    }
+  });
+
+  categories = await listRootCategories(env);
+  found = categories.find((category) =>
+    String(category?.category_name || "").trim() === categoryName &&
+    Number(category?.parent_category_no || 1) === 1
+  );
+  if (!found?.category_no) {
+    throw new Error(`Cafe24 category creation could not be verified: ${categoryName}`);
+  }
+  return found;
+}
+
+async function ensureProductInCategory(env, categoryNo, productNo) {
+  const current = await cafe24AdminGet(`/categories/${categoryNo}/products`, env, {
+    shop_no: 1,
+    display_group: 1,
+    limit: 50000
+  });
+  const products = Array.isArray(current?.products) ? current.products : [];
+  if (products.some((product) => Number(product?.product_no || 0) === Number(productNo))) {
+    return { added: false };
+  }
+
+  await cafe24AdminRequest(`/categories/${categoryNo}/products`, env, {
+    method: "POST",
+    body: {
+      shop_no: 1,
+      display_group: 1,
+      product_no: Number(productNo)
+    }
+  });
+
+  const verify = await cafe24AdminGet(`/categories/${categoryNo}/products`, env, {
+    shop_no: 1,
+    display_group: 1,
+    limit: 50000
+  });
+  const verifiedProducts = Array.isArray(verify?.products) ? verify.products : [];
+  if (!verifiedProducts.some((product) => Number(product?.product_no || 0) === Number(productNo))) {
+    throw new Error(`Cafe24 product category assignment could not be verified: category=${categoryNo} product=${productNo}`);
+  }
+  return { added: true };
+}
+
+export async function bootstrapCafe24Catalog(env) {
+  const categories = {};
+  for (const categoryName of CATALOG_CATEGORY_NAMES) {
+    const category = await findOrCreateRootCategory(env, categoryName);
+    categories[categoryName] = Number(category.category_no);
+  }
+
+  const courseCategoryNo = categories["강의"];
+  const productAssignment = await ensureProductInCategory(env, courseCategoryNo, 13);
+
+  return {
+    ok: true,
+    categories,
+    product_13: {
+      category: "강의",
+      category_no: courseCategoryNo,
+      assigned: true,
+      added_now: productAssignment.added
+    }
+  };
+}
