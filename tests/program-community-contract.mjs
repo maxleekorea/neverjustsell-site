@@ -177,6 +177,7 @@ assert(systemOperations.includes("bootstrap_cafe24_catalog"), "Cafe24 catalog bo
 assert(systemOperations.includes("add_category_no"), "Cafe24 category product assignment must use product add_category_no");
 assert(systemOperations.includes("attempt <= 3"), "Cafe24 category creation retry guard missing");
 assert(systemOperations.includes("AUTOMATION_DUPLICATE_CATEGORY_IDS"), "automation-created duplicate category cleanup missing");
+assert(systemOperations.includes("cleanup_cafe24_catalog_duplicates"), "one-time duplicate category cleanup operation missing");
 assert(systemOperations.includes("contains_products"), "duplicate category cleanup must protect non-empty categories");
 assert(systemOperations.includes("/categories"), "Cafe24 category creation endpoint missing");
 assert(systemOperations.includes("product_13"), "payment E2E product category assignment missing");
