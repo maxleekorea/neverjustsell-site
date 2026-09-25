@@ -176,6 +176,7 @@ assert(systemOperations.includes("bootstrapCafe24Catalog"), "Cafe24 catalog boot
 assert(systemOperations.includes("/categories"), "Cafe24 category creation endpoint missing");
 assert(systemOperations.includes("product_13"), "payment E2E product category assignment missing");
 assert(unified.includes("bootstrapCafe24Catalog"), "Cafe24 reauthorization must bootstrap product categories");
+assert(unified.includes('ADMIN_SCOPES.join(",")'), "Cafe24 OAuth scopes must be comma-separated");
 assert(production.includes("/system-check/payment-e2e/status"), "payment E2E product status route missing");
 assert(programAccess.includes("reconcilePurchasedProgramEnrollments"), "Cafe24 program enrollment sync missing");
 assert(programAccess.includes("findValidCoursePurchase"), "program enrollment must reuse confirmed purchase rules");
