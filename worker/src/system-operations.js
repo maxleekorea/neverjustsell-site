@@ -328,7 +328,7 @@ async function findOrCreateRootCategory(env, categoryName) {
   let lastError = null;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      await cafe24AdminRequest("/categories", env, {
+      const createdPayload = await cafe24AdminRequest("/categories", env, {
         method: "POST",
         body: {
           shop_no: 1,
@@ -339,25 +339,35 @@ async function findOrCreateRootCategory(env, categoryName) {
           use_display: "T"
         }
       });
-      lastError = null;
-      break;
+
+      const created =
+        createdPayload?.category ||
+        (Array.isArray(createdPayload?.categories) ? createdPayload.categories[0] : null) ||
+        createdPayload?.resource ||
+        null;
+
+      if (created?.category_no) {
+        return created;
+      }
+
+      // Cafe24 category list can lag immediately after a successful create.
+      for (let verifyAttempt = 1; verifyAttempt <= 5; verifyAttempt += 1) {
+        await sleep(1000);
+        categories = await listRootCategories(env);
+        found = categories.find((category) =>
+          String(category?.category_name || "").trim() === categoryName &&
+          Number(category?.parent_category_no || 1) === 1
+        );
+        if (found?.category_no) return found;
+      }
+
+      lastError = new Error(`Cafe24 category creation could not be verified: ${categoryName}`);
     } catch (error) {
       lastError = error;
-      if (attempt < 3) await sleep(700 * attempt);
+      if (attempt < 3) await sleep(1200 * attempt);
     }
   }
-  if (lastError) throw lastError;
-
-  await sleep(500);
-  categories = await listRootCategories(env);
-  found = categories.find((category) =>
-    String(category?.category_name || "").trim() === categoryName &&
-    Number(category?.parent_category_no || 1) === 1
-  );
-  if (!found?.category_no) {
-    throw new Error(`Cafe24 category creation could not be verified: ${categoryName}`);
-  }
-  return found;
+  throw lastError || new Error(`Cafe24 category creation failed: ${categoryName}`);
 }
 
 async function ensureProductInCategory(env, categoryNo, productNo) {
@@ -380,16 +390,19 @@ async function ensureProductInCategory(env, categoryNo, productNo) {
     }
   });
 
-  const verify = await cafe24AdminGet(`/categories/${categoryNo}/products`, env, {
-    shop_no: 1,
-    display_group: 1,
-    limit: 50000
-  });
-  const verifiedProducts = Array.isArray(verify?.products) ? verify.products : [];
-  if (!verifiedProducts.some((product) => Number(product?.product_no || 0) === Number(productNo))) {
-    throw new Error(`Cafe24 product category assignment could not be verified: category=${categoryNo} product=${productNo}`);
+  for (let verifyAttempt = 1; verifyAttempt <= 5; verifyAttempt += 1) {
+    await sleep(1000);
+    const verify = await cafe24AdminGet(`/categories/${categoryNo}/products`, env, {
+      shop_no: 1,
+      display_group: 1,
+      limit: 50000
+    });
+    const verifiedProducts = Array.isArray(verify?.products) ? verify.products : [];
+    if (verifiedProducts.some((product) => Number(product?.product_no || 0) === Number(productNo))) {
+      return { added: true };
+    }
   }
-  return { added: true };
+  throw new Error(`Cafe24 product category assignment could not be verified: category=${categoryNo} product=${productNo}`);
 }
 
 export async function bootstrapCafe24Catalog(env) {
@@ -418,12 +431,17 @@ export async function bootstrapCafe24Catalog(env) {
 export async function getCafe24CatalogStatus(env) {
   const categories = await listRootCategories(env);
   const wanted = {};
+  const duplicate_counts = {};
+  const category_matches = {};
   for (const name of CATALOG_CATEGORY_NAMES) {
-    const match = categories.find((category) =>
+    const matches = categories.filter((category) =>
       String(category?.category_name || "").trim() === name &&
       Number(category?.parent_category_no || 1) === 1
     );
+    const match = matches[0] || null;
     wanted[name] = match?.category_no ? Number(match.category_no) : null;
+    duplicate_counts[name] = Math.max(0, matches.length - 1);
+    category_matches[name] = matches.map((category) => Number(category.category_no)).filter(Boolean);
   }
 
   let product13InCourse = false;
@@ -441,6 +459,9 @@ export async function getCafe24CatalogStatus(env) {
   return {
     ok: true,
     categories: wanted,
+    category_matches,
+    duplicate_counts,
+    duplicates_present: Object.values(duplicate_counts).some((count) => Number(count) > 0),
     all_categories_present: CATALOG_CATEGORY_NAMES.every((name) => Number(wanted[name] || 0) > 0),
     product_13_in_course: product13InCourse
   };
