@@ -1,10 +1,11 @@
 import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
-import { findValidCoursePurchase, syncPaidCourseEntitlementForPurchase } from "./access.js";
+import { findValidCoursePurchase, findRevokedCoursePurchase, syncPaidCourseEntitlementForPurchase, revokePaidCourseEntitlementForPurchase } from "./access.js";
 import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
 import { digitalCafe24ProductPatch, fulfillmentProfileForProductType, digitalProductDescriptionHtml, hasDigitalProductUx } from "./fulfillment.js";
 
 const OPEN_E2E_OPERATION = "open_payment_e2e_product_13";
 const RECONCILE_E2E_ORDER_OPERATION = "reconcile_latest_payment_e2e_order";
+const CANCEL_E2E_ORDER_OPERATION = "cancel_payment_e2e_order";
 const BOOTSTRAP_CATALOG_OPERATION = "bootstrap_cafe24_catalog";
 const CLEANUP_CATALOG_DUPLICATES_OPERATION = "cleanup_cafe24_catalog_duplicates";
 const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_shipping";
@@ -221,6 +222,160 @@ async function reconcileLatestPaymentE2EOrder(env, row) {
     course_entitlement: entitlement?.status || null,
     program_enrollment: enrollment?.status || null,
     program_sync: programSync
+  };
+}
+
+async function paymentE2EOrdersForDate(env, date) {
+  const orderPayload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    start_date: date,
+    end_date: date,
+    date_type: "order_date",
+    product_no: 13,
+    embed: "items",
+    limit: 100,
+    offset: 0
+  });
+  return Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
+}
+
+function paymentE2EPurchaseMeta(purchase) {
+  const order = purchase?.order || {};
+  const item = purchase?.item || {};
+  const quantity = Number(item.quantity ?? item.order_quantity ?? 1);
+  return {
+    orderId: String(order.order_id || "").trim(),
+    memberId: String(order.member_id || "").trim(),
+    itemCode: String(item.order_item_code || "").trim(),
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
+    paymentMethod: String(order.payment_method || item.payment_method || "").trim(),
+    paymentGatewayNames: Array.isArray(order.payment_gateway_names)
+      ? order.payment_gateway_names.map(String)
+      : []
+  };
+}
+
+async function reconcileRevokedPaymentE2EAccess(env, purchase) {
+  const meta = paymentE2EPurchaseMeta(purchase);
+  if (!meta.orderId || !meta.memberId || !meta.itemCode) {
+    throw new Error("Revoked payment E2E order is missing identity or item metadata");
+  }
+
+  const entitlement = await revokePaidCourseEntitlementForPurchase(
+    env,
+    meta.memberId,
+    13,
+    purchase
+  );
+  const programSync = await reconcilePurchasedProgramEnrollments(env, meta.memberId);
+  const enrollment = await env.COURSE_DB.prepare(
+    "SELECT run_id,member_id,status,source,source_order_id,source_order_item_code,joined_at,started_at,updated_at " +
+    "FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+  ).bind(meta.memberId).first();
+
+  if (entitlement?.status !== "revoked") {
+    throw new Error("Course entitlement did not become revoked");
+  }
+  if (enrollment?.status !== "withdrawn") {
+    throw new Error("Program enrollment did not become withdrawn");
+  }
+
+  return { meta, entitlement, enrollment, programSync };
+}
+
+async function cancelPaymentE2EOrder(env, row) {
+  let payload = {};
+  try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
+
+  const productNo = Number(payload.product_no || 13);
+  const date = String(payload.date || "").trim();
+  if (productNo !== 13) throw new Error("payment E2E cancellation must target product 13");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error("payment E2E cancellation date is invalid");
+
+  let orders = await paymentE2EOrdersForDate(env, date);
+  let purchase = findValidCoursePurchase(orders, 13);
+  let alreadyRevoked = false;
+
+  if (!purchase) {
+    purchase = findRevokedCoursePurchase(orders, 13);
+    alreadyRevoked = Boolean(purchase);
+  }
+  if (!purchase) throw new Error("No product #13 payment E2E order found for cancellation");
+
+  const meta = paymentE2EPurchaseMeta(purchase);
+  if (!meta.orderId || !meta.memberId || !meta.itemCode) {
+    throw new Error("Payment E2E order is missing identity or item metadata");
+  }
+
+  const [entitlementBefore, enrollmentBefore] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT member_id,status,source_order_id FROM course_entitlements " +
+      "WHERE course_id='system-check-paid-course' AND member_id=? LIMIT 1"
+    ).bind(meta.memberId).first(),
+    env.COURSE_DB.prepare(
+      "SELECT member_id,status,source_order_id FROM program_enrollments " +
+      "WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+    ).bind(meta.memberId).first()
+  ]);
+
+  if (String(entitlementBefore?.source_order_id || "") !== meta.orderId) {
+    throw new Error("Refusing cancellation because course entitlement does not match the target order");
+  }
+  if (String(enrollmentBefore?.source_order_id || "") !== meta.orderId) {
+    throw new Error("Refusing cancellation because program enrollment does not match the target order");
+  }
+
+  let cancellationRequested = false;
+  if (!alreadyRevoked) {
+    await cafe24AdminRequest("/orders/" + encodeURIComponent(meta.orderId) + "/cancellation", env, {
+      method: "POST",
+      body: {
+        shop_no: 1,
+        status: "canceled",
+        payment_gateway_cancel: "T",
+        recover_inventory: "F",
+        recover_coupon: "T",
+        add_memo_too: "T",
+        claim_reason_type: "I",
+        reason: "NEVER JUST SELL 결제 E2E 취소·환불 검증",
+        items: [{ order_item_code: meta.itemCode, quantity: meta.quantity }]
+      }
+    });
+    cancellationRequested = true;
+
+    let revokedPurchase = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      orders = await paymentE2EOrdersForDate(env, date);
+      revokedPurchase = findRevokedCoursePurchase(orders, 13);
+      if (
+        revokedPurchase &&
+        String(revokedPurchase?.order?.order_id || "") === meta.orderId &&
+        String(revokedPurchase?.item?.order_item_code || "") === meta.itemCode
+      ) {
+        purchase = revokedPurchase;
+        break;
+      }
+      await sleep(1500);
+    }
+    if (!findRevokedCoursePurchase([purchase?.order].filter(Boolean), 13)) {
+      throw new Error("Cafe24 cancellation was requested but revoked order state was not observed");
+    }
+  }
+
+  const reconciled = await reconcileRevokedPaymentE2EAccess(env, purchase);
+  return {
+    operation: CANCEL_E2E_ORDER_OPERATION,
+    order_state: "revoked",
+    cancellation_requested: cancellationRequested,
+    already_revoked: alreadyRevoked,
+    payment_method: meta.paymentMethod || null,
+    payment_gateway_names: meta.paymentGatewayNames,
+    payment_gateway_cancel_requested: cancellationRequested,
+    course_entitlement: reconciled.entitlement?.status || null,
+    program_enrollment: reconciled.enrollment?.status || null,
+    identity_consistent:
+      String(reconciled.entitlement?.member_id || "") === meta.memberId &&
+      String(reconciled.enrollment?.member_id || "") === meta.memberId
   };
 }
 
@@ -482,11 +637,14 @@ export async function getPaymentE2EFlowStatus(env) {
     offset: 0
   });
   const orders = Array.isArray(orderPayload?.orders) ? orderPayload.orders : [];
-  const purchase = findValidCoursePurchase(orders, 13);
+  const validPurchase = findValidCoursePurchase(orders, 13);
+  const revokedPurchase = validPurchase ? null : findRevokedCoursePurchase(orders, 13);
+  const purchase = validPurchase || revokedPurchase;
   if (!purchase) {
     return {
       ok: true,
       order_detected: false,
+      order_state: null,
       course_entitlement: null,
       program_enrollment: null
     };
@@ -494,6 +652,8 @@ export async function getPaymentE2EFlowStatus(env) {
 
   const orderId = String(purchase?.order?.order_id || "");
   const memberId = String(purchase?.order?.member_id || "");
+  const orderState = validPurchase ? "active" : "revoked";
+  const paymentMethod = String(purchase?.order?.payment_method || purchase?.item?.payment_method || "").trim();
   const [entitlement, enrollment] = await Promise.all([
     env.COURSE_DB.prepare(
       "SELECT status,member_id FROM course_entitlements WHERE course_id='system-check-paid-course' AND source_order_id=? ORDER BY updated_at DESC LIMIT 1"
@@ -503,16 +663,25 @@ export async function getPaymentE2EFlowStatus(env) {
     ).bind(orderId).first()
   ]);
 
+  const identityConsistent =
+    Boolean(memberId) &&
+    String(entitlement?.member_id || "") === memberId &&
+    String(enrollment?.member_id || "") === memberId;
+
   return {
     ok: true,
     order_detected: true,
+    order_state: orderState,
     paid_member_order: Boolean(memberId),
+    payment_method: paymentMethod || null,
     course_entitlement: entitlement?.status || null,
     program_enrollment: enrollment?.status || null,
-    identity_consistent:
-      Boolean(memberId) &&
-      String(entitlement?.member_id || "") === memberId &&
-      String(enrollment?.member_id || "") === memberId
+    identity_consistent: identityConsistent,
+    access_state_consistent:
+      identityConsistent &&
+      (orderState === "active"
+        ? entitlement?.status === "active" && enrollment?.status === "active"
+        : entitlement?.status === "revoked" && enrollment?.status === "withdrawn")
   };
 }
 
@@ -681,7 +850,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -692,6 +861,8 @@ export async function runPendingSystemOperations(env) {
         ? await openPaymentE2EProduct(env, row)
         : row.operation_type === RECONCILE_E2E_ORDER_OPERATION
           ? await reconcileLatestPaymentE2EOrder(env, row)
+          : row.operation_type === CANCEL_E2E_ORDER_OPERATION
+            ? await cancelPaymentE2EOrder(env, row)
           : row.operation_type === BOOTSTRAP_CATALOG_OPERATION
             ? await bootstrapCafe24Catalog(env)
             : row.operation_type === CLEANUP_CATALOG_DUPLICATES_OPERATION

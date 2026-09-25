@@ -78,10 +78,12 @@ jobs:
             !r.ok ||
             !j?.ok ||
             j?.order_detected!==true ||
+            j?.order_state!=="active" ||
             j?.paid_member_order!==true ||
             j?.course_entitlement!=="active" ||
             j?.program_enrollment!=="active" ||
-            j?.identity_consistent!==true
+            j?.identity_consistent!==true ||
+            j?.access_state_consistent!==true
           ) process.exit(1);
           '
       - name: Verify Cafe24 catalog bootstrap
