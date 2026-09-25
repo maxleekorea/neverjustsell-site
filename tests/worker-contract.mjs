@@ -126,6 +126,13 @@ assert(
 r = await get("https://classroom.neverjustsell.com/library");
 assert(r.status === 302, "anonymous learner library must require authentication");
 
+r = await get("https://classroom.neverjustsell.com/my-space");
+assert(r.status === 302, "anonymous My Space must require authentication");
+assert(
+  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
+  "My Space must share the canonical member authentication boundary"
+);
+
 r = await get("https://classroom.neverjustsell.com/classroom");
 assert(r.status === 302, "anonymous classroom must immediately start authentication");
 assert(
