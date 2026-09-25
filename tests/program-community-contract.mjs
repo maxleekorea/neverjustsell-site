@@ -86,6 +86,18 @@ const admin = await readFile(
   new URL("../worker/src/course-admin.js", import.meta.url),
   "utf8"
 );
+const fulfillment = await readFile(
+  new URL("../worker/src/fulfillment.js", import.meta.url),
+  "utf8"
+);
+const fulfillmentMigration = await readFile(
+  new URL("../worker/migrations/0036_commerce_fulfillment_profiles.sql", import.meta.url),
+  "utf8"
+);
+const router = await readFile(
+  new URL("../worker/src/router.js", import.meta.url),
+  "utf8"
+);
 
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS programs"), "program template table missing");
 assert(foundation.includes("CREATE TABLE IF NOT EXISTS program_runs"), "program run table missing");
@@ -207,6 +219,28 @@ assert(communityRuntime.includes("syncMemberProgramSpaces"), "community login mu
 assert(admin.includes("program_enrollment"), "payment E2E inspection must expose Program enrollment");
 assert(admin.includes("Program 참가권"), "payment E2E admin must show Program enrollment state");
 assert(admin.includes("withdrawn"), "payment E2E must verify Program access withdrawal after refund");
+
+assert(fulfillment.includes("CAFE24_CATEGORY_PROFILES"), "canonical Cafe24 category profiles missing");
+assert(fulfillment.includes("categoryNo: 42"), "course category 42 mapping missing");
+assert(fulfillment.includes("categoryNo: 43"), "ebook category 43 mapping missing");
+assert(fulfillment.includes("categoryNo: 48"), "program category 48 mapping missing");
+assert(fulfillment.includes("categoryNo: 53"), "physical category 53 mapping missing");
+assert(fulfillment.includes('fulfillmentType: FULFILLMENT_TYPES.ENTITLEMENT'), "digital entitlement fulfillment mapping missing");
+assert(fulfillment.includes('fulfillmentType: FULFILLMENT_TYPES.SHIPMENT'), "physical shipment fulfillment mapping missing");
+assert(fulfillment.includes('shipping_method: "09"'), "digital Cafe24 no-shipping patch missing");
+assert(fulfillment.includes("mixed_fulfillment_categories"), "mixed fulfillment category guard missing");
+assert(fulfillmentMigration.includes("commerce_category_profiles"), "commerce fulfillment profile migration missing");
+assert(fulfillmentMigration.includes("(42,'강의','course','entitlement',0"), "course fulfillment seed missing");
+assert(fulfillmentMigration.includes("(43,'전자책','ebook','entitlement',0"), "ebook fulfillment seed missing");
+assert(fulfillmentMigration.includes("(48,'프로그램','program','entitlement',0"), "program fulfillment seed missing");
+assert(fulfillmentMigration.includes("(53,'일반상품','physical','shipment',1"), "physical fulfillment seed missing");
+assert(programSchema.includes("0036_commerce_fulfillment_profiles.sql"), "runtime reconciler must apply commerce fulfillment profiles");
+assert(admin.includes("ensureCafe24CourseDigitalProfile"), "course admin must enforce digital fulfillment profile");
+assert(admin.includes("digitalCafe24ProductPatch"), "course admin must use canonical digital Cafe24 patch");
+assert(admin.includes("강의 상품의 배송 없음 설정을 확인하지 못했습니다."), "course sales must fail closed when no-shipping verification fails");
+assert(router.includes('url.pathname === "/my-space"'), "digital My Space route missing");
+assert(router.includes("구매하거나 신청한 디지털 콘텐츠와 프로그램을 이곳에서 바로 이용합니다."), "My Space digital post-purchase UX missing");
+assert(!router.includes("주문 배송상태를 찾을 필요 없이"), "customer My Space must not mention shipping-state workflow");
 
 assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community migration tracking missing");
 assert(communitySchema.includes("INSERT OR IGNORE INTO d1_migrations"), "runtime community migration must be recorded for Wrangler compatibility");
