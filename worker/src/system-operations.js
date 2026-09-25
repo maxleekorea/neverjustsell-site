@@ -759,6 +759,89 @@ export async function getPaymentE2EFlowStatus(env) {
   };
 }
 
+export async function getPaymentE2EClaimStatus(env) {
+  const ledger = await env.COURSE_DB.prepare(
+    "SELECT source_order_id FROM course_entitlements WHERE course_id='system-check-paid-course' AND source_order_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1"
+  ).first();
+  const orderId = String(ledger?.source_order_id || "").trim();
+  if (!orderId) {
+    return { ok: true, order_detected: false, order_id: null };
+  }
+
+  const match = orderId.match(/^(\d{4})(\d{2})(\d{2})-/);
+  const kstToday = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const date = match ? `${match[1]}-${match[2]}-${match[3]}` : kstToday;
+
+  const listPayload = await cafe24AdminGet("/orders", env, {
+    shop_no: 1,
+    start_date: date,
+    end_date: date,
+    date_type: "order_date",
+    order_id: orderId,
+    embed: "items",
+    limit: 100,
+    offset: 0
+  });
+  const order = (Array.isArray(listPayload?.orders) ? listPayload.orders : [])
+    .find((item) => String(item?.order_id || "") === orderId) || null;
+  const targetItem = (Array.isArray(order?.items) ? order.items : [])
+    .find((item) => Number(item?.product_no || 0) === 13) || null;
+
+  let detailPayload = null;
+  try {
+    detailPayload = await cafe24AdminGet("/orders/" + encodeURIComponent(orderId), env, {
+      shop_no: 1,
+      embed: "buyer,refunds,cancellation"
+    });
+  } catch {
+    detailPayload = null;
+  }
+  const detail = normalizeOrder(detailPayload || {});
+  const cancellation = Array.isArray(detail?.cancellation)
+    ? detail.cancellation[0] || null
+    : detail?.cancellation || null;
+  const refunds = Array.isArray(detail?.refunds)
+    ? detail.refunds
+    : detail?.refunds
+      ? [detail.refunds]
+      : [];
+  const firstRefund = refunds[0] || null;
+
+  const pick = (key) => {
+    for (const source of [targetItem, order, cancellation, firstRefund, detail]) {
+      const value = source?.[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value).trim();
+      }
+    }
+    return "";
+  };
+
+  const claimCode = pick("claim_code");
+  const itemStatus = pick("order_status");
+  const refundBankComplete =
+    Boolean(pick("refund_bank_code")) &&
+    Boolean(pick("refund_bank_account_no")) &&
+    Boolean(pick("refund_bank_account_holder"));
+
+  return {
+    ok: true,
+    order_detected: Boolean(order),
+    order_id: orderId,
+    item_order_status: itemStatus || null,
+    canceled: pick("canceled") || null,
+    refund_status: pick("refund_status") || null,
+    claim_code: claimCode || null,
+    cancellation_status: String(cancellation?.status || "").trim() || null,
+    refund_method_code: firstRefund?.refund_method_code ?? cancellation?.refund_method_code ?? null,
+    refund_bank_account_complete: refundBankComplete,
+    customer_cancellation_requested:
+      itemStatus === "C00" ||
+      String(cancellation?.status || "").trim() === "accepted" ||
+      String(cancellation?.status || "").trim() === "canceling"
+  };
+}
+
 export async function getPaymentE2EProductStatus(env) {
   const payload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
   const product = normalizeProduct(payload);
