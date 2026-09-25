@@ -36,6 +36,14 @@ const production = await readFile(
   new URL("../worker/src/production.js", import.meta.url),
   "utf8"
 );
+const unified = await readFile(
+  new URL("../worker/src/unified.js", import.meta.url),
+  "utf8"
+);
+const config = await readFile(
+  new URL("../worker/src/config.js", import.meta.url),
+  "utf8"
+);
 const programSchema = await readFile(
   new URL("../worker/src/program-schema.js", import.meta.url),
   "utf8"
@@ -160,6 +168,14 @@ assert(systemOperations.includes('display: "T"'), "one-time operation must expos
 assert(systemOperations.includes('selling: "T"'), "one-time operation must enable selling");
 assert(systemOperations.includes('buy_limit_type: "M"'), "one-time operation must keep member-only purchase");
 assert(systemOperations.includes("getPaymentE2EProductStatus"), "read-only payment E2E product status missing");
+
+assert(config.includes('"mall.read_category"'), "Cafe24 category read scope missing");
+assert(config.includes('"mall.write_category"'), "Cafe24 category write scope missing");
+assert(systemOperations.includes('CATALOG_CATEGORY_NAMES = ["강의", "전자책", "프로그램", "일반상품"]'), "canonical Cafe24 product categories missing");
+assert(systemOperations.includes("bootstrapCafe24Catalog"), "Cafe24 catalog bootstrap missing");
+assert(systemOperations.includes("/categories"), "Cafe24 category creation endpoint missing");
+assert(systemOperations.includes("product_13"), "payment E2E product category assignment missing");
+assert(unified.includes("bootstrapCafe24Catalog"), "Cafe24 reauthorization must bootstrap product categories");
 assert(production.includes("/system-check/payment-e2e/status"), "payment E2E product status route missing");
 assert(programAccess.includes("reconcilePurchasedProgramEnrollments"), "Cafe24 program enrollment sync missing");
 assert(programAccess.includes("findValidCoursePurchase"), "program enrollment must reuse confirmed purchase rules");
