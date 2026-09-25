@@ -882,6 +882,21 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0051 = String.raw`
+UPDATE system_operations
+SET
+  status='completed',
+  completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP),
+  last_error='superseded_cafe24_native_refund_owner',
+  updated_at=CURRENT_TIMESTAMP
+WHERE id IN (
+  '2026-09-26-accept-payment-e2e-customer-cancellation',
+  '2026-09-26-advance-payment-e2e-to-awaiting-refund',
+  '2026-09-26-begin-payment-e2e-customer-refund'
+)
+AND status IN ('pending','failed','running');
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -1051,6 +1066,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0050);
     await markMigration(db, "0050_begin_payment_e2e_customer_refund.sql");
     applied.push("0050_begin_payment_e2e_customer_refund.sql");
+  }
+
+  if (!(await migrationApplied(db, "0051_delegate_refund_workflow_to_cafe24.sql"))) {
+    await executeStatements(db, MIGRATION_0051);
+    await markMigration(db, "0051_delegate_refund_workflow_to_cafe24.sql");
+    applied.push("0051_delegate_refund_workflow_to_cafe24.sql");
   }
 
   const check = await db.prepare(
