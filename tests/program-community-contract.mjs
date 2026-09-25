@@ -191,6 +191,7 @@ assert(programSchema.includes("0040_cancel_payment_e2e_order.sql"), "runtime rec
 assert(refundMigration.includes("'cancel_payment_e2e_order'"), "final payment E2E cancellation migration missing");
 assert(refundMigration.includes('{"product_no":13,"date":"2026-09-25"}'), "final cancellation must target only the known E2E order date and product");
 assert(programSchema.includes("0041_retry_final_payment_e2e_consistency.sql"), "runtime reconciler must apply final E2E consistency retry");
+assert(programSchema.includes("0044_rerun_payment_e2e_withdrawal_after_source_pin.sql"), "runtime reconciler must rerun withdrawal after source-order pin");
 assert(refundRetryMigration.includes("'cancel_payment_e2e_order'"), "final consistency retry must reuse guarded cancellation operation");
 assert(refundRetryMigration.includes('{"product_no":13,"date":"2026-09-25"}'), "final consistency retry must stay scoped to the known E2E order");
 assert(systemOperations.includes("reconcile_latest_payment_e2e_order"), "latest paid E2E order reconciliation operation missing");
