@@ -1,3 +1,3 @@
-deploy_at=2026-09-25T15:30:00+09:00
-reason=retry-all-current-products-no-shipping-with-required-fields
-expected_head=40883744bdc85587f04f2ad159d903c61912cd24
+deploy_at=2026-09-25T15:34:00+09:00
+reason=verify-no-shipping-through-per-product-reads
+expected_head=996e27c2356665cc012a314fa27acd289c614455
