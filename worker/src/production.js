@@ -8,7 +8,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
-import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getCafe24CatalogStatus } from "./system-operations.js";
+import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-25-auto-order-v2";
 import {
@@ -121,6 +121,15 @@ export default {
 
     if (url.pathname === "/program-host" || url.pathname.startsWith("/program-host/")) {
       return programHostApp.fetch(request, env, ctx);
+    }
+
+    if (url.pathname === "/system-check/shipping-status" && request.method === "GET") {
+      try {
+        const shipping = await getAllCurrentProductsShippingStatus(env);
+        return json(shipping, { status: shipping.ok ? 200 : 503 });
+      } catch (error) {
+        return json({ ok: false, error: String(error?.message || error) }, { status: 503 });
+      }
     }
 
     if (url.pathname === "/system-check/catalog-status" && request.method === "GET") {
