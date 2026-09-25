@@ -153,7 +153,12 @@ assert(admin.includes('buy_limit_type: "M"'), "sales activation must require a c
 assert(admin.includes("selling_member_only"), "member-only selling state must be persisted");
 assert(admin.includes("Cafe24 회원 전용 구매 설정을 확인하지 못해 판매 상태를 변경하지 않았습니다."), "sales activation must fail closed when member-only policy cannot be verified");
 assert(!admin.includes('repurchase_restriction: "T"'), "repurchase restriction remains intentionally deferred until its Cafe24 prerequisites are verified");
-assert(admin.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
+const fulfillment = await readFile(
+  new URL("../worker/src/fulfillment.js", import.meta.url),
+  "utf8"
+);
+assert(fulfillment.includes('shipping_method: "09"'), "digital course must use no-delivery shipping method");
+assert(admin.includes("ensureCafe24CourseDigitalProfile"), "course product activation must verify digital fulfillment profile");
 assert(!admin.includes('use_naverpay: "F"'), "course product must not force Naver Pay setting");
 const adminApi = await readFile(
   new URL("../worker/src/session-orders.js", import.meta.url),
