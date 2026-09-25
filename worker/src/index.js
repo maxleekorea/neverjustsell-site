@@ -7,7 +7,7 @@ const CAFE24_MALL_ID = "neverjustsell";
 const CAFE24_PRIMARY_DOMAIN = "https://www.neverjustsell.com";
 const CAFE24_REDIRECT_URI =
   "https://neverjustsell-course-access.max-lee-korea.workers.dev/oauth/cafe24/callback";
-const CAFE24_SCOPES = ["mall.read_product", "mall.write_product", "mall.read_order", "mall.write_order"];
+const CAFE24_SCOPES = ["mall.read_product", "mall.write_product", "mall.read_order", "mall.write_order", "mall.read_category", "mall.write_category", "mall.read_store", "mall.write_store"];
 const CUSTOMER_SCOPE = "mall.read_customer_identifier";
 const TOKEN_KEY = "cafe24:admin-token";
 const ADMIN_STATE_PREFIX = "cafe24:admin-oauth-state:";
