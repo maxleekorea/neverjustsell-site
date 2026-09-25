@@ -34,6 +34,31 @@ expect(
   `status=${r.response.status}`
 );
 
+expect(
+  "digital-first primary navigation uses My Space without cart",
+  /https:\/\/classroom\.neverjustsell\.com\/my-space/.test(r.body) &&
+    /내 공간/.test(r.body) &&
+    !/>장바구니<\/a>/.test(r.body),
+  "home navigation must lead digital buyers to My Space"
+);
+
+r = await requestUntil(
+  "https://www.neverjustsell.com/store",
+  ({ response, body }) =>
+    response.status === 200 &&
+    /구매한 콘텐츠를 바로 이용하는 스토어/.test(body) &&
+    !/neverjustsell\.cafe24\.com\/$/.test(response.headers.get("location") || "")
+);
+expect(
+  "store discovery stays on NEVER JUST SELL",
+  r.response.status === 200 &&
+    /구매한 콘텐츠를 바로 이용하는 스토어/.test(r.body) &&
+    /강의/.test(r.body) &&
+    /전자책/.test(r.body) &&
+    /프로그램/.test(r.body),
+  `status=${r.response.status} location=${r.response.headers.get("location") || ""}`
+);
+
 let launchHealth = null;
 let launchHealthStatus = null;
 for (let attempt = 1; attempt <= 30; attempt += 1) {
@@ -65,11 +90,12 @@ expect(
 
 r = await request("https://www.neverjustsell.com/book");
 expect(
-  "book launch page has purchase CTA and SEO metadata",
+  "book launch page has store CTA and SEO metadata",
   r.response.status === 200 &&
     /9791124121061/.test(r.body) &&
     /9791124121122/.test(r.body) &&
-    /product\/detail\.html\?product_no=11/.test(r.body) &&
+    /스토어 보기/.test(r.body) &&
+    !/product\/detail\.html\?product_no=11/.test(r.body) &&
     /property="og:image"/.test(r.body) &&
     /href="\/favicon\.svg"/.test(r.body),
   `status=${r.response.status}`
@@ -134,6 +160,19 @@ r = await requestUntil(
 );
 expect(
   "anonymous classroom immediately starts member authentication",
+  r.response.status === 302 &&
+    r.response.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
+  `status=${r.response.status} location=${r.response.headers.get("location")}`
+);
+
+r = await requestUntil(
+  "https://classroom.neverjustsell.com/my-space",
+  ({ response }) =>
+    response.status === 302 &&
+    response.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start"
+);
+expect(
+  "anonymous My Space uses the same member authentication boundary",
   r.response.status === 302 &&
     r.response.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
   `status=${r.response.status} location=${r.response.headers.get("location")}`
