@@ -53,7 +53,7 @@ jobs:
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
-          const expected="2026-09-26-customer-claim-v10";
+          const expected="2026-09-26-customer-claim-v11";
           let last=null;
           for(let i=0;i<8;i+=1){
             const r=await fetch("https://classroom.neverjustsell.com/migration-health?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
@@ -80,6 +80,9 @@ jobs:
           const j=await r.json().catch(()=>null);
           console.log(JSON.stringify(j,null,2));
           const exposure=Array.isArray(j?.claim_request_button_exposure)?j.claim_request_button_exposure:[];
+          const expectedExposure=["cancel_N20","cancel_N22","cancel_N21"];
+          if(j?.use_product_prepare_status==="T") expectedExposure.unshift("cancel_N10");
+          const invalidN10=j?.use_product_prepare_status!=="T" && exposure.includes("cancel_N10");
           if(
             !r.ok ||
             !j?.ok ||
@@ -90,7 +93,8 @@ jobs:
             Number(j?.claim_request_button_period)!==7 ||
             j?.claim_request_auto_accept!=="F" ||
             j?.refund_bank_account_required!=="T" ||
-            !["cancel_N10","cancel_N20","cancel_N22","cancel_N21"].every(code=>exposure.includes(code)) ||
+            !expectedExposure.every(code=>exposure.includes(code)) ||
+            invalidN10 ||
             exposure.some(code=>code.startsWith("exchange_")||code.startsWith("return_"))
           ) process.exit(1);
           '
