@@ -362,8 +362,9 @@ const systemOperations = await readFile(
   "utf8"
 );
 assert(
-  !systemOperations.includes("cancellationBody.refund_method_code"),
-  "Cafe24 non-PG cancellation must not invent a refund method without refund account data"
+  systemOperations.includes('cancellationBody.refund_method_code = ["T"]') &&
+  systemOperations.includes("paymentE2ERefundBank"),
+  "Cafe24 bank-deposit cancellation must use stored refund account data for cash refund"
 );
 
 const wranglerConfig = await readFile(
