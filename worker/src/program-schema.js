@@ -897,6 +897,17 @@ WHERE id IN (
 AND status IN ('pending','failed','running');
 `;
 
+const MIGRATION_0052 = String.raw`
+UPDATE lessons
+SET
+  vimeo_id=NULL,
+  duration_seconds=NULL,
+  status='draft',
+  updated_at=CURRENT_TIMESTAMP
+WHERE course_id='paid-naver-search-algorithm'
+  AND vimeo_id IN ('1227604364','1227604365');
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -1072,6 +1083,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0051);
     await markMigration(db, "0051_delegate_refund_workflow_to_cafe24.sql");
     applied.push("0051_delegate_refund_workflow_to_cafe24.sql");
+  }
+
+  if (!(await migrationApplied(db, "0052_remove_test_vimeo_from_real_paid_course.sql"))) {
+    await executeStatements(db, MIGRATION_0052);
+    await markMigration(db, "0052_remove_test_vimeo_from_real_paid_course.sql");
+    applied.push("0052_remove_test_vimeo_from_real_paid_course.sql");
   }
 
   const check = await db.prepare(

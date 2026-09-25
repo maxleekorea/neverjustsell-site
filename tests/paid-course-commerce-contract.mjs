@@ -67,6 +67,7 @@ assert(admin.includes("real_paid_course_check"), "course admin health must expos
 assert(admin.includes("real_paid_courses_check"), "course admin health must expose both real paid courses");
 assert(admin.includes("paid-naver-keyword-strategy"), "course admin health must inspect the second real paid course");
 assert(admin.includes("duration_count"), "course admin health must expose Vimeo duration readiness");
+assert(admin.includes("test_fixture_video_count"), "course admin health must expose accidental fixture media");
 assert(admin.includes("Vimeo 처리 완료"), "course launch must verify Vimeo processing");
 assert(admin.includes("영상 길이 확인"), "course launch must verify duration evidence for refunds");
 assert(admin.includes("게시 전 확인이 필요합니다:"), "publishing must fail closed when launch checks are incomplete");
@@ -339,6 +340,14 @@ const fastTestMediaMigration = await readFile(
 assert(fastTestMediaMigration.includes("1227604364"), "real paid course test video 1 missing");
 assert(fastTestMediaMigration.includes("1227604365"), "real paid course test video 2 missing");
 assert(fastTestMediaMigration.includes("naver-search-algorithm-04"), "all real search-algorithm test lessons must be video-linked");
+
+const realMediaCleanupMigration = await readFile(
+  new URL("../worker/migrations/0052_remove_test_vimeo_from_real_paid_course.sql", import.meta.url),
+  "utf8"
+);
+assert(realMediaCleanupMigration.includes("paid-naver-search-algorithm"), "real paid course test media cleanup target missing");
+assert(realMediaCleanupMigration.includes("1227604364") && realMediaCleanupMigration.includes("1227604365"), "known Vimeo fixture IDs must be removed before launch");
+assert(realMediaCleanupMigration.includes("vimeo_id=NULL"), "real paid course test media cleanup must clear Vimeo links");
 
 const realSalesPageMigration = await readFile(
   new URL("../worker/migrations/0025_seed_real_paid_course_sales_pages.sql", import.meta.url),

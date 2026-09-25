@@ -1614,7 +1614,7 @@ async function health(env) {
         "SELECT id,title,status,visible,catalog_visible,price_krw,cafe24_product_no,sales_state FROM courses WHERE id IN (?,?) ORDER BY sort_order,created_at"
       ).bind(realCourseIds[0], realCourseIds[1]).all(),
       env.COURSE_DB.prepare(
-        "SELECT course_id,COUNT(*) AS lesson_count,SUM(CASE WHEN vimeo_id IS NOT NULL THEN 1 ELSE 0 END) AS video_count,SUM(CASE WHEN status IN ('ready','published') THEN 1 ELSE 0 END) AS ready_count,SUM(CASE WHEN duration_seconds>0 THEN 1 ELSE 0 END) AS duration_count FROM lessons WHERE course_id IN (?,?) AND status!='archived' GROUP BY course_id"
+        "SELECT course_id,COUNT(*) AS lesson_count,SUM(CASE WHEN vimeo_id IS NOT NULL THEN 1 ELSE 0 END) AS video_count,SUM(CASE WHEN vimeo_id IN ('1227604364','1227604365') THEN 1 ELSE 0 END) AS test_fixture_video_count,SUM(CASE WHEN status IN ('ready','published') THEN 1 ELSE 0 END) AS ready_count,SUM(CASE WHEN duration_seconds>0 THEN 1 ELSE 0 END) AS duration_count FROM lessons WHERE course_id IN (?,?) AND status!='archived' GROUP BY course_id"
       ).bind(realCourseIds[0], realCourseIds[1]).all()
     ]);
     const realCourseRows = Array.isArray(realCoursesResult?.results) ? realCoursesResult.results : [];
@@ -1635,6 +1635,7 @@ async function health(env) {
         sales_state: realCourse.sales_state || "preparing",
         lesson_count: Number(realLessons.lesson_count || 0),
         video_count: Number(realLessons.video_count || 0),
+        test_fixture_video_count: Number(realLessons.test_fixture_video_count || 0),
         ready_count: Number(realLessons.ready_count || 0),
         duration_count: Number(realLessons.duration_count || 0)
       };
