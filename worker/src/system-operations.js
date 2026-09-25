@@ -12,6 +12,7 @@ const SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION = "set_all_current_products_no_ship
 const RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION = "reconcile_all_course_product_fulfillment";
 const HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION = "hide_digital_product_shipping_properties";
 const APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION = "apply_digital_product_detail_ux";
+const CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION = "configure_customer_claim_settings";
 
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 
@@ -863,6 +864,168 @@ async function applyDigitalProductDetailUx(env) {
   };
 }
 
+
+function findObjectWithKey(value, key, depth = 0) {
+  if (depth > 5 || value == null) return null;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findObjectWithKey(item, key, depth + 1);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (typeof value !== "object") return null;
+  if (Object.prototype.hasOwnProperty.call(value, key)) return value;
+  for (const child of Object.values(value)) {
+    const found = findObjectWithKey(child, key, depth + 1);
+    if (found) return found;
+  }
+  return null;
+}
+
+function normalizeOrderSetting(payload) {
+  return (
+    payload?.setting ||
+    payload?.settings?.[0] ||
+    payload?.order_setting ||
+    payload?.orders_setting ||
+    payload?.resource ||
+    findObjectWithKey(payload, "claim_request") ||
+    {}
+  );
+}
+
+function claimExposureCodes(value) {
+  const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+  return [...new Set(text.match(/(?:cancel|exchange|return)_N\d+/g) || [])];
+}
+
+function customerClaimSettingsSummary(setting) {
+  const exposure = claimExposureCodes(setting?.claim_request_button_exposure);
+  return {
+    claim_request: String(setting?.claim_request || ""),
+    claim_request_type: String(setting?.claim_request_type || ""),
+    claim_request_button_exposure: exposure,
+    claim_request_button_date_type: String(setting?.claim_request_button_date_type || ""),
+    claim_request_button_period: Number(setting?.claim_request_button_period || 0),
+    claim_request_auto_accept: String(setting?.claim_request_auto_accept || ""),
+    refund_bank_account_required: String(setting?.refund_bank_account_required || "")
+  };
+}
+
+function customerClaimSettingsConfigured(setting) {
+  const summary = customerClaimSettingsSummary(setting);
+  const expectedExposure = ["cancel_N10", "cancel_N20", "cancel_N22", "cancel_N21"];
+  const exposure = new Set(summary.claim_request_button_exposure);
+  return (
+    summary.claim_request === "T" &&
+    summary.claim_request_type === "S" &&
+    summary.claim_request_button_date_type === "order_date" &&
+    summary.claim_request_button_period === 7 &&
+    summary.claim_request_auto_accept === "F" &&
+    summary.refund_bank_account_required === "T" &&
+    expectedExposure.every((code) => exposure.has(code)) &&
+    !summary.claim_request_button_exposure.some((code) => code.startsWith("exchange_") || code.startsWith("return_"))
+  );
+}
+
+async function configureCustomerClaimSettings(env, row) {
+  let payload = {};
+  try { payload = JSON.parse(String(row.payload_json || "{}")); } catch {}
+
+  const periodDays = Number(payload.period_days || 7);
+  if (periodDays !== 7) {
+    throw new Error("Customer claim period must remain the approved 7-day default");
+  }
+
+  const beforePayload = await cafe24AdminGet("/orders/setting", env, { shop_no: 1 });
+  const before = normalizeOrderSetting(beforePayload);
+  if (!before || typeof before !== "object" || !Object.keys(before).length) {
+    throw new Error("Cafe24 order settings could not be normalized");
+  }
+
+  const snapshotKey = "orders_setting_before_customer_claim_v1";
+  const existingSnapshot = await env.COURSE_DB.prepare(
+    "SELECT snapshot_key FROM cafe24_setting_snapshots WHERE snapshot_key=? LIMIT 1"
+  ).bind(snapshotKey).first();
+
+  if (!existingSnapshot?.snapshot_key) {
+    await env.COURSE_DB.prepare(
+      "INSERT INTO cafe24_setting_snapshots(snapshot_key,payload_json) VALUES (?,?)"
+    ).bind(
+      snapshotKey,
+      JSON.stringify({
+        raw: beforePayload,
+        normalized: customerClaimSettingsSummary(before)
+      })
+    ).run();
+  }
+
+  const cancelExposure = ["cancel_N10", "cancel_N20", "cancel_N22", "cancel_N21"];
+  const currentExposure = before?.claim_request_button_exposure;
+  const exposureRequest = typeof currentExposure === "string"
+    ? cancelExposure.join(",")
+    : cancelExposure;
+
+  await cafe24AdminRequest("/orders/setting", env, {
+    method: "PUT",
+    body: {
+      shop_no: 1,
+      claim_request: "T",
+      claim_request_type: "S",
+      claim_request_button_exposure: exposureRequest,
+      claim_request_button_date_type: "order_date",
+      claim_request_button_period: 7,
+      claim_request_auto_accept: "F",
+      refund_bank_account_required: "T"
+    }
+  });
+
+  const afterPayload = await cafe24AdminGet("/orders/setting", env, { shop_no: 1 });
+  const after = normalizeOrderSetting(afterPayload);
+  if (!customerClaimSettingsConfigured(after)) {
+    throw new Error(
+      "Cafe24 customer cancellation settings verification failed: " +
+      JSON.stringify(customerClaimSettingsSummary(after))
+    );
+  }
+
+  // The dedicated product #13 has already served its purchase purpose.
+  // Keep it closed while the existing order is used for customer-initiated cancellation testing.
+  await cafe24AdminRequest("/products/13", env, {
+    method: "PUT",
+    body: { shop_no: 1, display: "F", selling: "F" }
+  });
+
+  const closedPayload = await cafe24AdminGet("/products/13", env, {
+    shop_no: 1,
+    fields: "product_no,display,selling"
+  });
+  const closed = normalizeProduct(closedPayload);
+  if (String(closed?.display || "") !== "F" || String(closed?.selling || "") !== "F") {
+    throw new Error("Payment E2E product #13 did not close after customer claim configuration");
+  }
+
+  return {
+    operation: CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION,
+    snapshot_key: snapshotKey,
+    before: customerClaimSettingsSummary(before),
+    after: customerClaimSettingsSummary(after),
+    product_13_closed: true
+  };
+}
+
+export async function getCustomerClaimSettingsStatus(env) {
+  const payload = await cafe24AdminGet("/orders/setting", env, { shop_no: 1 });
+  const setting = normalizeOrderSetting(payload);
+  const summary = customerClaimSettingsSummary(setting);
+  return {
+    ok: true,
+    configured: customerClaimSettingsConfigured(setting),
+    ...summary
+  };
+}
+
 export async function getDigitalProductDetailUxStatus(env) {
   const listed = await listAllCurrentProducts(env);
   const products = [];
@@ -916,7 +1079,7 @@ export async function runPendingSystemOperations(env) {
 
   const results = [];
   for (const row of rows) {
-    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION].includes(row.operation_type)) {
+    if (![OPEN_E2E_OPERATION, RECONCILE_E2E_ORDER_OPERATION, CANCEL_E2E_ORDER_OPERATION, BOOTSTRAP_CATALOG_OPERATION, CLEANUP_CATALOG_DUPLICATES_OPERATION, SET_ALL_PRODUCTS_NO_SHIPPING_OPERATION, RECONCILE_ALL_COURSE_FULFILLMENT_OPERATION, HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION, APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION, CONFIGURE_CUSTOMER_CLAIM_SETTINGS_OPERATION].includes(row.operation_type)) {
       results.push({ id: row.id, ok: false, skipped: true, reason: "unsupported_operation" });
       continue;
     }
@@ -939,7 +1102,9 @@ export async function runPendingSystemOperations(env) {
                   ? await reconcileAllCourseProductFulfillment(env)
                   : row.operation_type === HIDE_DIGITAL_SHIPPING_PROPERTIES_OPERATION
                     ? await hideDigitalProductShippingProperties(env)
-                    : await applyDigitalProductDetailUx(env);
+                    : row.operation_type === APPLY_DIGITAL_PRODUCT_DETAIL_UX_OPERATION
+                      ? await applyDigitalProductDetailUx(env)
+                      : await configureCustomerClaimSettings(env, row);
       await markCompleted(env.COURSE_DB, row.id);
       results.push({ id: row.id, ok: true, ...detail });
     } catch (error) {
