@@ -837,6 +837,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0047 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-reassert-separated-refund-processing',
+  'configure_customer_claim_settings',
+  'pending',
+  '{"period_days":7}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -982,6 +993,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0045);
     await markMigration(db, "0045_accept_payment_e2e_customer_cancellation.sql");
     applied.push("0045_accept_payment_e2e_customer_cancellation.sql");
+  }
+
+  if (!(await migrationApplied(db, "0047_reassert_separated_refund_processing.sql"))) {
+    await executeStatements(db, MIGRATION_0047);
+    await markMigration(db, "0047_reassert_separated_refund_processing.sql");
+    applied.push("0047_reassert_separated_refund_processing.sql");
   }
 
   const check = await db.prepare(
