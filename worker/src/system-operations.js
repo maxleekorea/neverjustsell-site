@@ -384,9 +384,11 @@ async function ensureProductInCategory(env, categoryNo, productNo) {
   await cafe24AdminRequest(`/categories/${categoryNo}/products`, env, {
     method: "POST",
     body: {
-      shop_no: 1,
-      display_group: 1,
-      product_no: Number(productNo)
+      request: {
+        shop_no: 1,
+        display_group: 1,
+        product_no: Number(productNo)
+      }
     }
   });
 
