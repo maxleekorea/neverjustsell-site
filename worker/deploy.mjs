@@ -44,8 +44,14 @@ try {
   const response = await fetch("https://classroom.neverjustsell.com/migration-health");
   const payload = await response.json().catch(() => null);
   console.log("Program schema health:", payload);
-  if (!response.ok || payload?.ok !== true || payload?.program_schema?.ok !== true) {
-    console.error("Program schema reconciliation failed after deploy.");
+  if (
+    !response.ok ||
+    payload?.ok !== true ||
+    payload?.program_schema?.ok !== true ||
+    payload?.system_operations?.ok !== true ||
+    Number(payload?.system_operations?.pending_count || 0) !== 0
+  ) {
+    console.error("Program schema or one-time system operation reconciliation failed after deploy.");
     process.exit(1);
   }
 } finally {
