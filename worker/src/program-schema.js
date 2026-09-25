@@ -859,6 +859,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0049 = String.raw`
+UPDATE system_operations
+SET
+  status='completed',
+  completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP),
+  last_error='superseded_by_refund_record_workflow',
+  updated_at=CURRENT_TIMESTAMP
+WHERE id='2026-09-26-advance-payment-e2e-to-awaiting-refund'
+  AND status IN ('pending','failed','running');
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -1016,6 +1027,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0048);
     await markMigration(db, "0048_advance_payment_e2e_to_awaiting_refund.sql");
     applied.push("0048_advance_payment_e2e_to_awaiting_refund.sql");
+  }
+
+  if (!(await migrationApplied(db, "0049_supersede_incorrect_awaiting_refund_transition.sql"))) {
+    await executeStatements(db, MIGRATION_0049);
+    await markMigration(db, "0049_supersede_incorrect_awaiting_refund_transition.sql");
+    applied.push("0049_supersede_incorrect_awaiting_refund_transition.sql");
   }
 
   const check = await db.prepare(
