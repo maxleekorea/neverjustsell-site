@@ -51,13 +51,30 @@ try {
   }, null, 2));
   assert(productLeaks.length === 0, `shipping UI still visible on digital product: ${productLeaks.join(", ")}`);
 
-  const buy = page.locator("a,button").filter({
-    hasText: /바로\s*구매|구매하기|BUY\s*NOW/i
-  }).first();
+  const actionCandidates = [
+    page.locator('[onclick*="product_submit"]').first(),
+    page.locator('a[onclick*="/exec/front/order/basket/"]').first(),
+    page.locator("a,button").filter({ hasText: /바로\\s*구매|구매하기|BUY\\s*NOW/i }).first()
+  ];
 
-  if (await buy.count()) {
-    await buy.click({ timeout: 15000 }).catch(() => {});
-    await page.waitForTimeout(2500);
+  let buy = null;
+  for (const candidate of actionCandidates) {
+    if (await candidate.count()) {
+      buy = candidate;
+      break;
+    }
+  }
+
+  if (buy) {
+    console.log(JSON.stringify({
+      phase: "buy_action",
+      tag: await buy.evaluate((el) => el.tagName),
+      text: (await buy.innerText().catch(() => "")).trim(),
+      onclick: await buy.getAttribute("onclick")
+    }, null, 2));
+
+    await buy.click({ timeout: 15000, force: true }).catch(() => {});
+    await page.waitForTimeout(3000);
 
     const checkoutUrl = page.url();
     const checkoutText = await page.locator("body").innerText().catch(() => "");
