@@ -22,3 +22,4 @@ reason=separate-cancellation-acceptance-from-refund-processing
 reason=reassert-separated-refund-processing
 reason=advance-payment-e2e-to-awaiting-refund
 reason=fix-awaiting-refund-undo-payload
+reason=inspect-refund-record-after-c10
