@@ -438,6 +438,26 @@ async function acceptPaymentE2ECustomerCancellation(env, row) {
     throw new Error("Refusing cancellation acceptance because E2E identity is inconsistent");
   }
 
+  // Cafe24 only accepts a claim separately from refund processing when the
+  // shop's refund processing policy is explicitly separated (D). Keep actual
+  // cash settlement independent; this must not create or complete a refund.
+  const settingPayload = await cafe24AdminGet("/orders/setting", env, { shop_no: 1 });
+  const setting = normalizeOrderSetting(settingPayload);
+  if (String(setting?.refund_processing_setting || "") !== "D") {
+    await cafe24AdminRequest("/orders/setting", env, {
+      method: "PUT",
+      body: {
+        shop_no: 1,
+        refund_processing_setting: "D"
+      }
+    });
+    const verifyPayload = await cafe24AdminGet("/orders/setting", env, { shop_no: 1 });
+    const verifySetting = normalizeOrderSetting(verifyPayload);
+    if (String(verifySetting?.refund_processing_setting || "") !== "D") {
+      throw new Error("Cafe24 refund processing could not be separated from cancellation acceptance");
+    }
+  }
+
   const quantity = Number(item?.quantity ?? item?.order_quantity ?? 1);
   await cafe24AdminRequest("/orders/" + encodeURIComponent(expectedOrderId) + "/cancellation", env, {
     method: "POST",
@@ -1192,6 +1212,7 @@ function customerClaimSettingsSummary(setting) {
     claim_request_button_period: Number(setting?.claim_request_button_period || 0),
     claim_request_auto_accept: String(setting?.claim_request_auto_accept || ""),
     refund_bank_account_required: String(setting?.refund_bank_account_required || ""),
+    refund_processing_setting: String(setting?.refund_processing_setting || ""),
     use_product_prepare_status: String(setting?.use_product_prepare_status || "")
   };
 }
@@ -1208,6 +1229,7 @@ function customerClaimSettingsConfigured(setting) {
     summary.claim_request_button_period === 7 &&
     summary.claim_request_auto_accept === "F" &&
     summary.refund_bank_account_required === "T" &&
+    summary.refund_processing_setting === "D" &&
     expectedExposure.every((code) => exposure.has(code)) &&
     (summary.use_product_prepare_status === "T" || !exposure.has("cancel_N10")) &&
     !summary.claim_request_button_exposure.some((code) => code.startsWith("exchange_") || code.startsWith("return_"))
@@ -1265,7 +1287,8 @@ async function configureCustomerClaimSettings(env, row) {
       claim_request_button_date_type: "order_date",
       claim_request_button_period: 7,
       claim_request_auto_accept: "F",
-      refund_bank_account_required: "T"
+      refund_bank_account_required: "T",
+      refund_processing_setting: "D"
     }
   });
 

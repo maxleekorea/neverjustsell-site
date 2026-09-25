@@ -212,6 +212,7 @@ assert(systemOperations.includes('recover_inventory: "F"'), "digital payment E2E
 assert(systemOperations.includes('display: "F", selling: "F"'), "completed payment E2E must hide the test product");
 assert(systemOperations.includes("e2e_refund_verified_hidden"), "hidden post-refund fixture state missing");
 assert(systemOperations.includes('"withdrawn"'), "payment E2E cancellation must verify Program withdrawal");
+assert(systemOperations.includes('refund_processing_setting: "D"'), "customer cancellation acceptance must stay separate from refund completion");
 assert(systemOperations.includes('order_state: orderState'), "payment E2E flow status must expose active/revoked order state");
 assert(systemOperations.includes("access_state_consistent"), "payment E2E flow status must verify access state consistency");
 
