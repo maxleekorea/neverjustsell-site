@@ -815,6 +815,17 @@ INSERT OR IGNORE INTO system_operations (
 );
 `;
 
+const MIGRATION_0044 = String.raw`
+INSERT OR IGNORE INTO system_operations (
+  id,operation_type,status,payload_json
+) VALUES (
+  '2026-09-26-rerun-payment-e2e-withdrawal-after-source-pin',
+  'reconcile_customer_cancelled_payment_e2e_access',
+  'pending',
+  '{"product_no":13,"date":"2026-09-25","order_id":"20260925-0000013"}'
+);
+`;
+
 async function columnNames(db, table) {
   const result = await db.prepare(`PRAGMA table_info("${table.replaceAll('"','""')}")`).all();
   return new Set((result.results || []).map((row) => String(row.name || "")));
@@ -948,6 +959,12 @@ async function ensureInternal(db) {
     await executeStatements(db, MIGRATION_0043);
     await markMigration(db, "0043_reconcile_customer_cancelled_payment_e2e_access.sql");
     applied.push("0043_reconcile_customer_cancelled_payment_e2e_access.sql");
+  }
+
+  if (!(await migrationApplied(db, "0044_rerun_payment_e2e_withdrawal_after_source_pin.sql"))) {
+    await executeStatements(db, MIGRATION_0044);
+    await markMigration(db, "0044_rerun_payment_e2e_withdrawal_after_source_pin.sql");
+    applied.push("0044_rerun_payment_e2e_withdrawal_after_source_pin.sql");
   }
 
   const check = await db.prepare(
