@@ -20,6 +20,10 @@ const community = await readFile(
   new URL("../community/migrations/0002_program_spaces.sql", import.meta.url),
   "utf8"
 );
+const sessionAccessRefresh = await readFile(
+  new URL("../community/migrations/0003_session_access_refresh.sql", import.meta.url),
+  "utf8"
+);
 const roles = await readFile(
   new URL("../worker/src/roles.js", import.meta.url),
   "utf8"
@@ -215,6 +219,16 @@ assert(communityAccess.includes("program_completed"), "alumni space must require
 assert(communityAccess.includes("access_status='revoked'"), "stale projected space access must be revoked");
 assert(communityAccess.includes("moderation_role"), "creator/moderator projection missing");
 assert(communityRuntime.includes("syncMemberProgramSpaces"), "community login must sync program space access");
+assert(communityRuntime.includes("refreshAuthenticatedProgramAccess"), "authenticated community sessions must refresh program access");
+assert(communityRuntime.includes("getCommunityIdentity"), "community refresh must use private RPC identity lookup");
+assert(communityRuntime.includes("payment-e2e-space-status"), "community payment E2E projection status route missing");
+assert(communityRuntime.includes("revokeProjectedProgramSpaces"), "community refresh must fail closed on source lookup failure");
+assert(communityAccess.includes("revokeProjectedProgramSpaces"), "community fail-closed projection revocation helper missing");
+assert(sessionAccessRefresh.includes("access_checked_at"), "community session access refresh migration missing");
+assert(communitySchema.includes("0003_session_access_refresh.sql"), "runtime community schema must track access refresh migration");
+assert(production.includes("CommunityAuthRpc"), "course Worker private Community RPC entrypoint missing");
+assert(production.includes("getCommunityIdentity"), "course Worker Community identity RPC missing");
+assert(production.includes("getPaymentE2ECommunityIdentity"), "course Worker payment E2E Community RPC missing");
 
 assert(admin.includes("program_enrollment"), "payment E2E inspection must expose Program enrollment");
 assert(admin.includes("Program 참가권"), "payment E2E admin must show Program enrollment state");
@@ -272,6 +286,22 @@ assert(communityDefaultConfig.workers_dev === false, "default community config m
 assert(
   communityDefaultConfig.routes?.some((route) => route.pattern === "community.neverjustsell.com" && route.custom_domain === true),
   "default community config must use the canonical custom domain"
+);
+assert(
+  communityProductionConfig.services?.some((service) =>
+    service.binding === "AUTH_BRIDGE" &&
+    service.service === "neverjustsell-course-access" &&
+    service.entrypoint === "CommunityAuthRpc"
+  ),
+  "production Community AUTH_BRIDGE must use the private RPC entrypoint"
+);
+assert(
+  communityDefaultConfig.services?.some((service) =>
+    service.binding === "AUTH_BRIDGE" &&
+    service.service === "neverjustsell-course-access" &&
+    service.entrypoint === "CommunityAuthRpc"
+  ),
+  "default Community AUTH_BRIDGE must use the private RPC entrypoint"
 );
 
 assert(workerDeploy.includes("migration-health"), "course deploy must reconcile schema through runtime binding");
