@@ -238,6 +238,9 @@ assert(programAccess.includes("reconcilePurchasedProgramEnrollments"), "Cafe24 p
 assert(programAccess.includes("findValidCoursePurchase"), "program enrollment must reuse confirmed purchase rules");
 assert(programAccess.includes("findRevokedCoursePurchase"), "program enrollment must react to refund/cancellation");
 assert(programAccess.includes("status='withdrawn'"), "revoked purchase must withdraw program enrollment");
+assert(programAccess.includes('PAYMENT_E2E_ORDER_ID = "20260925-0000013"'), "payment E2E Program must stay pinned to the dedicated source order");
+assert(programAccess.includes('String(run.run_id) === PAYMENT_E2E_RUN_ID'), "payment E2E Program must use isolated source-order reconciliation");
+
 assert(programAccess.includes("getProgramCommunityProjection"), "canonical community program projection missing");
 assert(ticketRuntime.includes("getProgramCommunityProjection"), "community ticket redemption must include canonical program access");
 

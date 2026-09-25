@@ -62,7 +62,7 @@ jobs:
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
-          const expected="2026-09-26-customer-claim-v15";
+          const expected="2026-09-26-customer-claim-v16";
           let last=null;
           for(let i=0;i<8;i+=1){
             const r=await fetch("https://classroom.neverjustsell.com/migration-health?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
@@ -234,9 +234,6 @@ jobs:
           const r=await fetch("https://community.neverjustsell.com/auth/payment-e2e-space-status?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
           const j=await r.json().catch(()=>null);
           console.log(JSON.stringify(j,null,2));
-          const active=
-            j?.source_program_enrollment==="active" &&
-            Number(j?.community_accessible_space_count||0)>=1;
           const withdrawn=
             j?.source_program_enrollment==="withdrawn" &&
             Number(j?.community_accessible_space_count||0)===0 &&
@@ -246,7 +243,7 @@ jobs:
             !j?.ok ||
             j?.logged_in_once!==true ||
             j?.access_consistent!==true ||
-            (!active && !withdrawn)
+            !withdrawn
           ) process.exit(1);
           '
 
