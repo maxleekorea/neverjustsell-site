@@ -62,6 +62,10 @@ const programAccess = await readFile(
   new URL("../worker/src/program-access.js", import.meta.url),
   "utf8"
 );
+const systemOperations = await readFile(
+  new URL("../worker/src/system-operations.js", import.meta.url),
+  "utf8"
+);
 const ticketRuntime = await readFile(
   new URL("../worker/src/runtime.js", import.meta.url),
   "utf8"
@@ -144,6 +148,14 @@ assert(production.includes("ensureProgramSchema"), "migration health must reconc
 assert(host.includes("ensureProgramSchema"), "program host must self-heal schema before access");
 
 assert(programSchema.includes("0029_program_payment_e2e_fixture.sql"), "runtime reconciler must apply program payment fixture");
+assert(programSchema.includes("0030_open_payment_e2e_product.sql"), "runtime reconciler must apply one-time payment product operation");
+assert(systemOperations.includes("open_payment_e2e_product_13"), "one-time payment E2E operation missing");
+assert(systemOperations.includes("price: 1000"), "one-time operation must force 1,000 KRW");
+assert(systemOperations.includes('display: "T"'), "one-time operation must expose the product");
+assert(systemOperations.includes('selling: "T"'), "one-time operation must enable selling");
+assert(systemOperations.includes('buy_limit_type: "M"'), "one-time operation must keep member-only purchase");
+assert(systemOperations.includes("getPaymentE2EProductStatus"), "read-only payment E2E product status missing");
+assert(production.includes("/system-check/payment-e2e/status"), "payment E2E product status route missing");
 assert(programAccess.includes("reconcilePurchasedProgramEnrollments"), "Cafe24 program enrollment sync missing");
 assert(programAccess.includes("findValidCoursePurchase"), "program enrollment must reuse confirmed purchase rules");
 assert(programAccess.includes("findRevokedCoursePurchase"), "program enrollment must react to refund/cancellation");
