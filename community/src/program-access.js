@@ -201,3 +201,21 @@ export async function syncMemberProgramSpaces(env, memberId, identity) {
     completed_program_count: completedPrograms.size
   };
 }
+
+
+export async function revokeProjectedProgramSpaces(env, memberId) {
+  await ensureCommunityProgramSchema(env);
+  if (!memberId) return { ok: false, revoked_count: 0, error: "member_id_required" };
+
+  const result = await env.DB.prepare(
+    "UPDATE space_members SET access_status='revoked',moderation_role=NULL," +
+    "revoked_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP " +
+    "WHERE member_id=? AND access_source='projection' AND access_status!='revoked' " +
+    "AND space_id IN (SELECT id FROM spaces WHERE scope_type IN ('program','program_run'))"
+  ).bind(String(memberId)).run();
+
+  return {
+    ok: true,
+    revoked_count: Number(result?.meta?.changes || 0)
+  };
+}
