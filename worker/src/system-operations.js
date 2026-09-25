@@ -306,7 +306,30 @@ async function reconcileRevokedPaymentE2EAccess(env, purchase) {
     13,
     purchase
   );
-  const programSync = await reconcilePurchasedProgramEnrollments(env, meta.memberId);
+
+  // The payment E2E Program is an internal fixture tied to this exact order.
+  // Do not run the general multi-purchase reconciliation here: a historical
+  // valid purchase of product #13 could legitimately keep a real Program
+  // active, but would make this fixture unable to prove source-order revocation.
+  const existingEnrollment = await env.COURSE_DB.prepare(
+    "SELECT run_id,member_id,status,source,source_order_id,source_order_item_code " +
+    "FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
+  ).bind(meta.memberId).first();
+
+  if (!existingEnrollment || existingEnrollment.source !== "purchase") {
+    throw new Error("Payment E2E Program enrollment is not purchase-sourced");
+  }
+
+  await env.COURSE_DB.prepare(
+    "UPDATE program_enrollments SET status='withdrawn',source_order_id=?,source_order_item_code=?," +
+    "updated_at=CURRENT_TIMESTAMP WHERE run_id='system-check-payment-program-run' AND member_id=? AND source='purchase'"
+  ).bind(meta.orderId, meta.itemCode, meta.memberId).run();
+
+  const programSync = {
+    synced: true,
+    mode: "dedicated_payment_e2e_source_order",
+    source_order_id: meta.orderId
+  };
   const enrollment = await env.COURSE_DB.prepare(
     "SELECT run_id,member_id,status,source,source_order_id,source_order_item_code,joined_at,started_at,updated_at " +
     "FROM program_enrollments WHERE run_id='system-check-payment-program-run' AND member_id=? LIMIT 1"
