@@ -103,6 +103,28 @@ async function openPaymentE2EProduct(env, row) {
   };
 }
 
+export async function getPaymentE2EProductStatus(env) {
+  const payload = await cafe24AdminGet("/products/13", env, { shop_no: 1 });
+  const product = normalizeProduct(payload);
+  const price = numericPrice(product?.price);
+  const display = String(product?.display || "");
+  const selling = String(product?.selling || "");
+  const memberOnly =
+    product?.buy_limit_by_product === "T" &&
+    String(product?.buy_limit_type || "") === "M";
+
+  return {
+    ok: Number.isFinite(price),
+    product_no: 13,
+    price_krw: Number.isFinite(price) ? price : null,
+    display,
+    selling,
+    member_only: memberOnly,
+    ready_for_test: price === 1000 && display === "T" && selling === "T" && memberOnly,
+    purchase_url: "https://neverjustsell.cafe24.com/product/detail.html?product_no=13"
+  };
+}
+
 export async function runPendingSystemOperations(env) {
   if (!env.COURSE_DB) return { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
 
