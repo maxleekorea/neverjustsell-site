@@ -6,6 +6,7 @@ import {
   renderKnowledgeEntry,
   renderKnowledgeIndex
 } from "./knowledge-hub-v2.js";
+import { renderStartPage, safeSiteReturnTo } from "./onboarding.js";
 
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
 const CLASSROOM_ORIGIN = "https://classroom.neverjustsell.com";
@@ -31,6 +32,17 @@ function esc(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function loginRedirect(returnTo) {
+  const location = `${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start?return_to=${encodeURIComponent(returnTo)}`;
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: location,
+      "Cache-Control": "no-store"
+    }
+  });
 }
 
 async function injectKnowledgeNavigation(response) {
@@ -131,7 +143,10 @@ async function extendSitemap(response) {
   if (response.status !== 200) return response;
   const body = await response.text();
   if (!body.includes("</urlset>")) return new Response(body, { status: response.status, headers: response.headers });
-  const additions = knowledgeSitemapXml().map(url => `  <url><loc>${url}</loc></url>`).join("\n");
+  const additions = [
+    `${CANONICAL_SITE_ORIGIN}/start`,
+    ...knowledgeSitemapXml()
+  ].map(url => `  <url><loc>${url}</loc></url>`).join("\n");
   const headers = new Headers(response.headers);
   headers.delete("Content-Length");
   return new Response(body.replace("</urlset>", `${additions}\n</urlset>`), { status: response.status, headers });
@@ -143,7 +158,7 @@ async function extendLlms(response) {
   if (body.includes("Knowledge Hub:")) return new Response(body, { status: response.status, headers: response.headers });
   const headers = new Headers(response.headers);
   headers.delete("Content-Length");
-  return new Response(`${body}\nKnowledge Hub: ${CANONICAL_SITE_ORIGIN}/knowledge\n`, { status: response.status, headers });
+  return new Response(`${body}\nStart: ${CANONICAL_SITE_ORIGIN}/start\nKnowledge Hub: ${CANONICAL_SITE_ORIGIN}/knowledge\n`, { status: response.status, headers });
 }
 
 export default {
@@ -163,6 +178,14 @@ export default {
           "Cache-Control": "no-store"
         }
       });
+    }
+
+    if (request.method === "GET" && url.pathname === "/login") {
+      return loginRedirect(safeSiteReturnTo(url.searchParams.get("return_to")));
+    }
+
+    if (request.method === "GET" && (url.pathname === "/start" || url.pathname === "/start/")) {
+      return html(renderStartPage());
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge" || url.pathname === "/knowledge/")) {
