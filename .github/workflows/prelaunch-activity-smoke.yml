@@ -57,6 +57,8 @@ jobs:
             !j?.ok ||
             Number(j?.seeded_posts || 0) < 30 ||
             Number(j?.seeded_answers || 0) < 30 ||
+            Number(j?.meaningful_replies || 0) < 80 ||
+            j?.discussion_depth?.ok !== true ||
             Number(j?.course_qa_count || 0) < 23
           ) {
             process.exit(1);
