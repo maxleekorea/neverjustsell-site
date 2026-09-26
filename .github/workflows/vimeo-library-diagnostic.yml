@@ -1,0 +1,36 @@
+name: Vimeo library private diagnostic
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/vimeo-diagnostic.flag"
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Capture Vimeo library without printing private titles
+        run: |
+          node -e '
+          import("node:fs").then(async ({writeFileSync})=>{
+            const r=await fetch("https://classroom.neverjustsell.com/vimeo/videos?diagnostic="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+            const text=await r.text();
+            if(!r.ok) throw new Error("Vimeo library request failed: "+r.status);
+            writeFileSync("vimeo-videos.json",text,"utf8");
+          });
+          '
+      - name: Upload short-lived diagnostic artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vimeo-library-diagnostic
+          path: vimeo-videos.json
+          retention-days: 1
+          if-no-files-found: error
