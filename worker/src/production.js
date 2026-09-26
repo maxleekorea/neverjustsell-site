@@ -14,9 +14,10 @@ import {
   handleLessonDiscussionPost,
   injectLessonDiscussionExperience
 } from "./lesson-discussions.js";
+import { classroomMobileUxScript, injectClassroomMobileUx } from "./classroom-mobile-ux.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-26-lesson-discussion-v32";
+const PRODUCTION_BUILD = "2026-09-26-mobile-learning-ux-v33";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -101,6 +102,16 @@ export default {
       return ticketApp.fetch(request, env, ctx);
     }
 
+    if (url.pathname === "/classroom/mobile-learning.js" && request.method === "GET") {
+      return new Response(classroomMobileUxScript(), {
+        headers: {
+          "Content-Type": "application/javascript; charset=utf-8",
+          "Cache-Control": "public, max-age=300",
+          "X-Content-Type-Options": "nosniff"
+        }
+      });
+    }
+
     if (url.pathname === "/classroom/discussions" && request.method === "POST") {
       try {
         return await handleLessonDiscussionPost(request, env);
@@ -115,11 +126,16 @@ export default {
       url.pathname === "/courses" ||
       url.pathname.startsWith("/courses/")
     ) {
-      const response = await classroomApp.fetch(request, env, ctx);
+      let response = await classroomApp.fetch(request, env, ctx);
       try {
-        return await injectLessonDiscussionExperience(response, request, env);
+        response = await injectLessonDiscussionExperience(response, request, env);
       } catch (error) {
         console.error("lesson discussion UI injection failed", error);
+      }
+      try {
+        return await injectClassroomMobileUx(response);
+      } catch (error) {
+        console.error("classroom mobile UX injection failed", error);
         return response;
       }
     }
@@ -227,8 +243,6 @@ export default {
         const systemOperations = hasCourseDb
           ? await runPendingSystemOperations(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
-        // A local contract test intentionally has no D1 binding. In production the binding is
-        // mandatory and both real-course media sync and lesson discussion readiness must pass.
         const healthy = hasCourseDb
           ? Boolean(realPaidCourseSync?.ok && lessonDiscussions?.ok)
           : true;
