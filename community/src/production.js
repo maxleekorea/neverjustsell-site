@@ -70,29 +70,27 @@ async function injectCourseQa(response, env) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    let seedState = null;
 
-    try {
-      seedState = await ensureSeed(env);
-    } catch (error) {
-      console.error("prelaunch community seed failed", error);
-      if (url.pathname === "/auth/prelaunch-seed-status") {
+    // Seed/reconcile only through the explicit diagnostic route. Never make ordinary
+    // community page views pay for idempotent seed checks on a cold Worker isolate.
+    if (url.pathname === "/auth/prelaunch-seed-status") {
+      try {
+        const seedState = await ensureSeed(env);
+        const qas = await getCourseQa(env, 30);
+        const base = seedState?.base || { ok: false, error: "seed_unavailable" };
+        const depth = seedState?.depth || { ok: false, error: "discussion_depth_unavailable" };
+        const ok = Boolean(base?.ok && depth?.ok && qas.length >= 23);
+        return json({
+          ...base,
+          discussion_depth: depth,
+          meaningful_replies: Number(depth?.meaningful_replies || 0),
+          course_qa_count: qas.length,
+          ok
+        }, ok ? 200 : 503);
+      } catch (error) {
+        console.error("prelaunch community seed failed", error);
         return json({ ok: false, error: String(error?.message || error) }, 503);
       }
-    }
-
-    if (url.pathname === "/auth/prelaunch-seed-status") {
-      const qas = await getCourseQa(env, 30);
-      const base = seedState?.base || { ok: false, error: "seed_unavailable" };
-      const depth = seedState?.depth || { ok: false, error: "discussion_depth_unavailable" };
-      const ok = Boolean(base?.ok && depth?.ok && qas.length >= 23);
-      return json({
-        ...base,
-        discussion_depth: depth,
-        meaningful_replies: Number(depth?.meaningful_replies || 0),
-        course_qa_count: qas.length,
-        ok
-      }, ok ? 200 : 503);
     }
 
     const response = await community.fetch(request, env, ctx);
