@@ -1,0 +1,42 @@
+name: Prelaunch activity smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "community/src/prelaunch-seed.js"
+      - "community/src/production.js"
+      - "community/wrangler.jsonc"
+      - "community/wrangler.production.jsonc"
+      - "site/public/app.js"
+      - ".github/workflows/prelaunch-activity-smoke.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment propagation
+        run: sleep 45
+      - name: Verify seeded community activity
+        run: |
+          node - <<'NODE'
+          const url = "https://community.neverjustsell.com/auth/prelaunch-seed-status?check=" + Date.now();
+          const r = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
+          const j = await r.json().catch(() => null);
+          console.log(JSON.stringify(j, null, 2));
+          if (!r.ok || !j?.ok || Number(j?.seeded_posts || 0) < 30 || Number(j?.seeded_answers || 0) < 30) {
+            process.exit(1);
+          }
+          NODE
+      - name: Verify public social proof asset
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://www.neverjustsell.com/app.js?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const body = await r.text();
+          console.log(JSON.stringify({ status: r.status, bytes: body.length }));
+          if (!r.ok || !body.includes("YES24 종이책 리뷰") || !body.includes("교보문고 독자 평가") || !body.includes("9.4 / 10") || !body.includes("9.9 / 10")) {
+            process.exit(1);
+          }
+          NODE
