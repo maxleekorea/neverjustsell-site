@@ -8,6 +8,12 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
+  "services": [
+    {
+      "binding": "COMMUNITY_BRIDGE",
+      "service": "neverjustsell-community"
+    }
+  ],
   "vars": {
     "SITE_ORIGIN": "https://www.neverjustsell.com",
     "AUTH_ORIGIN": "https://classroom.neverjustsell.com",
