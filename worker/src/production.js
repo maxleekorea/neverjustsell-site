@@ -8,7 +8,7 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
-import { ensureRealPaidCourseLaunchData } from "./real-paid-course-sync.js";
+import { ensureRealPaidCourseLaunchData } from "./real-paid-course-sync-v2.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-26-liveklass-vimeo-sync-v31";
@@ -79,16 +79,11 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Old workers.dev bookmarks are compatibility-only. Production users
-    // always land on the canonical classroom custom domain.
     if (url.hostname === LEGACY_CLASSROOM_HOST) {
       const target = new URL(`${url.pathname}${url.search}`, CLASSROOM_ORIGIN);
       return Response.redirect(target.toString(), 302);
     }
 
-    // One public route owner per capability. Lower modules may still contain
-    // legacy fallback code during migration, but production dispatch never
-    // sends the same route through multiple wrappers.
     if (AUTH_ROUTES.has(url.pathname)) {
       return authApp.fetch(request, env, ctx);
     }
@@ -193,11 +188,7 @@ export default {
         const product = await getPaymentE2EProductStatus(env);
         return json(product, { status: product.ok ? 200 : 503 });
       } catch (error) {
-        return json({
-          ok: false,
-          product_no: 13,
-          error: String(error?.message || error)
-        }, { status: 503 });
+        return json({ ok: false, product_no: 13, error: String(error?.message || error) }, { status: 503 });
       }
     }
 
