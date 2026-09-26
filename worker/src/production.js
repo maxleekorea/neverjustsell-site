@@ -18,7 +18,7 @@ import { classroomMobileUxScript, injectClassroomMobileUx } from "./classroom-mo
 import { ensureKnowledgeSaveSchema, handleKnowledgeSaves } from "./knowledge-saves.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-27-member-knowledge-library-v34";
+const PRODUCTION_BUILD = "2026-09-26-mobile-learning-ux-v33";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
