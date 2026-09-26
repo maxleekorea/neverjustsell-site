@@ -62,7 +62,7 @@ jobs:
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
-          const expected="2026-09-26-real-course-media-cleanup-v30";
+          const expected="2026-09-26-liveklass-vimeo-sync-v31";
           let last=null;
           for(let i=0;i<8;i+=1){
             const r=await fetch("https://classroom.neverjustsell.com/migration-health?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
@@ -74,6 +74,7 @@ jobs:
               j?.ok &&
               j?.production_build===expected &&
               j?.program_schema?.ok &&
+              j?.real_paid_course_sync?.ok &&
               j?.system_operations?.ok &&
               Number(j?.system_operations?.pending_count||0)===0
             ) process.exit(0);
@@ -89,12 +90,21 @@ jobs:
           const j=await r.json().catch(()=>null);
           const courses=Array.isArray(j?.real_paid_courses_check)?j.real_paid_courses_check:[];
           console.log(JSON.stringify({version:j?.version,real_paid_courses_check:courses},null,2));
-          const ids=new Set(courses.map(course=>course?.id));
+          const first=courses.find(course=>course?.id==="paid-naver-search-algorithm");
+          const second=courses.find(course=>course?.id==="paid-naver-keyword-strategy");
           if(
             !r.ok ||
             !j?.ok ||
-            !ids.has("paid-naver-search-algorithm") ||
-            !ids.has("paid-naver-keyword-strategy") ||
+            !first ||
+            !second ||
+            Number(first?.lesson_count)!==10 ||
+            Number(first?.video_count)!==10 ||
+            Number(first?.ready_count)!==10 ||
+            Number(first?.duration_count)!==10 ||
+            Number(second?.lesson_count)!==13 ||
+            Number(second?.video_count)!==13 ||
+            Number(second?.ready_count)!==13 ||
+            Number(second?.duration_count)!==13 ||
             courses.some(course=>Number(course?.test_fixture_video_count||0)!==0)
           ) process.exit(1);
           '
