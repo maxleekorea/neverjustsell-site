@@ -8,9 +8,10 @@ import vimeoApp from "./vimeo.js";
 import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
+import { ensureRealPaidCourseLaunchData } from "./real-paid-course-sync.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-26-real-course-media-cleanup-v30";
+const PRODUCTION_BUILD = "2026-09-26-liveklass-vimeo-sync-v31";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
@@ -205,11 +206,14 @@ export default {
         const programSchema = env.COURSE_DB
           ? await ensureProgramSchema(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
+        const realPaidCourseSync = env.COURSE_DB
+          ? await ensureRealPaidCourseLaunchData(env)
+          : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
         const systemOperations = env.COURSE_DB
           ? await runPendingSystemOperations(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
         return json({
-          ok: true,
+          ok: Boolean(realPaidCourseSync?.ok),
           host: url.hostname,
           redirect_uri: cafe24RedirectUri(env),
           site_origin: env.SITE_ORIGIN || null,
@@ -218,8 +222,9 @@ export default {
           route_owner: "production-dispatch-v3",
           production_build: PRODUCTION_BUILD,
           program_schema: programSchema,
+          real_paid_course_sync: realPaidCourseSync,
           system_operations: systemOperations
-        });
+        }, { status: realPaidCourseSync?.ok ? 200 : 503 });
       } catch (error) {
         return json({
           ok: false,
