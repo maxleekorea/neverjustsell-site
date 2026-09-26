@@ -1,0 +1,60 @@
+name: Knowledge library smoke
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "deploy/production.flag"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for site and worker propagation
+        run: sleep 75
+
+      - name: Verify member knowledge library page
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://www.neverjustsell.com/knowledge/saved?check=" + Date.now(), {
+            headers: { "Cache-Control": "no-cache" }
+          });
+          const body = await r.text();
+          console.log(JSON.stringify({ status: r.status, bytes: body.length }));
+          if (!r.ok || !body.includes("내 학습함") || !body.includes("회원 계정에 저장한 용어·사례·브리핑")) process.exit(1);
+          NODE
+
+      - name: Verify knowledge login return is accepted
+        run: |
+          node - <<'NODE'
+          const returnTo = encodeURIComponent("https://www.neverjustsell.com/knowledge/saved");
+          const r = await fetch(
+            "https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to=" + returnTo,
+            { redirect: "manual", headers: { "Cache-Control": "no-cache" } }
+          );
+          const location = r.headers.get("location") || "";
+          console.log(JSON.stringify({ status: r.status, location_origin: location ? new URL(location).origin : null }));
+          if (r.status !== 302 || !location.startsWith("https://neverjustsell.cafe24.com/api/v2/oauth/authorize")) process.exit(1);
+          NODE
+
+      - name: Verify anonymous knowledge saves API and CORS
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://classroom.neverjustsell.com/knowledge/saves?check=" + Date.now(), {
+            headers: {
+              Origin: "https://www.neverjustsell.com",
+              Accept: "application/json",
+              "Cache-Control": "no-cache"
+            }
+          });
+          const j = await r.json().catch(() => null);
+          console.log(JSON.stringify({ status: r.status, body: j, cors: r.headers.get("access-control-allow-origin") }, null, 2));
+          if (
+            r.status !== 401 ||
+            j?.authenticated !== false ||
+            r.headers.get("access-control-allow-origin") !== "https://www.neverjustsell.com" ||
+            r.headers.get("access-control-allow-credentials") !== "true"
+          ) process.exit(1);
+          NODE
