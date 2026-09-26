@@ -38,7 +38,7 @@ jobs:
         run: |
           node - <<'NODE'
           const checks = [
-            ["https://www.neverjustsell.com/?check=" + Date.now(), ["그냥 팔지", "지금 이어지는 질문과 지식", "강의 Q&A", "커뮤니티"]],
+            ["https://www.neverjustsell.com/?check=" + Date.now(), ["그냥 팔지", "지금 이어지는 질문과 지식", "강의 Q&amp;A", "커뮤니티 글", "댓글·답변"]],
             ["https://www.neverjustsell.com/knowledge?check=" + Date.now(), ["NJS KNOWLEDGE HUB", "지식"]]
           ];
           for (const [url, phrases] of checks) {
@@ -46,8 +46,9 @@ jobs:
             for (let i = 0; i < 12; i += 1) {
               const r = await fetch(url + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
               const body = await r.text();
-              console.log(JSON.stringify({ url, attempt: i, status: r.status, bytes: body.length }));
-              if (r.ok && phrases.every((phrase) => body.includes(phrase))) { ok = true; break; }
+              const state = Object.fromEntries(phrases.map((phrase) => [phrase, body.includes(phrase)]));
+              console.log(JSON.stringify({ url, attempt: i, status: r.status, bytes: body.length, state }));
+              if (r.ok && Object.values(state).every(Boolean)) { ok = true; break; }
               await new Promise((resolve) => setTimeout(resolve, 3000));
             }
             if (!ok) process.exit(1);
