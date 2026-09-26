@@ -40,9 +40,7 @@ jobs:
             Number(first?.answered_count || 0) < 10 ||
             Number(second?.question_count || 0) < 13 ||
             Number(second?.answered_count || 0) < 13
-          ) {
-            process.exit(1);
-          }
+          ) process.exit(1);
           NODE
 
       - name: Verify seeded community activity and shared course Q&A
@@ -60,9 +58,24 @@ jobs:
             Number(j?.meaningful_replies || 0) < 80 ||
             j?.discussion_depth?.ok !== true ||
             Number(j?.course_qa_count || 0) < 23
-          ) {
-            process.exit(1);
-          }
+          ) process.exit(1);
+          NODE
+
+      - name: Verify read-only public activity feed
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/public/activity?limit=3&check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const j = await r.json().catch(() => null);
+          console.log(JSON.stringify(j, null, 2));
+          if (
+            !r.ok ||
+            !j?.ok ||
+            !Array.isArray(j?.posts) || j.posts.length < 1 ||
+            !Array.isArray(j?.course_qa) || j.course_qa.length < 1 ||
+            Number(j?.totals?.published_posts || 0) < 30 ||
+            Number(j?.totals?.published_comments || 0) < 80 ||
+            Number(j?.totals?.course_qa || 0) < 23
+          ) process.exit(1);
           NODE
 
       - name: Verify course Q&A surfaces
@@ -95,6 +108,22 @@ jobs:
           ) process.exit(1);
           NODE
 
+      - name: Verify public home live activity module
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const body = await r.text();
+          console.log(JSON.stringify({ status: r.status, bytes: body.length }));
+          if (
+            !r.ok ||
+            !body.includes("지금 이어지는 질문과 지식") ||
+            !body.includes("강의 Q&A") ||
+            !body.includes("커뮤니티 글") ||
+            !body.includes("댓글·답변") ||
+            !body.includes("지식 브리핑")
+          ) process.exit(1);
+          NODE
+
       - name: Verify public social proof and mobile IA asset
         run: |
           node - <<'NODE'
@@ -109,7 +138,5 @@ jobs:
             !body.includes("9.9 / 10") ||
             !body.includes("organizeMobileNavigation") ||
             !body.includes("njs-mobile-more")
-          ) {
-            process.exit(1);
-          }
+          ) process.exit(1);
           NODE
