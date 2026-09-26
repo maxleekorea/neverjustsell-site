@@ -16,7 +16,7 @@ import {
 } from "./lesson-discussions.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-26-liveklass-vimeo-sync-v31";
+const PRODUCTION_BUILD = "2026-09-26-lesson-discussion-v32";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
