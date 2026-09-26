@@ -6,6 +6,11 @@ import {
   renderKnowledgeEntry,
   renderKnowledgeIndex
 } from "./knowledge-hub-v2.js";
+import {
+  renderSavedKnowledgePage,
+  injectKnowledgeMemberIndex,
+  injectMemberSaveControl
+} from "./knowledge-member.js";
 import { renderStartPage, safeSiteReturnTo } from "./onboarding.js";
 
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
@@ -189,13 +194,17 @@ export default {
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge" || url.pathname === "/knowledge/")) {
-      return html(renderKnowledgeIndex());
+      return injectKnowledgeMemberIndex(html(renderKnowledgeIndex()));
+    }
+
+    if (request.method === "GET" && (url.pathname === "/knowledge/saved" || url.pathname === "/knowledge/saved/")) {
+      return html(renderSavedKnowledgePage(KNOWLEDGE_ENTRIES), 200, { "Cache-Control": "private, no-store" });
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/knowledge/")) {
       const slug = decodeURIComponent(url.pathname.slice("/knowledge/".length)).replace(/\/$/, "");
       const entry = findKnowledgeEntry(slug);
-      if (entry) return html(renderKnowledgeEntry(entry));
+      if (entry) return injectMemberSaveControl(html(renderKnowledgeEntry(entry)), request);
       return html('<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>지식을 찾을 수 없습니다 | NEVER JUST SELL</title></head><body><main style="max-width:720px;margin:80px auto;padding:20px;font-family:Arial,sans-serif"><h1>지식을 찾을 수 없습니다.</h1><p><a href="/knowledge">지식 허브로 돌아가기</a></p></main></body></html>', 404, { "Cache-Control": "no-store" });
     }
 
