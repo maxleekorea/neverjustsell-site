@@ -33,3 +33,4 @@ reason=inspect-real-paid-course-production-state
 reason=remove-test-vimeo-from-real-paid-course-before-launch
 reason=sync-liveklass-catalog-vimeo-and-transcript-availability
 reason=retry-liveklass-vimeo-match-by-sequence
+reason=pin-vimeo-files-by-actual-library-name
