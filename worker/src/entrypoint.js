@@ -2,6 +2,7 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import productionWorker from "./production.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
+import { listPublicCourseQa } from "./lesson-discussions.js";
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
   async fetch(request) {
@@ -30,6 +31,14 @@ export class CommunityAuthRpc extends WorkerEntrypoint {
       ok: true,
       member_id: normalized,
       ...projection
+    };
+  }
+
+  async listPublicCourseQa(limit = 8) {
+    const safeLimit = Math.max(1, Math.min(30, Number(limit) || 8));
+    return {
+      ok: true,
+      items: await listPublicCourseQa(this.env, safeLimit)
     };
   }
 
