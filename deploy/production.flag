@@ -35,3 +35,4 @@ reason=sync-liveklass-catalog-vimeo-and-transcript-availability
 reason=retry-liveklass-vimeo-match-by-sequence
 reason=pin-vimeo-files-by-actual-library-name
 reason=seed-prelaunch-community-activity-and-verified-social-proof
+reason=deploy-shared-lesson-qna-and-community-surface
