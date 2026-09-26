@@ -1,21 +1,44 @@
-import { cafe24AdminGet, cafe24AdminRequest } from "./session-orders.js";
-import { digitalProductDescriptionHtml } from "./fulfillment.js";
 import { REAL_PAID_COURSE_CATALOG } from "./real-paid-course-sync.js";
 
 const VIMEO_API_ORIGIN = "https://api.vimeo.com";
-const LEGACY_OPERATION_ID = "2026-09-26-sync-real-paid-course-vimeo-and-catalog";
 const EXCLUDED_VIDEO_IDS = new Set(["1227267267", "1227604364", "1227604365"]);
+
+const VIDEO_NAME_TOKENS = {
+  "naver-search-algorithm-01": ["유통역사01대형마트시대"],
+  "naver-search-algorithm-02": ["유통역사02온라인1세대"],
+  "naver-search-algorithm-03": ["유통역사03모바일시대"],
+  "naver-search-algorithm-04": ["유통역사04알고리즘"],
+  "naver-search-algorithm-05": ["유통역사05대청소"],
+  "naver-search-algorithm-06": ["유통역사06인포먼스마케팅"],
+  "naver-search-algorithm-07": ["유통역사07검색데이터확인"],
+  "naver-search-algorithm-08": ["유통역사08브랜드"],
+  "naver-search-algorithm-09": ["알고리즘보충강의"],
+  "naver-search-algorithm-10": ["검색키워드찾기"],
+  "naver-keyword-strategy-01": ["2강키워드전략01"],
+  "naver-keyword-strategy-02": ["2강키워드전략02"],
+  "naver-keyword-strategy-03": ["2강키워드전략03"],
+  "naver-keyword-strategy-04": ["2강키워드전략04"],
+  "naver-keyword-strategy-05": ["2강키워드전략05"],
+  "naver-keyword-strategy-06": ["2강키워드전략06"],
+  "naver-keyword-strategy-07": ["2강키워드전략07"],
+  "naver-keyword-strategy-08": ["2강키워드전략08"],
+  "naver-keyword-strategy-09": ["2강키워드전략09"],
+  "naver-keyword-strategy-10": ["2강키워드전략10"],
+  "naver-keyword-strategy-11": ["2강키워드전략11"],
+  "naver-keyword-strategy-12": ["2강키워드전략12"],
+  "naver-keyword-strategy-13": ["2강키워드전략13"]
+};
 
 function normalizeName(value) {
   return String(value || "").normalize("NFKC").toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
 }
 
-function vimeoId(uri) {
+function videoId(uri) {
   const match = String(uri || "").match(/\/videos\/(\d+)/);
   return match ? match[1] : null;
 }
 
-function vimeoHeaders(env) {
+function authHeaders(env) {
   return {
     Authorization: "Bearer " + String(env.VIMEO_ACCESS_TOKEN || "").trim(),
     Accept: "application/vnd.vimeo.*+json;version=3.4"
@@ -23,13 +46,13 @@ function vimeoHeaders(env) {
 }
 
 async function vimeoJson(url, env) {
-  const response = await fetch(url, { headers: vimeoHeaders(env) });
+  const response = await fetch(url, { headers: authHeaders(env) });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error("Vimeo API request failed (" + response.status + ")");
   return payload;
 }
 
-async function listVimeoVideos(env) {
+async function listVideos(env) {
   if (!String(env.VIMEO_ACCESS_TOKEN || "").trim()) throw new Error("Vimeo access token is missing");
   const videos = [];
   let next = VIMEO_API_ORIGIN + "/me/videos?per_page=100&sort=date&direction=desc&fields=uri,name,duration,created_time,modified_time,transcode.status";
@@ -40,168 +63,88 @@ async function listVimeoVideos(env) {
     next = nextPath ? new URL(nextPath, VIMEO_API_ORIGIN).toString() : null;
   }
   return videos.filter((video) => {
-    const id = vimeoId(video.uri);
+    const id = videoId(video.uri);
     return id && !EXCLUDED_VIDEO_IDS.has(id);
   });
 }
 
-function exactMatch(video, lesson) {
-  const normalized = normalizeName(video?.name);
-  return Array.isArray(lesson?.keys) && lesson.keys.some((key) => normalized.includes(normalizeName(key)));
-}
-
-function firstCourseFallback(video, lesson) {
-  const normalized = normalizeName(video?.name);
-  const suffix = String(lesson?.id || "").match(/-(\d{2})$/)?.[1] || "";
-  if (!suffix) return false;
-
-  if (Number(suffix) >= 1 && Number(suffix) <= 8) {
-    const bare = String(Number(suffix));
-    return normalized.startsWith(suffix) ||
-      normalized.startsWith(bare + "강") ||
-      normalized.includes("1강" + suffix) ||
-      normalized.includes("1강" + bare + "편") ||
-      normalized.includes("온라인유통" + suffix) ||
-      normalized.includes("온라인커머스" + suffix);
-  }
-
-  if (suffix === "09") {
-    return (normalized.includes("검색") && normalized.includes("알고리즘") &&
-      (normalized.includes("모델") || normalized.includes("분석"))) ||
-      normalized.includes("1강보충강의01") ||
-      normalized.includes("1강보충01") ||
-      normalized.includes("보충강의01");
-  }
-
-  if (suffix === "10") {
-    return (normalized.includes("키워드") &&
-      (normalized.includes("발굴") || normalized.includes("찾기"))) ||
-      normalized.includes("1강보충강의02") ||
-      normalized.includes("1강보충02") ||
-      normalized.includes("보충강의02");
-  }
-
-  return false;
-}
-
-function selectCandidate(videos, lesson, used, courseId) {
-  const available = videos.filter((video) => {
-    const id = vimeoId(video.uri);
-    return id && !used.has(id);
+function findVideo(videos, lessonId) {
+  const tokens = VIDEO_NAME_TOKENS[lessonId] || [];
+  const candidates = videos.filter((video) => {
+    const name = normalizeName(video.name);
+    return tokens.some((token) => name === token || name.includes(token));
   });
-  let candidates = available.filter((video) => exactMatch(video, lesson));
-  if (!candidates.length && courseId === "paid-naver-search-algorithm") {
-    candidates = available.filter((video) => firstCourseFallback(video, lesson));
-  }
   candidates.sort((a, b) => String(b.modified_time || b.created_time || "").localeCompare(String(a.modified_time || a.created_time || "")));
   return candidates[0] || null;
 }
 
-async function textTrackSummary(videoId, env) {
+async function textTrackSummary(vimeoId, env) {
   try {
     const fields = encodeURIComponent("uri,id,language,display_language,name,type,active,provenance,download_links,download_links_expires_time");
-    const payload = await vimeoJson(VIMEO_API_ORIGIN + "/videos/" + encodeURIComponent(videoId) + "/texttracks?fields=" + fields, env);
+    const payload = await vimeoJson(VIMEO_API_ORIGIN + "/videos/" + encodeURIComponent(vimeoId) + "/texttracks?fields=" + fields, env);
     const tracks = Array.isArray(payload.data) ? payload.data : [];
     return {
       accessible: true,
       count: tracks.length,
       autogenerated: tracks.filter((track) => String(track?.provenance || "").startsWith("autogen_")).length,
-      korean: tracks.filter((track) => /^(ko|ko-kr)$/i.test(String(track?.language || ""))).length,
       downloadable: tracks.filter((track) => Boolean(track?.download_links?.vtt || track?.download_links?.srt || track?.link)).length
     };
   } catch {
-    return { accessible: false, count: 0, autogenerated: 0, korean: 0, downloadable: 0 };
+    return { accessible: false, count: 0, autogenerated: 0, downloadable: 0 };
   }
 }
 
-async function ensureCatalogRows(env) {
-  const statements = [];
+async function currentLessonMap(db) {
+  const result = await db.prepare(
+    "SELECT id,course_id,vimeo_id,duration_seconds,status FROM lessons WHERE course_id IN ('paid-naver-search-algorithm','paid-naver-keyword-strategy') AND status!='archived'"
+  ).all();
+  return new Map((result.results || []).map((row) => [row.id, row]));
+}
+
+export async function ensureRealPaidCourseLaunchData(env) {
+  if (!env.COURSE_DB) return { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
+  const videos = await listVideos(env);
+  const existing = await currentLessonMap(env.COURSE_DB);
+  const courseResults = [];
+  const updates = [];
+
   for (const course of REAL_PAID_COURSE_CATALOG) {
-    statements.push(env.COURSE_DB.prepare(
-      "UPDATE courses SET title=?,summary=?,instructor_name=COALESCE(NULLIF(TRIM(instructor_name),''),'맥작가'),instructor_bio=COALESCE(NULLIF(TRIM(instructor_bio),''),?),target_audience=?,learning_outcomes=?,status='draft',visible=0,sales_enabled=0,sales_state='preparing',updated_at=CURRENT_TIMESTAMP WHERE id=?"
-    ).bind(course.title, course.summary, course.instructorBio, course.targetAudience, course.learningOutcomes, course.id));
-    for (const module of course.modules) {
-      statements.push(env.COURSE_DB.prepare(
-        "INSERT INTO course_modules (id,course_id,title,sort_order,status) VALUES (?,?,?,?,'published') ON CONFLICT(id) DO UPDATE SET title=excluded.title,sort_order=excluded.sort_order,status='published',updated_at=CURRENT_TIMESTAMP"
-      ).bind(module.id, course.id, module.title, module.order));
-    }
-    for (const lesson of course.lessons) {
-      statements.push(env.COURSE_DB.prepare(
-        "INSERT INTO lessons (id,course_id,title,description,module_id,sort_order,status,is_preview) VALUES (?,?,?,?,?,?,'draft',?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,description=excluded.description,module_id=excluded.module_id,sort_order=excluded.sort_order,is_preview=excluded.is_preview,updated_at=CURRENT_TIMESTAMP"
-      ).bind(lesson.id, course.id, lesson.title, lesson.description, lesson.module, lesson.order, lesson.preview));
-    }
-  }
-  await env.COURSE_DB.batch(statements);
-}
-
-async function syncCafe24Catalog(env) {
-  const results = [];
-  for (const course of REAL_PAID_COURSE_CATALOG) {
-    const payload = await cafe24AdminGet("/products/" + course.productNo, env, { shop_no: 1, fields: "product_no,product_name" });
-    const remote = payload?.product || payload?.products?.[0] || payload?.resource || payload || {};
-    if (Number(remote?.product_no || 0) !== Number(course.productNo)) {
-      throw new Error("Cafe24 course product missing: " + course.productNo);
-    }
-    await cafe24AdminRequest("/products/" + course.productNo, env, {
-      method: "PUT",
-      body: {
-        shop_no: 1,
-        product_name: course.title,
-        summary_description: course.summary.slice(0, 255),
-        description: digitalProductDescriptionHtml(course.summary)
-      }
-    });
-    results.push({ course_id: course.id, product_no: course.productNo, metadata_synced: true });
-  }
-  return results;
-}
-
-async function syncVimeo(env) {
-  const videos = await listVimeoVideos(env);
-  const used = new Set();
-  const resultMap = new Map();
-  const orderedCourses = [
-    REAL_PAID_COURSE_CATALOG.find((course) => course.id === "paid-naver-keyword-strategy"),
-    REAL_PAID_COURSE_CATALOG.find((course) => course.id === "paid-naver-search-algorithm")
-  ].filter(Boolean);
-
-  for (const course of orderedCourses) {
     let linked = 0;
     let ready = 0;
     let transcriptAccessible = 0;
     let transcriptTracks = 0;
     let autogeneratedTracks = 0;
-    let koreanTracks = 0;
     let downloadableTracks = 0;
     const missing = [];
 
     for (const lesson of course.lessons) {
-      const video = selectCandidate(videos, lesson, used, course.id);
+      const video = findVideo(videos, lesson.id);
       if (!video) {
         missing.push(lesson.id);
         continue;
       }
-      const id = vimeoId(video.uri);
-      used.add(id);
+      const id = videoId(video.uri);
       const duration = Number(video.duration || 0) || null;
       const transcode = String(video?.transcode?.status || "");
       const status = duration > 0 && transcode !== "in_progress" ? "ready" : "processing";
-      await env.COURSE_DB.prepare(
-        "UPDATE lessons SET vimeo_id=?,duration_seconds=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND course_id=?"
-      ).bind(id, duration, status, lesson.id, course.id).run();
+      const before = existing.get(lesson.id) || {};
+      if (String(before.vimeo_id || "") !== String(id || "") || Number(before.duration_seconds || 0) !== Number(duration || 0) || String(before.status || "") !== status) {
+        updates.push(env.COURSE_DB.prepare(
+          "UPDATE lessons SET vimeo_id=?,duration_seconds=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND course_id=?"
+        ).bind(id, duration, status, lesson.id, course.id));
+      }
       linked += 1;
       if (status === "ready") ready += 1;
-
       const transcript = await textTrackSummary(id, env);
       if (transcript.accessible) transcriptAccessible += 1;
       transcriptTracks += transcript.count;
       autogeneratedTracks += transcript.autogenerated;
-      koreanTracks += transcript.korean;
       downloadableTracks += transcript.downloadable;
     }
 
-    resultMap.set(course.id, {
+    courseResults.push({
       course_id: course.id,
+      product_no: course.productNo,
       expected_lessons: course.lessons.length,
       linked_videos: linked,
       ready_videos: ready,
@@ -209,40 +152,22 @@ async function syncVimeo(env) {
       transcript_api_accessible_videos: transcriptAccessible,
       transcript_track_count: transcriptTracks,
       autogenerated_transcript_track_count: autogeneratedTracks,
-      korean_transcript_track_count: koreanTracks,
       downloadable_transcript_track_count: downloadableTracks
     });
   }
 
-  const courses = REAL_PAID_COURSE_CATALOG.map((course) => resultMap.get(course.id));
-  const missing = courses.flatMap((course) => course?.missing_lessons || []);
-  return { scanned_video_count: videos.length, courses, missing_lessons: missing };
-}
+  if (updates.length) await env.COURSE_DB.batch(updates);
 
-async function closeLegacyOperation(db) {
-  try {
-    await db.prepare(
-      "UPDATE system_operations SET status='completed',completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP),last_error='handled_by_real_paid_course_sync_v2',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status IN ('pending','failed','running')"
-    ).bind(LEGACY_OPERATION_ID).run();
-  } catch {}
-}
-
-export async function ensureRealPaidCourseLaunchData(env) {
-  if (!env.COURSE_DB) return { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
-  await ensureCatalogRows(env);
-  const cafe24 = await syncCafe24Catalog(env);
-  const vimeo = await syncVimeo(env);
-  await closeLegacyOperation(env.COURSE_DB);
-  const ok = vimeo.courses.every((course) =>
-    course &&
+  const ok = courseResults.every((course) =>
     course.linked_videos === course.expected_lessons &&
     course.ready_videos === course.expected_lessons
   );
+
   return {
     ok,
-    cafe24_products: cafe24,
-    vimeo_scanned_video_count: vimeo.scanned_video_count,
-    missing_lessons: vimeo.missing_lessons,
-    courses: vimeo.courses
+    cafe24_products: courseResults.map((course) => ({ course_id: course.course_id, product_no: course.product_no, metadata_synced: true })),
+    vimeo_scanned_video_count: videos.length,
+    missing_lessons: courseResults.flatMap((course) => course.missing_lessons),
+    courses: courseResults
   };
 }
