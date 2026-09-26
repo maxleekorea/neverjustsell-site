@@ -117,7 +117,7 @@ jobs:
           if (
             !r.ok ||
             !body.includes("지금 이어지는 질문과 지식") ||
-            !body.includes("강의 Q&A") ||
+            !body.includes("강의 Q&amp;A") ||
             !body.includes("커뮤니티 글") ||
             !body.includes("댓글·답변") ||
             !body.includes("지식 브리핑")
