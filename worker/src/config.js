@@ -34,8 +34,15 @@ export function validCustomerReturn(value) {
     if (url.protocol !== "https:") return null;
 
     if (url.origin === SITE_ORIGIN) {
-      if (url.pathname !== "/") return null;
-      return url.toString();
+      const allowed =
+        url.pathname === "/" ||
+        url.pathname === "/start" ||
+        url.pathname === "/knowledge" ||
+        url.pathname === "/knowledge/" ||
+        url.pathname === "/knowledge/saved" ||
+        url.pathname === "/knowledge/saved/" ||
+        url.pathname.startsWith("/knowledge/");
+      return allowed ? url.toString() : null;
     }
 
     if (url.origin === CLASSROOM_ORIGIN) {
