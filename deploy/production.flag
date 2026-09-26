@@ -41,3 +41,4 @@ reason=confirm-lesson-qna-after-transient-probe-fix
 reason=run-lesson-qna-deploy-with-resilient-probe
 reason=expand-prelaunch-community-to-80-meaningful-replies
 reason=keep-prelaunch-seed-off-user-facing-cold-requests
+reason=deploy-fixed-lesson-qna-readiness-contract-and-current-prelaunch-stack
