@@ -9,6 +9,11 @@ import courseAdminApp from "./course-admin.js";
 import programHostApp from "./program-host.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { ensureRealPaidCourseLaunchData } from "./real-paid-course-sync-v2.js";
+import {
+  ensureLessonDiscussionData,
+  handleLessonDiscussionPost,
+  injectLessonDiscussionExperience
+} from "./lesson-discussions.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-26-liveklass-vimeo-sync-v31";
@@ -96,12 +101,27 @@ export default {
       return ticketApp.fetch(request, env, ctx);
     }
 
+    if (url.pathname === "/classroom/discussions" && request.method === "POST") {
+      try {
+        return await handleLessonDiscussionPost(request, env);
+      } catch (error) {
+        console.error("lesson discussion post failed", error);
+        return json({ ok: false, error: "lesson_discussion_post_failed" }, { status: 500 });
+      }
+    }
+
     if (
       CLASSROOM_ROUTES.has(url.pathname) ||
       url.pathname === "/courses" ||
       url.pathname.startsWith("/courses/")
     ) {
-      return classroomApp.fetch(request, env, ctx);
+      const response = await classroomApp.fetch(request, env, ctx);
+      try {
+        return await injectLessonDiscussionExperience(response, request, env);
+      } catch (error) {
+        console.error("lesson discussion UI injection failed", error);
+        return response;
+      }
     }
 
     if (SESSION_ORDER_ROUTES.has(url.pathname)) {
@@ -200,11 +220,15 @@ export default {
         const realPaidCourseSync = env.COURSE_DB
           ? await ensureRealPaidCourseLaunchData(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
+        const lessonDiscussions = env.COURSE_DB
+          ? await ensureLessonDiscussionData(env)
+          : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
         const systemOperations = env.COURSE_DB
           ? await runPendingSystemOperations(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
+        const healthy = Boolean(realPaidCourseSync?.ok && lessonDiscussions?.ok);
         return json({
-          ok: Boolean(realPaidCourseSync?.ok),
+          ok: healthy,
           host: url.hostname,
           redirect_uri: cafe24RedirectUri(env),
           site_origin: env.SITE_ORIGIN || null,
@@ -214,8 +238,9 @@ export default {
           production_build: PRODUCTION_BUILD,
           program_schema: programSchema,
           real_paid_course_sync: realPaidCourseSync,
+          lesson_discussions: lessonDiscussions,
           system_operations: systemOperations
-        }, { status: realPaidCourseSync?.ok ? 200 : 503 });
+        }, { status: healthy ? 200 : 503 });
       } catch (error) {
         return json({
           ok: false,
