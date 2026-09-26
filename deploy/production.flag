@@ -38,3 +38,4 @@ reason=seed-prelaunch-community-activity-and-verified-social-proof
 reason=deploy-shared-lesson-qna-and-community-surface
 reason=retry-lesson-qna-v32-verification
 reason=confirm-lesson-qna-after-transient-probe-fix
+reason=run-lesson-qna-deploy-with-resilient-probe
