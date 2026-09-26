@@ -37,7 +37,7 @@ body = await response.text();
 assert(response.status === 200, "knowledge detail must return 200");
 assert(body.includes(sample.title), "knowledge detail title missing");
 assert(body.includes('rel="canonical"'), "knowledge canonical missing");
-assert(body.includes("관련 지식"), "related knowledge block missing");
+assert(body.includes("같이 보면 좋은 지식"), "related knowledge block missing");
 assert(body.includes("커뮤니티"), "knowledge-to-community connection missing");
 
 response = await get("/sitemap.xml");
