@@ -6,11 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "community/src/prelaunch-seed.js"
-      - "community/src/production.js"
-      - "community/wrangler.jsonc"
-      - "community/wrangler.production.jsonc"
-      - "site/public/app.js"
+      - "deploy/production.flag"
       - ".github/workflows/prelaunch-activity-smoke.yml"
 
 jobs:
@@ -18,18 +14,79 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Wait for deployment propagation
-        run: sleep 45
-      - name: Verify seeded community activity
+        run: sleep 75
+
+      - name: Verify lesson discussion seed and course coverage
+        run: |
+          node - <<'NODE'
+          const url = "https://classroom.neverjustsell.com/migration-health?check=" + Date.now();
+          const r = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
+          const j = await r.json().catch(() => null);
+          console.log(JSON.stringify({
+            status: r.status,
+            production_build: j?.production_build,
+            lesson_discussions: j?.lesson_discussions
+          }, null, 2));
+          const first = j?.lesson_discussions?.courses?.["paid-naver-search-algorithm"];
+          const second = j?.lesson_discussions?.courses?.["paid-naver-keyword-strategy"];
+          if (
+            !r.ok ||
+            !j?.ok ||
+            j?.production_build !== "2026-09-26-lesson-discussion-v32" ||
+            !j?.lesson_discussions?.ok ||
+            Number(j?.lesson_discussions?.total_seed_questions || 0) < 23 ||
+            Number(j?.lesson_discussions?.total_seed_answers || 0) < 23 ||
+            Number(first?.question_count || 0) < 10 ||
+            Number(first?.answered_count || 0) < 10 ||
+            Number(second?.question_count || 0) < 13 ||
+            Number(second?.answered_count || 0) < 13
+          ) {
+            process.exit(1);
+          }
+          NODE
+
+      - name: Verify seeded community activity and shared course Q&A
         run: |
           node - <<'NODE'
           const url = "https://community.neverjustsell.com/auth/prelaunch-seed-status?check=" + Date.now();
           const r = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
           const j = await r.json().catch(() => null);
           console.log(JSON.stringify(j, null, 2));
-          if (!r.ok || !j?.ok || Number(j?.seeded_posts || 0) < 30 || Number(j?.seeded_answers || 0) < 30) {
+          if (
+            !r.ok ||
+            !j?.ok ||
+            Number(j?.seeded_posts || 0) < 30 ||
+            Number(j?.seeded_answers || 0) < 30 ||
+            Number(j?.course_qa_count || 0) < 23
+          ) {
             process.exit(1);
           }
           NODE
+
+      - name: Verify course Q&A surfaces
+        run: |
+          node - <<'NODE'
+          const pages = [
+            ["https://classroom.neverjustsell.com/courses/naver-search-algorithm", "오프라인 유통의 ‘입지’ 개념"],
+            ["https://classroom.neverjustsell.com/courses/naver-keyword-strategy", "‘황금 키워드’를 찾는 방식"]
+          ];
+          for (const [url, phrase] of pages) {
+            const r = await fetch(url + "?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+            const body = await r.text();
+            console.log(JSON.stringify({ url, status: r.status, bytes: body.length }));
+            if (!r.ok || !body.includes("COURSE Q&A") || !body.includes(phrase)) process.exit(1);
+          }
+          NODE
+
+      - name: Verify community Q&A surface
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const body = await r.text();
+          console.log(JSON.stringify({ status: r.status, bytes: body.length }));
+          if (!r.ok || !body.includes("COURSE Q&A") || !body.includes("강의에서 많이 묻는 질문")) process.exit(1);
+          NODE
+
       - name: Verify public social proof asset
         run: |
           node - <<'NODE'
