@@ -48,3 +48,4 @@ reason=deploy-mobile-ia-simplification-and-live-contract
 reason=deploy-real-activity-feed-and-public-home-module
 reason=deploy-member-knowledge-library-persistence-v34
 reason=redeploy-member-knowledge-library-with-v33-contract-label
+reason=deploy-knowledge-member-login-return-fix
