@@ -44,3 +44,4 @@ reason=keep-prelaunch-seed-off-user-facing-cold-requests
 reason=deploy-fixed-lesson-qna-readiness-contract-and-current-prelaunch-stack
 reason=deploy-mobile-first-classroom-learning-ux-v33
 reason=rerun-v33-production-community-and-prelaunch-verification
+reason=deploy-mobile-ia-simplification-and-live-contract
