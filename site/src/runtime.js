@@ -4,7 +4,7 @@ import {
   knowledgeSitemapXml,
   renderKnowledgeEntry,
   renderKnowledgeIndex
-} from "./knowledge-hub.js";
+} from "./knowledge-hub-v2.js";
 
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
 
