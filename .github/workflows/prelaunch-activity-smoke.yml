@@ -32,7 +32,7 @@ jobs:
           if (
             !r.ok ||
             !j?.ok ||
-            j?.production_build !== "2026-09-26-lesson-discussion-v32" ||
+            j?.production_build !== "2026-09-26-mobile-learning-ux-v33" ||
             !j?.lesson_discussions?.ok ||
             Number(j?.lesson_discussions?.total_seed_questions || 0) < 23 ||
             Number(j?.lesson_discussions?.total_seed_answers || 0) < 23 ||
