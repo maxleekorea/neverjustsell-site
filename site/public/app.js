@@ -25,6 +25,54 @@
     }
   }
 
+  function organizeMobileNavigation() {
+    const nav = document.querySelector('#njs-nav');
+    if (!nav || nav.querySelector('.njs-mobile-more')) return;
+
+    const secondaryHrefs = new Set(['/content', '/store', '/lecture']);
+    const secondary = Array.from(nav.querySelectorAll(':scope > a')).filter((link) => {
+      try {
+        return secondaryHrefs.has(new URL(link.href, window.location.origin).pathname);
+      } catch (_) {
+        return false;
+      }
+    });
+    if (!secondary.length) return;
+
+    const details = document.createElement('details');
+    details.className = 'njs-mobile-more';
+    const summary = document.createElement('summary');
+    summary.textContent = '더 보기';
+    const panel = document.createElement('div');
+    panel.className = 'njs-mobile-more-panel';
+    secondary.forEach((link) => {
+      link.classList.add('njs-desktop-secondary');
+      panel.appendChild(link.cloneNode(true));
+    });
+    details.appendChild(summary);
+    details.appendChild(panel);
+
+    const memberServices = nav.querySelector('.njs-mobile-services');
+    nav.insertBefore(details, memberServices || null);
+
+    const style = document.createElement('style');
+    style.id = 'njs-mobile-ia-style';
+    style.textContent = `
+      .njs-mobile-more{display:none}
+      @media(max-width:1024px){
+        .njs-nav>a.njs-desktop-secondary{display:none}
+        .njs-mobile-more{display:block;width:100%;border-top:1px solid var(--line);padding-top:14px}
+        .njs-mobile-more>summary{list-style:none;cursor:pointer;font-size:14px;font-weight:750;color:var(--muted)}
+        .njs-mobile-more>summary::-webkit-details-marker{display:none}
+        .njs-mobile-more>summary:after{content:' +';font-weight:500}
+        .njs-mobile-more[open]>summary:after{content:' −'}
+        .njs-mobile-more-panel{display:flex;flex-direction:column;gap:15px;padding:16px 0 2px}
+        .njs-mobile-more-panel a{font-size:14px;font-weight:650}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function injectVerifiedSocialProof() {
     const path = window.location.pathname.replace(/\/+$/, '') || '/';
     if (path !== '/' && path !== '/class') return;
@@ -77,6 +125,7 @@
   }
 
   syncAuthLinks();
+  organizeMobileNavigation();
   injectVerifiedSocialProof();
 
   const button = document.querySelector('.njs-menu-toggle');
