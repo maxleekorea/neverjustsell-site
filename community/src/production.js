@@ -67,6 +67,35 @@ async function injectCourseQa(response, env) {
   return new Response(body.replace(marker, section + marker), { status: response.status, headers });
 }
 
+async function injectMobileCommunityNavigation(response) {
+  if (response.status !== 200 || !String(response.headers.get("Content-Type") || "").includes("text/html")) return response;
+  const body = await response.text();
+  if (body.includes("community-mobile-menu-script")) {
+    return new Response(body, { status: response.status, headers: response.headers });
+  }
+  const marker = "</head>";
+  if (!body.includes(marker)) return new Response(body, { status: response.status, headers: response.headers });
+
+  const mobileIa = `<style>
+.community-mobile-menu{display:none}
+@media(max-width:800px){
+  .site-header{position:sticky!important;top:0!important}
+  .header-inner{min-height:58px!important;padding:9px 0!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}
+  .site-header .header-inner>nav{display:none!important}
+  .community-mobile-menu{display:block;position:relative;margin-left:auto}
+  .community-mobile-menu>summary{list-style:none;cursor:pointer;border:1px solid #cfc6bb;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;background:#fff}
+  .community-mobile-menu>summary::-webkit-details-marker{display:none}
+  .community-mobile-panel{position:absolute;right:0;top:42px;z-index:30;width:min(270px,calc(100vw - 24px));padding:8px;background:#fff;border:1px solid #d7cec3;border-radius:14px;box-shadow:0 14px 34px rgba(34,25,17,.16)}
+  .community-mobile-panel a,.community-mobile-panel .member-name{display:block;padding:10px 11px;border-radius:8px;font-size:14px;text-decoration:none}
+  .community-mobile-panel a:active{background:#f2ede7}
+  .community-mobile-panel .member-name{padding-bottom:5px;color:#81776e;font-size:12px}
+}
+</style><script id="community-mobile-menu-script">(function(){function init(){var header=document.querySelector('.site-header .header-inner');var nav=header&&header.querySelector(':scope > nav');if(!header||!nav||header.querySelector('.community-mobile-menu'))return;var d=document.createElement('details');d.className='community-mobile-menu';var s=document.createElement('summary');s.textContent='메뉴';s.setAttribute('aria-label','커뮤니티 메뉴 열기');var p=document.createElement('div');p.className='community-mobile-panel';Array.from(nav.children).forEach(function(node){p.appendChild(node.cloneNode(true));});d.appendChild(s);d.appendChild(p);header.appendChild(d);}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();})();</script>`;
+  const headers = new Headers(response.headers);
+  headers.delete("Content-Length");
+  return new Response(body.replace(marker, mobileIa + marker), { status: response.status, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -93,9 +122,12 @@ export default {
       }
     }
 
-    const response = await community.fetch(request, env, ctx);
+    let response = await community.fetch(request, env, ctx);
     if (request.method === "GET" && url.pathname === "/") {
-      return injectCourseQa(response, env);
+      response = await injectCourseQa(response, env);
+    }
+    if (request.method === "GET") {
+      response = await injectMobileCommunityNavigation(response);
     }
     return response;
   }
