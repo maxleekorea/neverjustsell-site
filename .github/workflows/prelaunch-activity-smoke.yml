@@ -80,22 +80,36 @@ jobs:
           }
           NODE
 
-      - name: Verify community Q&A surface
+      - name: Verify community Q&A and mobile IA surface
         run: |
           node - <<'NODE'
           const r = await fetch("https://community.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
-          if (!r.ok || !body.includes("COURSE Q&A") || !body.includes("강의에서 많이 묻는 질문")) process.exit(1);
+          if (
+            !r.ok ||
+            !body.includes("COURSE Q&A") ||
+            !body.includes("강의에서 많이 묻는 질문") ||
+            !body.includes("community-mobile-menu") ||
+            !body.includes("community-mobile-menu-script")
+          ) process.exit(1);
           NODE
 
-      - name: Verify public social proof asset
+      - name: Verify public social proof and mobile IA asset
         run: |
           node - <<'NODE'
           const r = await fetch("https://www.neverjustsell.com/app.js?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
-          if (!r.ok || !body.includes("YES24 종이책 리뷰") || !body.includes("교보문고 독자 평가") || !body.includes("9.4 / 10") || !body.includes("9.9 / 10")) {
+          if (
+            !r.ok ||
+            !body.includes("YES24 종이책 리뷰") ||
+            !body.includes("교보문고 독자 평가") ||
+            !body.includes("9.4 / 10") ||
+            !body.includes("9.9 / 10") ||
+            !body.includes("organizeMobileNavigation") ||
+            !body.includes("njs-mobile-more")
+          ) {
             process.exit(1);
           }
           NODE
