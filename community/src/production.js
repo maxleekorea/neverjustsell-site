@@ -18,12 +18,12 @@ async function ensureSeed(env) {
   return seedPromise;
 }
 
-function json(data, status = 200) {
+function json(data, status = 200, cacheControl = "no-store") {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
+      "Cache-Control": cacheControl,
       "X-Robots-Tag": "noindex, nofollow, noarchive"
     }
   });
@@ -47,6 +47,49 @@ async function getCourseQa(env, limit = 6) {
     console.error("course Q&A RPC failed", error);
     return [];
   }
+}
+
+async function getPublicActivity(env, limit = 3) {
+  if (!env.DB || typeof env.DB.prepare !== "function") {
+    return { ok: false, error: "community_db_binding_missing", posts: [], course_qa: [] };
+  }
+  const safeLimit = Math.max(1, Math.min(6, Number(limit) || 3));
+  const [postResult, totals, qas] = await Promise.all([
+    env.DB.prepare(`SELECT p.id,p.slug,p.title,p.body,p.published_at,p.comment_count,p.like_count,
+      c.slug AS category_slug,c.name AS category_name,m.display_name
+      FROM posts p
+      JOIN categories c ON c.id=p.category_id
+      JOIN members m ON m.member_id=p.author_member_id
+      WHERE p.status='published' AND p.is_indexable=1
+      ORDER BY p.published_at DESC,p.id DESC LIMIT ?`).bind(safeLimit).all(),
+    env.DB.prepare(`SELECT
+      (SELECT COUNT(*) FROM posts WHERE status='published') AS post_count,
+      (SELECT COUNT(*) FROM comments WHERE status='published') AS comment_count`).first(),
+    getCourseQa(env, Math.max(23, safeLimit))
+  ]);
+  const posts = (postResult.results || []).map((row) => ({
+    id: Number(row.id),
+    title: String(row.title || ""),
+    excerpt: String(row.body || "").replace(/\s+/g, " ").trim().slice(0, 150),
+    category_slug: String(row.category_slug || ""),
+    category_name: String(row.category_name || ""),
+    author: String(row.display_name || ""),
+    published_at: row.published_at || null,
+    comment_count: Number(row.comment_count || 0),
+    like_count: Number(row.like_count || 0),
+    url: `https://community.neverjustsell.com/p/${Number(row.id)}/${encodeURIComponent(String(row.slug || ""))}`
+  }));
+  return {
+    ok: true,
+    generated_at: new Date().toISOString(),
+    totals: {
+      published_posts: Number(totals?.post_count || 0),
+      published_comments: Number(totals?.comment_count || 0),
+      course_qa: qas.length
+    },
+    posts,
+    course_qa: qas.slice(0, safeLimit)
+  };
 }
 
 async function injectCourseQa(response, env) {
@@ -99,6 +142,16 @@ async function injectMobileCommunityNavigation(response) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === "/public/activity") {
+      try {
+        const activity = await getPublicActivity(env, url.searchParams.get("limit"));
+        return json(activity, activity.ok ? 200 : 503, "public, max-age=60, s-maxage=120");
+      } catch (error) {
+        console.error("public activity feed failed", error);
+        return json({ ok: false, error: "activity_feed_failed", posts: [], course_qa: [] }, 503);
+      }
+    }
 
     // Seed/reconcile only through the explicit diagnostic route. Never make ordinary
     // community page views pay for idempotent seed checks on a cold Worker isolate.
