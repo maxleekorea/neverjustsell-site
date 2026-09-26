@@ -31,3 +31,4 @@ reason=redact-sensitive-cafe24-provider-errors
 reason=accept-unreachable-disabled-workers-dev-smoke
 reason=inspect-real-paid-course-production-state
 reason=remove-test-vimeo-from-real-paid-course-before-launch
+reason=sync-liveklass-catalog-vimeo-and-transcript-availability
