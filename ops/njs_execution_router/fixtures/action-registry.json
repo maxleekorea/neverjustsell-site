@@ -42,6 +42,34 @@
     "status": "PILOT"
   },
   {
+    "action": "CLOUDFLARE.CACHE.PURGE_URLS",
+    "capability": "Plan a scoped Cloudflare URL cache purge without sending it",
+    "adapter": "CLOUDFLARE_SHADOW",
+    "mutability": "WRITE_REVERSIBLE",
+    "approval_floor": "A2",
+    "enabled_phase": "SHADOW_EXECUTION",
+    "target_allowlist": "neverjustsell.com",
+    "precondition_required": "FALSE",
+    "postcondition_required": "TRUE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "PILOT"
+  },
+  {
+    "action": "CAFE24.PRODUCT_STATUS.UPDATE",
+    "capability": "Plan Cafe24 product display/selling status update without sending it",
+    "adapter": "CAFE24_SHADOW",
+    "mutability": "WRITE_REVERSIBLE",
+    "approval_floor": "A2",
+    "enabled_phase": "SHADOW_EXECUTION",
+    "target_allowlist": "P30_CAFE24",
+    "precondition_required": "TRUE",
+    "postcondition_required": "TRUE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "PILOT"
+  },
+  {
     "action": "P30.TEST_WORKFLOW.RUN",
     "capability": "P30 reversible test workflow",
     "adapter": "GITHUB",
