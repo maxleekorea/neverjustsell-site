@@ -1,0 +1,32 @@
+{
+  "job_id": "JOB-20260927-0006",
+  "protocol_version": "NJS-CMD-0.1",
+  "created_at": "2026-09-27T19:56:31+09:00",
+  "project_id": "P30",
+  "action": "CLOUDFLARE.CACHE.PURGE_URLS",
+  "target_type": "DOMAIN",
+  "target_ref": "neverjustsell.com",
+  "refs_json": [],
+  "approval_level": "A3",
+  "requested_by": "ChatGPT Plus",
+  "idempotency_key": "P30|CLOUDFLARE.CACHE.PURGE_URLS|20260927-0006",
+  "expected_state": "NO_STATE_CHANGE_SHADOW",
+  "precondition_json": {
+    "edge_probe_required": true,
+    "provider_ack_required": true,
+    "rollback_supported": false,
+    "zone_identity_required": true
+  },
+  "payload_json": {
+    "files": [
+      "https://neverjustsell.com/",
+      "https://neverjustsell.com/knowledge"
+    ],
+    "zone_id_ref": "CLOUDFLARE_ZONE_ID"
+  },
+  "mode": "SHADOW_EXECUTION",
+  "status": "VALIDATED",
+  "command_hash": "0d214f7d5dcb1fe1aadc88e4e140b10cae4ad23dafb745775a77fa9530c0d031",
+  "shadow_ir": "N1|C:0d214f7d5dcb1fe1aadc88e4e140b10cae4ad23dafb745775a77fa9530c0d031|P:P30|A:04|L:3|M:3",
+  "notes": "Shadow verification-contract pilot; irreversible classification corrected; no Cloudflare network call"
+}
