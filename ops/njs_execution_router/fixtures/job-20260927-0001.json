@@ -16,6 +16,6 @@
   "mode": "SHADOW_ENCODE",
   "status": "VALIDATED",
   "command_hash": "2a17e95f06d2c4c114ca9cb49560883ddac01b66be1fdf75c3e3613f1edead3e",
-  "shadow_ir": "N0|J0001|P30|A:SYS.GET|T:P30|L:A0|M:S1|I:2a17e95f06d2",
-  "notes": "Shadow canonical fixture; read-only"
+  "shadow_ir": "N1|C:2a17e95f06d2c4c114ca9cb49560883ddac01b66be1fdf75c3e3613f1edead3e|P:P30|A:01|L:0|M:1",
+  "notes": "NJS-IR-0.2-REF canonical fixture; read-only"
 }
