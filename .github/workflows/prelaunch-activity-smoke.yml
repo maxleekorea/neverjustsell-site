@@ -22,16 +22,17 @@ jobs:
           const url = "https://classroom.neverjustsell.com/migration-health?check=" + Date.now();
           const r = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
           const j = await r.json().catch(() => null);
-          console.log(JSON.stringify({
-            status: r.status,
-            production_build: j?.production_build,
-            lesson_discussions: j?.lesson_discussions
-          }, null, 2));
-          if (
-            !r.ok ||
-            !j?.ok ||
-            !j?.lesson_discussions?.ok
-          ) process.exit(1);
+          console.log(JSON.stringify({ status: r.status, lesson_discussions: j?.lesson_discussions }, null, 2));
+          if (!r.ok || !j?.ok || !j?.lesson_discussions?.ok) process.exit(1);
+          NODE
+
+      - name: Verify community RPC bridge is current
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/auth/bridge-health?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const j = await r.json().catch(() => null);
+          console.log(JSON.stringify(j, null, 2));
+          if (!r.ok || !j?.ok || j?.rpc_runtime !== "community-auth-rpc-v2") process.exit(1);
           NODE
 
       - name: Verify community is in system-first phase without seed mutation
@@ -42,12 +43,8 @@ jobs:
           const j = await r.json().catch(() => null);
           console.log(JSON.stringify(j, null, 2));
           if (
-            !r.ok ||
-            !j?.ok ||
-            j?.phase !== "system-first" ||
-            j?.seeding_paused !== true ||
-            !Number.isFinite(Number(j?.active_categories)) ||
-            !Number.isFinite(Number(j?.course_qa_count))
+            !r.ok || !j?.ok || j?.phase !== "system-first" || j?.seeding_paused !== true ||
+            !Number.isFinite(Number(j?.active_categories)) || !Number.isFinite(Number(j?.course_qa_count))
           ) process.exit(1);
           NODE
 
@@ -57,16 +54,10 @@ jobs:
           const r = await fetch("https://community.neverjustsell.com/public/activity?limit=3&check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const j = await r.json().catch(() => null);
           console.log(JSON.stringify(j, null, 2));
-          if (
-            !r.ok ||
-            !j?.ok ||
-            !Array.isArray(j?.posts) ||
-            !Array.isArray(j?.course_qa) ||
-            typeof j?.totals !== "object"
-          ) process.exit(1);
+          if (!r.ok || !j?.ok || !Array.isArray(j?.posts) || !Array.isArray(j?.course_qa) || typeof j?.totals !== "object") process.exit(1);
           NODE
 
-      - name: Verify public course questions are discoverable
+      - name: Verify shared course questions are public and interactive-ready
         run: |
           node - <<'NODE'
           const r = await fetch("https://community.neverjustsell.com/course-questions?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
@@ -75,27 +66,33 @@ jobs:
           if (
             !r.ok ||
             !body.includes("강의에서 이어진 질문") ||
-            !body.includes("강의 정보 보기") ||
-            !body.includes("COURSE DISCUSSIONS")
+            !body.includes("SHARED COURSE DISCUSSIONS") ||
+            !body.includes("로그인하고 답변하기") ||
+            !body.includes("강의 맥락 보기")
           ) process.exit(1);
           NODE
 
-      - name: Verify community journey-first home and mobile navigation
+      - name: Verify member spaces are protected by login
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/spaces?check=" + Date.now(), { redirect: "manual", headers: { "Cache-Control": "no-cache" } });
+          const location = r.headers.get("location") || "";
+          console.log(JSON.stringify({ status: r.status, location }));
+          if (![302,303].includes(r.status) || !location.includes("/login") || !location.includes("return_to")) process.exit(1);
+          NODE
+
+      - name: Verify community journey-first home and member-space navigation
         run: |
           node - <<'NODE'
           const r = await fetch("https://community.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
           if (
-            !r.ok ||
-            !body.includes("무엇이 필요하신가요?") ||
-            !body.includes("질문하기") ||
-            !body.includes("경험·사례 보기") ||
-            !body.includes("강의 질문 보기") ||
-            !body.includes("/course-questions") ||
+            !r.ok || !body.includes("무엇이 필요하신가요?") || !body.includes("질문하기") ||
+            !body.includes("경험·사례 보기") || !body.includes("강의 질문 보기") ||
+            !body.includes("/course-questions") || !body.includes("/spaces") ||
             body.includes("강의에서 많이 묻는 질문") ||
-            !body.includes("community-mobile-menu") ||
-            !body.includes("community-mobile-menu-script")
+            !body.includes("community-mobile-menu") || !body.includes("community-mobile-menu-script")
           ) process.exit(1);
           NODE
 
@@ -105,12 +102,7 @@ jobs:
           const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
-          if (
-            !r.ok ||
-            !body.includes("지금 이어지는 질문과 지식") ||
-            !body.includes("커뮤니티 글") ||
-            !body.includes("지식 브리핑")
-          ) process.exit(1);
+          if (!r.ok || !body.includes("지금 이어지는 질문과 지식") || !body.includes("커뮤니티 글") || !body.includes("지식 브리핑")) process.exit(1);
           NODE
 
       - name: Verify public social proof and mobile IA asset
@@ -120,10 +112,7 @@ jobs:
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
           if (
-            !r.ok ||
-            !body.includes("YES24 종이책 리뷰") ||
-            !body.includes("교보문고 독자 평가") ||
-            !body.includes("organizeMobileNavigation") ||
-            !body.includes("njs-mobile-more")
+            !r.ok || !body.includes("YES24 종이책 리뷰") || !body.includes("교보문고 독자 평가") ||
+            !body.includes("organizeMobileNavigation") || !body.includes("njs-mobile-more")
           ) process.exit(1);
           NODE
