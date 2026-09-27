@@ -35,6 +35,16 @@ def _safe_njs_url(value: Any) -> str:
     return url
 
 
+def _bearer_headers(secret_ref: str, *, api_version: str | None = None) -> Dict[str, str]:
+    headers = {
+        "Authorization": f"Bearer ${{{secret_ref}}}",
+        "Content-Type": "application/json",
+    }
+    if api_version:
+        headers["X-Cafe24-Api-Version"] = api_version
+    return headers
+
+
 def cloudflare_cache_purge_plan(command: Mapping[str, Any]) -> Dict[str, Any]:
     payload = dict(command.get("payload_json") or {})
     allowed = {"files", "zone_id_ref"}
@@ -47,18 +57,75 @@ def cloudflare_cache_purge_plan(command: Mapping[str, Any]) -> Dict[str, Any]:
     safe_files = [_safe_njs_url(v) for v in files]
     if len(set(safe_files)) != len(safe_files):
         raise ShadowAdapterError("CLOUDFLARE_FILES_DUPLICATE")
+
+    headers = _bearer_headers("CLOUDFLARE_API_TOKEN")
+    zone_url = f"https://api.cloudflare.com/client/v4/zones/${{{zone_ref}}}"
+    purge_url = f"https://api.cloudflare.com/client/v4/zones/${{{zone_ref}}}/purge_cache"
+
     return {
         "shadow_execution": True,
         "transport_state": "NOT_SENT",
         "provider": "CLOUDFLARE",
+        "mutability_semantics": "WRITE_IRREVERSIBLE",
+        "preflight": {
+            "request": {
+                "method": "GET",
+                "url_template": zone_url,
+                "headers_template": headers,
+            },
+            "required_assertions": [
+                {"path": "success", "op": "EQ", "value": True},
+                {"path": "result.id", "op": "EQ_SECRET_REF", "value_ref": zone_ref},
+                {"path": "result.name", "op": "EQ", "value": "neverjustsell.com"},
+                {"path": "result.status", "op": "EQ", "value": "active"},
+            ],
+            "failure_state": "BLOCKED",
+        },
         "request": {
             "method": "POST",
-            "url_template": f"https://api.cloudflare.com/client/v4/zones/${{{zone_ref}}}/purge_cache",
-            "headers_template": {
-                "Authorization": "Bearer ${CLOUDFLARE_API_TOKEN}",
-                "Content-Type": "application/json",
-            },
+            "url_template": purge_url,
+            "headers_template": headers,
             "body": {"files": safe_files},
+        },
+        "provider_ack": {
+            "required_http_status": 200,
+            "required_assertions": [
+                {"path": "success", "op": "EQ", "value": True},
+                {"path": "result.id", "op": "NON_EMPTY"},
+            ],
+            "meaning": "REQUEST_ACCEPTED_NOT_EVICTION_PROOF",
+        },
+        "postcondition": {
+            "verification_strength": "EDGE_PROBE_NOT_GLOBAL_PROOF",
+            "probe_requests": [
+                {
+                    "method": "GET",
+                    "url": url,
+                    "headers_template": {"User-Agent": "njs-execution-router/0.1"},
+                    "capture_headers": ["CF-Cache-Status", "CF-Ray", "Age"],
+                }
+                for url in safe_files
+            ],
+            "required_assertion": {
+                "header": "CF-Cache-Status",
+                "op": "NEQ_CASE_INSENSITIVE",
+                "value": "HIT",
+            },
+            "max_attempts_per_url": 3,
+            "retry_delay_seconds": 2,
+            "success_rule": "PROVIDER_ACK_AND_EACH_URL_OBSERVED_NON_HIT",
+            "inconclusive_state": "UNVERIFIED",
+            "global_eviction_proof": False,
+        },
+        "rollback": {
+            "supported": False,
+            "reason": "CACHE_PURGE_CANNOT_RESTORE_EVICTED_EDGE_ENTRIES",
+            "recovery": "ORIGIN_REFILL_OR_CONTROLLED_REWARM_ONLY",
+        },
+        "credential_contract": {
+            "required_secret_refs": ["CLOUDFLARE_API_TOKEN", zone_ref],
+            "minimum_permission": "Cache Purge",
+            "zone_scope": "neverjustsell.com only",
         },
         "required_secret_refs": ["CLOUDFLARE_API_TOKEN", zone_ref],
         "required_permission": "Cache Purge",
@@ -79,29 +146,86 @@ def cafe24_product_status_plan(command: Mapping[str, Any]) -> Dict[str, Any]:
     shop_no = payload.get("shop_no", 1)
     if not isinstance(shop_no, int) or shop_no < 1:
         raise ShadowAdapterError("CAFE24_SHOP_NO_INVALID")
-    request: Dict[str, Any] = {}
+
+    requested_change: Dict[str, Any] = {}
     if "display" in payload:
-        request["display"] = _require_bool_flag(payload.get("display"), "display")
+        requested_change["display"] = _require_bool_flag(payload.get("display"), "display")
     if "selling" in payload:
-        request["selling"] = _require_bool_flag(payload.get("selling"), "selling")
-    if not request:
+        requested_change["selling"] = _require_bool_flag(payload.get("selling"), "selling")
+    if not requested_change:
         raise ShadowAdapterError("CAFE24_STATUS_CHANGE_REQUIRED")
+
+    headers = _bearer_headers("CAFE24_ACCESS_TOKEN", api_version=version)
+    product_url = f"https://${{{mall_ref}}}.cafe24api.com/api/v2/admin/products/${{{product_ref}}}"
+    read_url = f"{product_url}?shop_no={shop_no}"
+
+    rollback_fields = {
+        field: f"${{BEFORE_STATE.{field}}}"
+        for field in requested_change
+    }
+
     return {
         "shadow_execution": True,
         "transport_state": "NOT_SENT",
         "provider": "CAFE24",
+        "mutability_semantics": "WRITE_REVERSIBLE",
+        "before_state": {
+            "request": {
+                "method": "GET",
+                "url_template": read_url,
+                "headers_template": headers,
+            },
+            "snapshot_fields": ["product_no", *requested_change.keys()],
+            "required_assertions": [
+                {"path": "product.product_no", "op": "EQ_SECRET_REF", "value_ref": product_ref},
+                *[
+                    {"path": f"product.{field}", "op": "IN", "values": ["T", "F"]}
+                    for field in requested_change
+                ],
+            ],
+            "failure_state": "BLOCKED",
+        },
         "request": {
             "method": "PUT",
-            "url_template": f"https://${{{mall_ref}}}.cafe24api.com/api/v2/admin/products/${{{product_ref}}}",
-            "headers_template": {
-                "Authorization": "Bearer ${CAFE24_ACCESS_TOKEN}",
-                "X-Cafe24-Api-Version": version,
-                "Content-Type": "application/json",
+            "url_template": product_url,
+            "headers_template": headers,
+            "body": {"shop_no": shop_no, "request": requested_change},
+        },
+        "postcondition": {
+            "request": {
+                "method": "GET",
+                "url_template": read_url,
+                "headers_template": headers,
             },
-            "body": {"shop_no": shop_no, "request": request},
+            "expected_fields": {
+                f"product.{field}": value for field, value in requested_change.items()
+            },
+            "success_rule": "ALL_EXPECTED_FIELDS_EXACT_MATCH",
+            "failure_state": "UNVERIFIED",
+        },
+        "rollback": {
+            "supported": True,
+            "source": "BEFORE_STATE_SNAPSHOT",
+            "request": {
+                "method": "PUT",
+                "url_template": product_url,
+                "headers_template": headers,
+                "body": {"shop_no": shop_no, "request": rollback_fields},
+            },
+            "verification": {
+                "method": "GET",
+                "url_template": read_url,
+                "headers_template": headers,
+                "expected": "MATCH_BEFORE_STATE_SNAPSHOT",
+            },
+        },
+        "credential_contract": {
+            "required_secret_refs": ["CAFE24_ACCESS_TOKEN", mall_ref, product_ref],
+            "required_scopes": ["mall.read_product", "mall.write_product"],
+            "shop_no": shop_no,
         },
         "required_secret_refs": ["CAFE24_ACCESS_TOKEN", mall_ref, product_ref],
-        "required_scope": "mall.write_product",
+        "required_scopes": ["mall.read_product", "mall.write_product"],
         "network_call_performed": False,
     }
 
