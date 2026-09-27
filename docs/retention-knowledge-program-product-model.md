@@ -17,6 +17,30 @@ Core loop:
 
 Q&A is one discussion type, not the center of the product.
 
+## User journey ladder
+
+NJS should become more useful as the member moves up the commitment curve. Do not force high-commitment actions before the member has received value.
+
+1. Anonymous value: search/discovery -> read useful public knowledge/community/course preview without forced signup.
+2. First commitment: save knowledge, enroll in a free course, or join a program. Authentication exists to preserve continuity, not to block discovery.
+3. Personal continuity: My Space shows the member's saved knowledge, learning history, program participation, and later contextual responses/next actions.
+4. Progress accumulation: course progress, completion, program milestones, reflections, and attendance build durable personal history.
+5. Social accountability: questions, cases, discussion, host/peer responses, events, and cohort spaces create relationship-based reasons to return.
+6. Contribution identity: strong member experience can become a reusable case, answer, or knowledge candidate with explicit moderation/consent.
+7. Long-term role: only after real behavior supports it, recurring contributors may become curator/mentor/moderator-level participants.
+
+The desired switching cost is accumulated utility: saved knowledge, progress, program history, relationships, and contribution archive. Do not create artificial friction that makes leaving difficult.
+
+## Continuity rule
+
+My Space is the continuity layer, not another feature directory. Its job is to answer three questions with as little UI as possible:
+
+- What have I accumulated here?
+- Where did I stop?
+- What is the next useful action, if any?
+
+Generic feature cards must not dominate My Space once member-specific state exists. Prefer actual saved/progress/program state over links that merely advertise Knowledge, Courses, or Community.
+
 ## Primary product metric
 
 Weekly Value-Active Members (WVAM): distinct authenticated members who perform at least one qualifying value action within 7 days.
@@ -25,7 +49,7 @@ Initial qualifying events:
 - knowledge_save
 - knowledge_revisit (only after a meaningful revisit rule is defined)
 - course_enroll
-- lesson_progress (only after minimum progress threshold is defined)
+- lesson_progress (minimum meaningful progress threshold required)
 - lesson_complete
 - program_checkin
 - program_reflection
@@ -49,11 +73,11 @@ Secondary metrics:
 
 ### Now
 1. Value-event instrumentation and retention measurement foundation.
-2. Knowledge Operating System: structured D1 source, operator board/CMS workflow, owner, draft/review/published/archive, version and review due dates.
-3. Program V1: program run/cohort, milestone, check-in/reflection, event, completion/alumni; reuse current program spaces and roles.
-4. Unified taxonomy/search/deep links across Knowledge, Community, Course, Program.
-5. Minimal notifications: replies to own contribution, program schedule/deadline, optional weekly digest.
-6. Contextual next action instead of a large feature dashboard.
+2. My Space continuity layer: accumulated member state and contextual next action, not a feature directory.
+3. Knowledge Operating System: structured D1 source, operator board/CMS workflow, owner, draft/review/published/archive, version and review due dates.
+4. Program V1: program run/cohort, milestone, check-in/reflection, event, completion/alumni; reuse current program spaces and roles.
+5. Unified taxonomy/search/deep links across Knowledge, Community, Course, Program.
+6. Minimal notifications: replies to own contribution, program schedule/deadline, optional weekly digest.
 
 ### After system/mobile QA
 - Founding/beta group of 10-20 real users.
@@ -82,7 +106,9 @@ Secondary metrics:
 
 - Do not optimize a weekly/monthly use case into artificial DAU.
 - Do not treat reading-only members as failed participants.
+- Do not force signup before the user has received public value.
 - Do not ship feature count as success; measure customer/business outcome.
 - Do not duplicate existing space/role/moderation/notification/Q&A foundations.
 - Do not infer 30-day retention before enough event history exists.
 - Prefer accumulated user value (saved knowledge, progress, program history, relationships, contribution archive) over dark-pattern lock-in.
+- Every major feature must connect to the journey ladder and either shorten time-to-value, improve continuity, deepen progress, or increase useful contribution. Otherwise defer it.
