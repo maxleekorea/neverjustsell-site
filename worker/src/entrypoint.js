@@ -3,6 +3,7 @@ import productionWorker from "./production.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
+import { listCommunityCourseDiscussions, replyToCommunityCourseDiscussion } from "./community-course-discussions.js";
 import { injectMemberNextActions } from "./member-onboarding.js";
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
@@ -13,7 +14,7 @@ export class CommunityAuthRpc extends WorkerEntrypoint {
   async communityAccessHealth() {
     return {
       ok: true,
-      runtime: "community-auth-rpc-v1"
+      runtime: "community-auth-rpc-v2"
     };
   }
 
@@ -41,6 +42,18 @@ export class CommunityAuthRpc extends WorkerEntrypoint {
       ok: true,
       items: await listPublicCourseQa(this.env, safeLimit)
     };
+  }
+
+  async listCommunityCourseDiscussions(limit = 50) {
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 50));
+    return {
+      ok: true,
+      items: await listCommunityCourseDiscussions(this.env, safeLimit)
+    };
+  }
+
+  async replyToCommunityCourseDiscussion(input = {}) {
+    return replyToCommunityCourseDiscussion(this.env, input);
   }
 
   async getPaymentE2ECommunityIdentity() {
