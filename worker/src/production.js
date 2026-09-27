@@ -19,7 +19,7 @@ import { ensureKnowledgeSaveSchema, handleKnowledgeSaves } from "./knowledge-sav
 import { ensureKnowledgeOpsSchema, handleKnowledgePublic } from "./knowledge-ops.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
-const PRODUCTION_BUILD = "2026-09-26-mobile-learning-ux-v33";
+const PRODUCTION_BUILD = "2026-09-27-retention-knowledge-program-v1";
 import {
   CLASSROOM_ORIGIN,
   LEGACY_CLASSROOM_HOST,
