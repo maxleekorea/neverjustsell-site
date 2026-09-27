@@ -22,10 +22,21 @@ jobs:
           python-version: '3.12'
       - name: Unit tests
         run: python -m unittest discover -s ops/njs_execution_router/tests -v
-      - name: Execute read-only fixture
+      - name: Select command
+        id: command
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(ops/njs_execution_router/inbox/*.json)
+          if [ ${#files[@]} -gt 0 ]; then
+            printf '%s\n' "${files[@]}" | sort | tail -n 1 | sed 's/^/path=/' >> "$GITHUB_OUTPUT"
+          else
+            echo 'path=ops/njs_execution_router/fixtures/job-20260927-0001.json' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Execute read-only command
         run: |
           python ops/njs_execution_router/router.py \
-            --command ops/njs_execution_router/fixtures/job-20260927-0001.json \
+            --command "${{ steps.command.outputs.path }}" \
             --registry ops/njs_execution_router/fixtures/action-registry.json \
             --phase SHADOW_ENCODE \
             --output njs-router-result.json
