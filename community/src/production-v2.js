@@ -4,6 +4,7 @@ import { handleIntentWritePost } from "./intent-write.js";
 import { refreshSpaceAccess } from "./space-refresh.js";
 import { handleCourseDiscussionRequest } from "./course-discussions.js";
 import { guardRestrictedPostRequest, filterRestrictedPostsFromPublicLists } from "./privacy-guard.js";
+import { handleCommunityOpsRequest } from "./community-ops.js";
 
 function textError(message, status = 500) {
   return new Response(message, {
@@ -18,8 +19,12 @@ function textError(message, status = 500) {
 async function addMemberSpaceNavigation(response, request) {
   if (request.method !== "GET" || response.status !== 200 || !String(response.headers.get("Content-Type") || "").includes("text/html")) return response;
   let body = await response.text();
-  if (body.includes('href="/spaces"')) return new Response(body, { status: response.status, headers: response.headers });
-  body = body.replace('<a href="/course-questions">강의 질문</a>', '<a href="/course-questions">강의 질문</a><a href="/spaces">내 모임</a>');
+  if (!body.includes('href="/spaces"')) {
+    body = body.replace('<a href="/course-questions">강의 질문</a>', '<a href="/course-questions">강의 질문</a><a href="/spaces">내 모임</a>');
+  }
+  if (!body.includes('href="/notifications"')) {
+    body = body.replace('<a href="/spaces">내 모임</a>', '<a href="/spaces">내 모임</a><a href="/notifications">알림</a>');
+  }
   const headers = new Headers(response.headers);
   headers.delete("Content-Length");
   return new Response(body, { status: response.status, headers });
@@ -35,6 +40,14 @@ export default {
     } catch (error) {
       console.error("restricted post guard failed closed", error);
       return textError("게시글 공개 범위를 확인하지 못했습니다.", 503);
+    }
+
+    try {
+      const opsResponse = await handleCommunityOpsRequest(request, env);
+      if (opsResponse) return opsResponse;
+    } catch (error) {
+      console.error("community operations route failed", error);
+      return textError("커뮤니티 작업을 처리하는 중 오류가 발생했습니다.");
     }
 
     if (url.pathname === "/course-questions" || url.pathname.startsWith("/course-questions/")) {
