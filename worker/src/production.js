@@ -228,7 +228,7 @@ export default {
     if (url.pathname === "/system-check/payment-e2e/claim-status" && request.method === "GET") {
       try {
         const claim = await getPaymentE2EClaimStatus(env);
-        return json(claim, { status: status.ok ? 200 : 503 });
+        return json(claim, { status: claim.ok ? 200 : 503 });
       } catch (error) {
         return json({ ok: false, error: String(error?.message || error) }, { status: 503 });
       }
