@@ -12,6 +12,10 @@
     {
       "binding": "COMMUNITY_BRIDGE",
       "service": "neverjustsell-community"
+    },
+    {
+      "binding": "KNOWLEDGE_BRIDGE",
+      "service": "neverjustsell-course-access"
     }
   ],
   "vars": {

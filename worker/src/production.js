@@ -16,6 +16,7 @@ import {
 } from "./lesson-discussions.js";
 import { classroomMobileUxScript, injectClassroomMobileUx } from "./classroom-mobile-ux.js";
 import { ensureKnowledgeSaveSchema, handleKnowledgeSaves } from "./knowledge-saves.js";
+import { ensureKnowledgeOpsSchema, handleKnowledgePublic } from "./knowledge-ops.js";
 import { runPendingSystemOperations, getPaymentE2EProductStatus, getPaymentE2EFlowStatus, getPaymentE2EClaimStatus, getCafe24CatalogStatus, getAllCurrentProductsShippingStatus, getDigitalProductPropertyVisibilityStatus, getDigitalProductDetailUxStatus, getCustomerClaimSettingsStatus } from "./system-operations.js";
 
 const PRODUCTION_BUILD = "2026-09-26-mobile-learning-ux-v33";
@@ -101,6 +102,10 @@ export default {
 
     if (TICKET_ROUTES.has(url.pathname)) {
       return ticketApp.fetch(request, env, ctx);
+    }
+
+    if (url.pathname === "/knowledge/public") {
+      return handleKnowledgePublic(request, env);
     }
 
     if (url.pathname === "/knowledge/saves") {
@@ -253,11 +258,14 @@ export default {
         const knowledgeSaves = hasCourseDb
           ? await ensureKnowledgeSaveSchema(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
+        const knowledgeOps = hasCourseDb
+          ? await ensureKnowledgeOpsSchema(env)
+          : { ok: false, skipped: true, reason: "COURSE_DB binding missing" };
         const systemOperations = hasCourseDb
           ? await runPendingSystemOperations(env)
           : { ok: false, skipped: true, reason: "COURSE_DB binding missing", results: [] };
         const healthy = hasCourseDb
-          ? Boolean(realPaidCourseSync?.ok && lessonDiscussions?.ok && knowledgeSaves?.ok)
+          ? Boolean(realPaidCourseSync?.ok && lessonDiscussions?.ok && knowledgeSaves?.ok && knowledgeOps?.ok)
           : true;
         return json({
           ok: healthy,
@@ -272,6 +280,7 @@ export default {
           real_paid_course_sync: realPaidCourseSync,
           lesson_discussions: lessonDiscussions,
           knowledge_saves: knowledgeSaves,
+          knowledge_ops: knowledgeOps,
           system_operations: systemOperations
         }, { status: healthy ? 200 : 503 });
       } catch (error) {
