@@ -19,7 +19,7 @@ function redirect(location, status = 303) {
 }
 
 async function loadDiscussions(env) {
-  if (!env.AUTH_BRIDGE || typeof env.AUTH_BRIDGE.listCommunityCourseDiscussions !== "function") return [];
+  if (!env.AUTH_BRIDGE) return [];
   const result = await env.AUTH_BRIDGE.listCommunityCourseDiscussions(100);
   return result?.ok && Array.isArray(result.items) ? result.items : [];
 }
@@ -81,7 +81,7 @@ export async function handleCourseDiscussionRequest(request, env) {
     if (!body) return new Response("답변 내용을 입력해 주세요.", { status: 400 });
     let discussionId;
     try { discussionId = decodeURIComponent(match[1]); } catch { return new Response("잘못된 질문 주소입니다.", { status: 400 }); }
-    if (!env.AUTH_BRIDGE || typeof env.AUTH_BRIDGE.replyToCommunityCourseDiscussion !== "function") {
+    if (!env.AUTH_BRIDGE) {
       return new Response("강의 질문 연결을 확인할 수 없습니다.", { status: 503 });
     }
     const result = await env.AUTH_BRIDGE.replyToCommunityCourseDiscussion({
