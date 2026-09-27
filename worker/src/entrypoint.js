@@ -3,6 +3,7 @@ import productionWorker from "./production.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
+import { injectMemberNextActions } from "./member-onboarding.js";
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
   async fetch(request) {
@@ -79,4 +80,14 @@ export class CommunityAuthRpc extends WorkerEntrypoint {
   }
 }
 
-export default productionWorker;
+export default {
+  async fetch(request, env, ctx) {
+    const response = await productionWorker.fetch(request, env, ctx);
+    try {
+      return await injectMemberNextActions(response, request);
+    } catch (error) {
+      console.error("member next-action injection failed", error);
+      return response;
+    }
+  }
+};
