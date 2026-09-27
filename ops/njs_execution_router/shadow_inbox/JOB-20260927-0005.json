@@ -1,0 +1,30 @@
+{
+  "job_id": "JOB-20260927-0005",
+  "protocol_version": "NJS-CMD-0.1",
+  "created_at": "2026-09-27T19:26:00+09:00",
+  "project_id": "P30",
+  "action": "CAFE24.PRODUCT_STATUS.UPDATE",
+  "target_type": "SHOP",
+  "target_ref": "P30_CAFE24",
+  "refs_json": [],
+  "approval_level": "A2",
+  "requested_by": "ChatGPT Plus",
+  "idempotency_key": "P30|CAFE24.PRODUCT_STATUS.UPDATE|20260927-0005",
+  "expected_state": "NO_STATE_CHANGE_SHADOW",
+  "precondition_json": {
+    "before_state_read_required": true
+  },
+  "payload_json": {
+    "shop_no": 1,
+    "display": "T",
+    "selling": "T",
+    "mall_id_ref": "CAFE24_MALL_ID",
+    "product_no_ref": "CAFE24_SHADOW_PRODUCT_NO",
+    "api_version": "2026-09-01"
+  },
+  "mode": "SHADOW_EXECUTION",
+  "status": "VALIDATED",
+  "command_hash": "f623dc0ff65dd7d22fd7a9cbf79de8a753130d2432a3d41659425871d64d8fee",
+  "shadow_ir": "N1|C:f623dc0ff65dd7d22fd7a9cbf79de8a753130d2432a3d41659425871d64d8fee|P:P30|A:05|L:2|M:3",
+  "notes": "Shadow request plan only; no Cafe24 network call"
+}
