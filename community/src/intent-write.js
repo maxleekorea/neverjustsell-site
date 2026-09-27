@@ -55,19 +55,23 @@ export async function handleIntentWritePost(request, env) {
   if (!form || String(form.get("csrf") || "") !== String(session.csrf_token || "")) {
     return new Response("요청을 확인할 수 없습니다.", { status: 403 });
   }
-  const title = String(form.get("title") || "").trim().slice(0, 140);
-  const body = String(form.get("body") || "").trim().slice(0, 12000);
+  const title = String(form.get("title") || "").trim().slice(0, 160);
+  const body = String(form.get("body") || "").trim().slice(0, 50000);
   const categorySlug = String(form.get("category") || "").trim().slice(0, 80);
-  if (title.length < 2 || body.length < 2) return new Response("제목과 내용을 입력해 주세요.", { status: 400 });
+  if (title.length < 4 || body.length < 20) return new Response("제목과 본문을 조금 더 구체적으로 작성해 주세요.", { status: 400 });
 
-  const category = await env.DB.prepare("SELECT id FROM categories WHERE slug=? AND is_active=1 LIMIT 1").bind(categorySlug).first();
+  const category = await env.DB.prepare("SELECT id,slug FROM categories WHERE slug=? AND is_active=1 LIMIT 1").bind(categorySlug).first();
   if (!category?.id) return new Response("주제를 확인해 주세요.", { status: 400 });
+  const recent = await env.DB.prepare("SELECT COUNT(*) AS n FROM posts WHERE author_member_id=? AND created_at>datetime('now','-10 minutes')")
+    .bind(session.member_id).first();
+  if (Number(recent?.n || 0) >= 3) return new Response("짧은 시간에 너무 많은 글이 등록되었습니다. 잠시 후 다시 시도해 주세요.", { status: 429 });
 
+  const isIndexable = category.slug !== "free-talk" && body.length >= 120 ? 1 : 0;
   const slug = slugify(title);
   const insert = await env.DB.prepare(`INSERT INTO posts
     (category_id,author_member_id,slug,title,body,status,is_indexable,post_type,visibility,knowledge_state)
-    VALUES(?,?,?,?,?,'published',1,?,'public','private')`)
-    .bind(Number(category.id),session.member_id,slug,title,body,intent).run();
+    VALUES(?,?,?,?,?,'published',?,?,'public','private')`)
+    .bind(Number(category.id),session.member_id,slug,title,body,isIndexable,intent).run();
   const id = Number(insert?.meta?.last_row_id || 0);
   return redirect(`/p/${id}/${encodeURIComponent(slug)}`);
 }
