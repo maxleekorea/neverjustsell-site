@@ -15,8 +15,22 @@ class RouterCoreTests(unittest.TestCase):
     def test_hash_reproducible(self):
         self.assertEqual(router.command_hash(self.cmd), self.cmd['command_hash'])
 
-    def test_ir_reproducible(self):
-        self.assertEqual(router.shadow_ir(self.cmd), self.cmd['shadow_ir'])
+    def test_reference_ir_reproducible_and_full_hash(self):
+        ir=router.shadow_ir(self.cmd)
+        self.assertEqual(ir, self.cmd['shadow_ir'])
+        self.assertIn(self.cmd['command_hash'], ir)
+        self.assertTrue(ir.startswith('N1|C:'))
+
+    def test_roundtrip_critical_fields(self):
+        view=router.roundtrip_critical_view(self.cmd,[self.cmd])
+        normalized=router.normalize_command(self.cmd)
+        for field in router.CRITICAL_ROUNDTRIP_FIELDS:
+            self.assertEqual(view[field], normalized[field])
+
+    def test_reference_ir_tamper_fails_closed(self):
+        tampered=self.cmd['shadow_ir'].replace('|P:P30|','|P:P20|')
+        with self.assertRaises(router.Reject):
+            router.resolve_reference_ir(tampered,[self.cmd])
 
     def test_status_does_not_change_hash(self):
         before=router.command_hash(self.cmd)
@@ -24,24 +38,19 @@ class RouterCoreTests(unittest.TestCase):
         self.assertEqual(before, router.command_hash(self.cmd))
 
     def test_unknown_action_fails_closed(self):
-        self.cmd['action']='BAD.ACTION'
-        self.cmd['command_hash']=router.command_hash(self.cmd)
-        self.cmd['shadow_ir']=router.shadow_ir(self.cmd)
+        c=router.normalize_command(self.cmd)
+        c['action']='BAD.ACTION'
         with self.assertRaises(router.Reject):
-            c=router.validate_schema(self.cmd)
             router.validate_action(c,self.reg,'SHADOW_ENCODE')
 
     def test_write_action_blocked_in_pilot(self):
-        c=dict(self.cmd)
+        c=router.normalize_command(self.cmd)
         c['action']='P30.TEST_WORKFLOW.RUN'
         c['target_ref']='maxleekorea/neverjustsell-site'
         c['approval_level']='A2'
         c['mode']='DUAL_RUN'
-        c['command_hash']=router.command_hash(c)
-        c['shadow_ir']=router.shadow_ir(c)
         with self.assertRaises(router.RouterError):
-            cc=router.validate_schema(c)
-            router.validate_action(cc,self.reg,'DUAL_RUN')
+            router.validate_action(c,self.reg,'DUAL_RUN')
 
 if __name__=='__main__':
     unittest.main()
