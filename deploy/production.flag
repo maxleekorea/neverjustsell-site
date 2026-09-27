@@ -56,3 +56,6 @@ reason=deploy-community-moderation-notifications-and-knowledge-promotion-before-
 reason=deploy-learner-controlled-course-question-community-sharing
 reason=deploy-course-discussion-rpc-proxy-fix
 reason=align-community-auto-build-entrypoint-with-production-v2
+deploy_at=2026-09-27T14:35:00+09:00
+reason=deploy-retention-knowledge-program-v1-unified-release
+expected_head=32a2c5dbfa71bd39a3065e35a56e1610abf97b4e
