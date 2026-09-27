@@ -2,8 +2,6 @@
 
 Status: approved product direction (D-036)
 
-## Product outcome
-
 NJS optimizes for repeated value at the natural frequency of each use case and for accumulated value that makes returning useful. Universal daily visits are not the goal.
 
 Core loop: discover useful knowledge -> save/learn/join -> make progress or contribute -> receive contextual response/event/next action -> curate strong contributions into durable knowledge -> improve future discovery -> repeat.
@@ -43,14 +41,12 @@ My Space is the continuity layer, not another feature directory. It answers: Wha
 
 Generic feature cards must not dominate once member-specific state exists. Prefer actual saved/progress/program state over links that merely advertise Knowledge, Courses, or Community.
 
-## Primary product metric
+## Primary metric
 Weekly Value-Active Members (WVAM): distinct authenticated members who perform at least one qualifying value action within 7 days.
 
-Initial qualifying events: knowledge_save, knowledge_revisit (after meaningful revisit rule exists), course_enroll, lesson_progress (minimum threshold), lesson_complete, program_checkin, program_reflection, program_milestone_complete, community_contribution, knowledge_promotion.
+Qualifying events: knowledge_save, knowledge_revisit (after meaningful revisit rule exists), course_enroll, lesson_progress (minimum threshold), lesson_complete, program_checkin, program_reflection, program_milestone_complete, community_contribution, knowledge_promotion.
 
 Do not count raw page views, login events, notification opens, likes, or other low-signal clicks by default.
-
-Secondary metrics: 30-day value-active members; cohort retention after sufficient history; course resume/completion; program check-in/completion; knowledge save/revisit; meaningful contribution and response coverage; contribution -> published knowledge conversion; recurring event participation -> subsequent return.
 
 ## Development priority
 ### Now
