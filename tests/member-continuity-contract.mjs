@@ -25,6 +25,7 @@ assert.ok(accumulated.includes("학습 기록 5개 차시"));
 assert.ok(accumulated.includes("3개 차시를 완료"));
 assert.ok(accumulated.includes("참여 프로그램 2개"));
 assert.ok(accumulated.includes("https://www.neverjustsell.com/knowledge/saved"));
-assert.ok(accumulated.includes("https://community.neverjustsell.com/spaces"));
+assert.ok(accumulated.includes('href="/programs"'));
+assert.ok(!accumulated.includes("https://community.neverjustsell.com/spaces"));
 
 console.log("member-continuity contract: ok");
