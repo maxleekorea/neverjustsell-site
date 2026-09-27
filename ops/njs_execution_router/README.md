@@ -62,6 +62,8 @@ The planner:
 
 Only HTTPS URLs on `neverjustsell.com` or its subdomains are accepted. `purge_everything` and arbitrary hosts are rejected.
 
+Verification pilot: `JOB-20260927-0006`, GitHub Actions run `36314207781` — `SUCCEEDED/PASS`, request plan only, `NOT_SENT`.
+
 ### Cafe24
 Shadow action: `CAFE24.PRODUCT_STATUS.UPDATE`
 
@@ -76,6 +78,11 @@ The planner:
 6. requires both `mall.read_product` and `mall.write_product` in the credential contract.
 
 Mall ID, product number and access token remain Secret/Env references.
+
+Verification pilot: `JOB-20260927-0007`, GitHub Actions run `36314377221` — `SUCCEEDED/PASS`, request plan only, `NOT_SENT`.
+
+## Regression status
+The current head passes 24 Router/Shadow safety tests, covering immutable hash/IR behavior, fail-closed action gates, Cloudflare irreversible/A3 classification, provider ACK versus eviction proof, Cafe24 before-state/readback/rollback contracts, and mutability mismatch rejection.
 
 ## Deployment isolation gate
 This code currently lives temporarily inside the P30 production repository. Commits on `ops/njs-execution-router-v0` are also observed by the repository's connected Cloudflare Workers Builds integration and can trigger non-production branch build/preview checks.
