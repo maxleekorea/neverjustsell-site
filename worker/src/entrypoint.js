@@ -1,5 +1,6 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import productionWorker from "./production.js";
+import knowledgeAdminApp from "./knowledge-admin.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
@@ -10,6 +11,10 @@ import { injectMemberNextActions } from "./member-onboarding.js";
 function isLessonDiscussionPost(request) {
   const url = new URL(request.url);
   return request.method === "POST" && url.pathname === "/classroom/discussions";
+}
+
+function isKnowledgeAdmin(request) {
+  return new URL(request.url).pathname.startsWith("/course-admin/knowledge");
 }
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
@@ -106,6 +111,9 @@ export default {
   async fetch(request, env, ctx) {
     if (isLessonDiscussionPost(request)) {
       return handleLessonDiscussionConsentPost(request, env);
+    }
+    if (isKnowledgeAdmin(request)) {
+      return knowledgeAdminApp.fetch(request, env, ctx);
     }
 
     let response = await productionWorker.fetch(request, env, ctx);
