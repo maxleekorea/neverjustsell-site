@@ -117,18 +117,25 @@ jobs:
       - name: Verify public home exposes Knowledge and Community gateways without Q&A feed dependency
         run: |
           node - <<'NODE'
-          const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
-          const body = await r.text();
-          const checks = {
-            ok: r.ok,
-            knowledge_link: body.includes('href="/knowledge"'),
-            experience_copy: body.includes("경험이 쌓이면"),
-            searchable_knowledge_copy: body.includes("검색할 수 있는 지식이 됩니다"),
-            community_link: body.includes('href="/community"'),
-            old_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
-          };
-          console.log(JSON.stringify({ status: r.status, bytes: body.length, checks }, null, 2));
-          if (!Object.values(checks).every(Boolean)) process.exit(1);
+          let last = null;
+          for (let attempt = 0; attempt < 30; attempt += 1) {
+            const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now() + "&attempt=" + attempt, { headers: { "Cache-Control": "no-cache" } });
+            const body = await r.text();
+            const checks = {
+              ok: r.ok,
+              knowledge_link: body.includes('href="/knowledge"'),
+              experience_copy: body.includes("경험이 쌓이면"),
+              searchable_knowledge_copy: body.includes("검색할 수 있는 지식이 됩니다"),
+              community_link: body.includes('href="/community"'),
+              old_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
+            };
+            last = { status: r.status, bytes: body.length, attempt, checks };
+            console.log(JSON.stringify(last, null, 2));
+            if (Object.values(checks).every(Boolean)) process.exit(0);
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+          }
+          console.error("Public home did not converge to the current product contract:", JSON.stringify(last));
+          process.exit(1);
           NODE
 
       - name: Verify public social proof and mobile IA asset
