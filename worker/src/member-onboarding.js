@@ -1,7 +1,6 @@
 import { getCustomerSession } from "./session-orders.js";
 
 const SITE_ORIGIN = "https://www.neverjustsell.com";
-const COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
 
 function num(value) {
   return Math.max(0, Number(value || 0));
@@ -60,7 +59,7 @@ function accumulationCards(state) {
 
   const programCount = state.programsActive + state.programsCompleted;
   if (programCount > 0) {
-    cards.push(`<a class="member-next-card" href="${COMMUNITY_ORIGIN}/spaces"><span>PROGRAM</span><strong>참여 프로그램 ${programCount}개</strong><p>진행 중 ${state.programsActive}개 · 완료 ${state.programsCompleted}개. 다음 활동은 내 모임에서 이어갑니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="/programs"><span>PROGRAM</span><strong>참여 프로그램 ${programCount}개</strong><p>진행 중 ${state.programsActive}개 · 완료 ${state.programsCompleted}개. 지금 해야 할 활동과 남긴 기록을 이어갑니다.</p></a>`);
   }
 
   return cards.join("");
