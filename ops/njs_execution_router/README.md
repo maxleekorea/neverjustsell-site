@@ -80,7 +80,9 @@ Mall ID, product number and access token remain Secret/Env references.
 ## Deployment isolation gate
 This code currently lives temporarily inside the P30 production repository. Commits on `ops/njs-execution-router-v0` are also observed by the repository's connected Cloudflare Workers Builds integration and can trigger non-production branch build/preview checks.
 
-That activity is separate from the NJS Shadow Adapter: the Shadow Runner itself still performs no Cloudflare/Cafe24 API transport. However, credential connection or `DUAL_RUN` promotion is blocked until one of the following is proven:
+That activity is separate from the NJS Shadow Adapter. `network_call_performed=false` refers specifically to provider transport initiated by the NJS Shadow Runner; it does not claim that committing to this Git repository has no external CI/preview side effects.
+
+Credential connection or `DUAL_RUN` promotion is blocked until one of the following is proven:
 - ops-branch builds are isolated previews with no production route/binding mutation for every connected Worker; or
 - the Execution Fabric is moved to a dedicated ops repository/backend that is not connected to P30 deployment automation.
 
