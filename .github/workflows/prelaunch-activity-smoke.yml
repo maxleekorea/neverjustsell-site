@@ -81,6 +81,24 @@ jobs:
           if (![302,303].includes(r.status) || !location.includes("/login") || !location.includes("return_to")) process.exit(1);
           NODE
 
+      - name: Verify notifications require membership
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/notifications?check=" + Date.now(), { redirect: "manual", headers: { "Cache-Control": "no-cache" } });
+          const location = r.headers.get("location") || "";
+          console.log(JSON.stringify({ status: r.status, location }));
+          if (![302,303].includes(r.status) || !location.includes("/login") || !location.includes("return_to")) process.exit(1);
+          NODE
+
+      - name: Verify moderation requires authorized membership
+        run: |
+          node - <<'NODE'
+          const r = await fetch("https://community.neverjustsell.com/moderation?check=" + Date.now(), { redirect: "manual", headers: { "Cache-Control": "no-cache" } });
+          const location = r.headers.get("location") || "";
+          console.log(JSON.stringify({ status: r.status, location }));
+          if (![302,303].includes(r.status) || !location.includes("/login") || !location.includes("return_to")) process.exit(1);
+          NODE
+
       - name: Verify community journey-first home and member-space navigation
         run: |
           node - <<'NODE'
@@ -91,7 +109,7 @@ jobs:
             !r.ok || !body.includes("무엇이 필요하신가요?") || !body.includes("질문하기") ||
             !body.includes("경험·사례 보기") || !body.includes("강의 질문 보기") ||
             !body.includes("/course-questions") || !body.includes("/spaces") ||
-            body.includes("강의에서 많이 묻는 질문") ||
+            !body.includes("/notifications") || body.includes("강의에서 많이 묻는 질문") ||
             !body.includes("community-mobile-menu") || !body.includes("community-mobile-menu-script")
           ) process.exit(1);
           NODE
