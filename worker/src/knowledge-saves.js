@@ -1,7 +1,8 @@
 import { getCustomerSession } from "./session-orders.js";
 import { SITE_ORIGIN, APEX_ORIGIN } from "./config.js";
+import { recordValueEvent } from "./value-events.js";
 
-const KNOWLEDGE_SAVE_VERSION = "2026-09-27-member-knowledge-library-v1";
+const KNOWLEDGE_SAVE_VERSION = "2026-09-27-member-knowledge-library-v2";
 let schemaPromise = null;
 
 function json(data, init = {}) {
@@ -126,6 +127,14 @@ export async function handleKnowledgeSaves(request, env) {
     await env.COURSE_DB.prepare(
       "INSERT OR IGNORE INTO knowledge_saves(member_id,slug) VALUES(?,?)"
     ).bind(memberId, slug).run();
+    await recordValueEvent(env, {
+      memberId,
+      eventType: "knowledge_save",
+      objectType: "knowledge",
+      objectId: slug,
+      source: "knowledge",
+      eventKey: `knowledge_save:${memberId}:${slug}`
+    });
   } else {
     await env.COURSE_DB.prepare(
       "DELETE FROM knowledge_saves WHERE member_id=? AND slug=?"

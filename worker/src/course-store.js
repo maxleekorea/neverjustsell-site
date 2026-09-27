@@ -1,3 +1,4 @@
+import { recordValueEvent } from "./value-events.js";
 
 export async function getEnrollment(env, memberId, courseId) {
   if (!env.COURSE_DB || !memberId || !courseId) return null;
@@ -17,6 +18,15 @@ export async function enrollFreeCourse(env, memberId, course) {
   await env.COURSE_DB.prepare(
     "INSERT INTO course_enrollments (member_id,course_id,enrollment_type,status) VALUES (?,?, 'free','enrolled') ON CONFLICT(member_id,course_id) DO UPDATE SET enrollment_type='free',status='enrolled',updated_at=CURRENT_TIMESTAMP"
   ).bind(memberId, course.id).run();
+  await recordValueEvent(env, {
+    memberId,
+    eventType: "course_enroll",
+    objectType: "course",
+    objectId: course.id,
+    source: "classroom",
+    eventKey: `course_enroll:${memberId}:${course.id}`,
+    metadata: { course_slug: course.slug || null, access_type: course.access_type || null }
+  });
 }
 
 export async function getEnrolledCourseIds(env, memberId) {
@@ -100,6 +110,19 @@ export async function recordLessonWatch(env, memberId, courseId, lessonId, posit
     "INSERT INTO lesson_progress (member_id,course_id,lesson_id,completed,last_position_seconds,watched_seconds) VALUES (?,?,?,0,?,?) " +
     "ON CONFLICT(member_id,lesson_id) DO UPDATE SET last_position_seconds=excluded.last_position_seconds,watched_seconds=lesson_progress.watched_seconds+excluded.watched_seconds,updated_at=CURRENT_TIMESTAMP"
   ).bind(memberId, courseId, lessonId, position, delta).run();
+
+  if (position >= 60 && delta >= 10) {
+    const dayBucket = new Date().toISOString().slice(0, 10);
+    await recordValueEvent(env, {
+      memberId,
+      eventType: "lesson_progress",
+      objectType: "lesson",
+      objectId: lessonId,
+      source: "classroom",
+      eventKey: `lesson_progress:${memberId}:${lessonId}:${dayBucket}`,
+      metadata: { course_id: courseId, position_seconds: position }
+    });
+  }
 }
 
 export async function completeLesson(env, memberId, courseId, lessonId) {
@@ -107,6 +130,15 @@ export async function completeLesson(env, memberId, courseId, lessonId) {
   await env.COURSE_DB.prepare(
     "INSERT INTO lesson_progress (member_id,course_id,lesson_id,completed,last_position_seconds,completed_at) VALUES (?,?,?,1,0,CURRENT_TIMESTAMP) ON CONFLICT(member_id,lesson_id) DO UPDATE SET completed=1,completed_at=COALESCE(completed_at,CURRENT_TIMESTAMP),updated_at=CURRENT_TIMESTAMP"
   ).bind(memberId, courseId, lessonId).run();
+  await recordValueEvent(env, {
+    memberId,
+    eventType: "lesson_complete",
+    objectType: "lesson",
+    objectId: lessonId,
+    source: "classroom",
+    eventKey: `lesson_complete:${memberId}:${lessonId}`,
+    metadata: { course_id: courseId }
+  });
 }
 
 export async function getCourseProgress(env, memberId, course) {

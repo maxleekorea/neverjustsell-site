@@ -115,7 +115,7 @@ export default {
       console.error("lesson discussion consent injection failed", error);
     }
     try {
-      return await injectMemberNextActions(response, request);
+      return await injectMemberNextActions(response, request, env);
     } catch (error) {
       console.error("member next-action injection failed", error);
       return response;

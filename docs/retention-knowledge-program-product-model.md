@@ -1,0 +1,91 @@
+# P30 Retention / Knowledge / Program Product Model
+
+Status: approved product direction (D-036)
+
+NJS optimizes for repeated value at the natural frequency of each use case and for accumulated value that makes returning useful. Universal daily visits are not the goal.
+
+Core loop: discover useful knowledge -> save/learn/join -> make progress or contribute -> receive contextual response/event/next action -> curate strong contributions into durable knowledge -> improve future discovery -> repeat.
+
+Q&A is one discussion type, not the center of the product.
+
+## User journey ladder
+1. Anonymous value: public knowledge/community/course preview without forced signup.
+2. First commitment: save knowledge, enroll, or join a program; auth exists to preserve continuity.
+3. Personal continuity: My Space shows saved knowledge, learning history, program participation, and later contextual responses/next actions.
+4. Progress accumulation: course progress, completion, program milestones, reflections, attendance.
+5. Social accountability: questions, cases, discussion, host/peer responses, events, cohort spaces.
+6. Contribution identity: strong member experience can become a reusable case, answer, or knowledge candidate with moderation/consent.
+7. Long-term role: only after real behavior supports it, recurring contributors may become curator/mentor/moderator-level participants.
+
+Desired switching cost is accumulated utility: saved knowledge, progress, program history, relationships, and contribution archive. Never create artificial exit friction.
+
+## Activation
+Account creation is not activation. Initial activation is the first preserved value action: first knowledge save, first meaningful lesson progress/completion, first program participation/check-in, or first meaningful community contribution with contextual follow-up.
+
+First-session UX minimizes time-to-value. Registration, onboarding questions, notifications, or profile setup must not interrupt public value discovery unless required to preserve a user-requested action.
+
+For founding/beta users, meaningful first contributions should receive a useful human response quickly enough to teach the member that the community is responsive. Do not replace this with generic automated replies.
+
+## Necessity progression
+- Useful: I can get an answer or insight here.
+- Convenient: I can save it and resume later.
+- Personal: My learning and participation history is here.
+- Accountable: A program, host, or peers are expecting my next action.
+- Connected: My discussions and responses have continuity here.
+- Invested: My own contribution archive and recognized expertise are here.
+
+Each stage preserves value from the previous stage. A new feature that does not deepen one of these stages is not a current priority.
+
+## Continuity rule
+My Space is the continuity layer, not another feature directory. It answers: What have I accumulated here? Where did I stop? What is the next useful action, if any?
+
+Generic feature cards must not dominate once member-specific state exists. Prefer actual saved/progress/program state over links that merely advertise Knowledge, Courses, or Community.
+
+## Primary metric
+Weekly Value-Active Members (WVAM): distinct authenticated members who perform at least one qualifying value action within 7 days.
+
+Qualifying events: knowledge_save, knowledge_revisit (after meaningful revisit rule exists), course_enroll, lesson_progress (minimum threshold), lesson_complete, program_checkin, program_reflection, program_milestone_complete, community_contribution, knowledge_promotion.
+
+Do not count raw page views, login events, notification opens, likes, or other low-signal clicks by default.
+
+## Development priority
+### Now
+1. Value-event instrumentation and retention measurement foundation.
+2. My Space continuity layer.
+3. Knowledge Operating System: structured D1 source, operator board/CMS workflow, owner, draft/review/published/archive, version and review due dates.
+4. Program V1: program run/cohort, milestone, check-in/reflection, event, completion/alumni; reuse current program spaces and roles.
+5. Unified taxonomy/search/deep links across Knowledge, Community, Course, Program.
+6. Minimal notifications: replies to own contribution, program schedule/deadline, optional weekly digest.
+
+### After system/mobile QA
+- Founding/beta group of 10-20 real users.
+- Operate one recurring ritual/event consistently.
+- Observe 30/60-day retention and identify the contributor/facilitator hard side.
+
+### Later if data supports it
+- personalized recommendations
+- topic/person follow
+- semantic search
+- AI recap/curation
+- mentor/curator roles
+- more sophisticated recurring challenges
+
+### Defer
+- streaks
+- leaderboards
+- points/badge-led gamification
+- broad real-time chat/DM
+- mass push notifications
+- complex onboarding automation
+- full Directus/Discourse migration
+- mass seeding
+
+## Guardrails
+- Do not optimize weekly/monthly use cases into artificial DAU.
+- Do not treat reading-only members as failed participants.
+- Do not force signup before public value.
+- Measure customer/business outcomes, not feature count.
+- Do not duplicate existing space/role/moderation/notification/Q&A foundations.
+- Do not infer 30-day retention before enough event history exists.
+- Prefer accumulated user value over dark-pattern lock-in.
+- Every major feature must shorten time-to-value, improve continuity, deepen progress, or increase useful contribution. Otherwise defer it.
