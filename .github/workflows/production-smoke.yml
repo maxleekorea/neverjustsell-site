@@ -49,6 +49,8 @@ jobs:
         run: node tests/value-events-contract.mjs
       - name: Verify member continuity contract
         run: node tests/member-continuity-contract.mjs
+      - name: Verify Knowledge Ops contract
+        run: node tests/knowledge-ops-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
