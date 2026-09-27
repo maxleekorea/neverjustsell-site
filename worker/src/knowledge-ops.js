@@ -1,6 +1,7 @@
-const KNOWLEDGE_OPS_VERSION = "2026-09-27-knowledge-ops-v1";
+const KNOWLEDGE_OPS_VERSION = "2026-09-27-knowledge-ops-v2";
 const VALID_TYPES = new Set(["term", "case", "brief", "guide", "article"]);
 const VALID_STATUSES = new Set(["draft", "review", "published", "archived"]);
+const VALID_SOURCE_MODES = new Set(["legacy", "canonical"]);
 let schemaPromise = null;
 
 function json(data, init = {}) {
@@ -94,6 +95,14 @@ export async function ensureKnowledgeOpsSchema(env) {
       await env.COURSE_DB.prepare(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_knowledge_revision_slug_version ON knowledge_entry_revisions(slug,version)"
       ).run();
+      await env.COURSE_DB.prepare(`CREATE TABLE IF NOT EXISTS knowledge_ops_state (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`).run();
+      await env.COURSE_DB.prepare(
+        "INSERT OR IGNORE INTO knowledge_ops_state(key,value) VALUES('public_source_mode','legacy')"
+      ).run();
       return true;
     })().catch((error) => {
       schemaPromise = null;
@@ -102,16 +111,39 @@ export async function ensureKnowledgeOpsSchema(env) {
   }
 
   await schemaPromise;
-  const stats = await env.COURSE_DB.prepare(
-    "SELECT COUNT(*) AS total,SUM(CASE WHEN status='published' THEN 1 ELSE 0 END) AS published,SUM(CASE WHEN status='review' THEN 1 ELSE 0 END) AS review FROM knowledge_entries"
-  ).first();
+  const [stats, mode] = await Promise.all([
+    env.COURSE_DB.prepare(
+      "SELECT COUNT(*) AS total,SUM(CASE WHEN status='published' THEN 1 ELSE 0 END) AS published,SUM(CASE WHEN status='review' THEN 1 ELSE 0 END) AS review FROM knowledge_entries"
+    ).first(),
+    getKnowledgeSourceMode(env, { ensure: false })
+  ]);
   return {
     ok: true,
     version: KNOWLEDGE_OPS_VERSION,
+    source_mode: mode,
     total: Number(stats?.total || 0),
     published: Number(stats?.published || 0),
     review: Number(stats?.review || 0)
   };
+}
+
+export async function getKnowledgeSourceMode(env, options = {}) {
+  if (options.ensure !== false) await ensureKnowledgeOpsSchema(env);
+  if (!env?.COURSE_DB) return "legacy";
+  const row = await env.COURSE_DB.prepare(
+    "SELECT value FROM knowledge_ops_state WHERE key='public_source_mode' LIMIT 1"
+  ).first();
+  return VALID_SOURCE_MODES.has(String(row?.value || "")) ? String(row.value) : "legacy";
+}
+
+export async function setKnowledgeSourceMode(env, mode) {
+  await ensureKnowledgeOpsSchema(env);
+  const normalized = clean(mode, 20).toLowerCase();
+  if (!VALID_SOURCE_MODES.has(normalized)) throw new Error("invalid_knowledge_source_mode");
+  await env.COURSE_DB.prepare(
+    "INSERT INTO knowledge_ops_state(key,value,updated_at) VALUES('public_source_mode',?,CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP"
+  ).bind(normalized).run();
+  return normalized;
 }
 
 export async function listPublishedKnowledge(env, options = {}) {
@@ -191,17 +223,25 @@ export async function handleKnowledgePublic(request, env) {
   }
 
   const url = new URL(request.url);
-  const slug = url.searchParams.get("slug");
   try {
+    const mode = await getKnowledgeSourceMode(env);
+    const active = mode === "canonical";
+    if (!active) {
+      return json({ ok: true, version: KNOWLEDGE_OPS_VERSION, active: false, source_mode: mode, count: 0, items: [] }, {
+        headers: { "Cache-Control": "public, max-age=30, s-maxage=60" }
+      });
+    }
+
+    const slug = url.searchParams.get("slug");
     if (slug) {
       const item = await getPublishedKnowledge(env, slug);
-      return json({ ok: true, version: KNOWLEDGE_OPS_VERSION, item }, {
+      return json({ ok: true, version: KNOWLEDGE_OPS_VERSION, active: true, source_mode: mode, item }, {
         status: item ? 200 : 404,
         headers: { "Cache-Control": "public, max-age=60, s-maxage=300" }
       });
     }
     const items = await listPublishedKnowledge(env, { limit: url.searchParams.get("limit") });
-    return json({ ok: true, version: KNOWLEDGE_OPS_VERSION, count: items.length, items }, {
+    return json({ ok: true, version: KNOWLEDGE_OPS_VERSION, active: true, source_mode: mode, count: items.length, items }, {
       headers: { "Cache-Control": "public, max-age=60, s-maxage=300" }
     });
   } catch (error) {
@@ -210,4 +250,4 @@ export async function handleKnowledgePublic(request, env) {
   }
 }
 
-export { KNOWLEDGE_OPS_VERSION, VALID_TYPES, VALID_STATUSES };
+export { KNOWLEDGE_OPS_VERSION, VALID_TYPES, VALID_STATUSES, VALID_SOURCE_MODES };
