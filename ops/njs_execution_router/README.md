@@ -3,12 +3,12 @@
 Pilot router for the NJS AI-NATIVE Execution Fabric. Current migration phase: `SHADOW_EXECUTION`.
 
 ## Scope
-- Validates Canonical Command schema, immutable command hash, NJS-IR reference integrity, round-trip critical fields, and Action Registry gates.
+- Validates Canonical Command schema, immutable command hash, NJS-IR reference integrity, round-trip critical fields, Action Registry gates, provider preflight/readback, and rollback semantics.
 - Base Router executes only registered `READ` actions.
-- Provider Shadow Runner may accept explicitly registered `WRITE_REVERSIBLE` semantics only to construct an exact HTTP request plan. It has no provider transport/send capability.
+- Provider Shadow Runner may accept explicitly registered `WRITE_REVERSIBLE` or `WRITE_IRREVERSIBLE` semantics only to construct an exact request/verification plan. It has no provider transport/send capability.
 - Current live read adapter reads public GitHub state for P30.
 - Current shadow adapters are `CLOUDFLARE.CACHE.PURGE_URLS` and `CAFE24.PRODUCT_STATUS.UPDATE`.
-- `WRITE_IRREVERSIBLE` and all production mutation remain fail-closed.
+- All production mutation remains fail-closed.
 - NJS-IR is never execution authority.
 
 ## NJS-IR shadow contract
@@ -27,18 +27,18 @@ Execution Relay runs only when a **new inbox JSON file is added**. Modifying an 
 
 ### Shadow Execution Relay
 For provider request-plan validation:
-`Drive Canonical Shadow Command → ChatGPT relay → immutable shadow_inbox object → Shadow Runner → request plan artifact → ChatGPT readback → Drive Result`.
+`Drive Canonical Shadow Command → ChatGPT relay → immutable shadow_inbox object → Shadow Runner → request/verification plan artifact → ChatGPT readback → Drive Result`.
 
 A successful Shadow Result must have all of the following:
 - `transport_state = NOT_SENT`
 - `network_call_performed = false`
 - `canonical_effect = NONE`
-- no changed objects
+- no changed provider objects
 
 Provider credentials and identifiers are represented only as Secret/Env references. No actual token value is stored in Command payloads.
 
 ### Direct Drive transport
-Prepared but not enabled. A cloud worker needs a Google service account or equivalent OAuth credential with minimum access to the single `NJS_EXECUTION_CONTROL_PLANE_v0.1` spreadsheet. This path is for unattended operation later.
+Prepared but not enabled. A cloud worker would need a Google service account or equivalent OAuth credential with minimum access to the single `NJS_EXECUTION_CONTROL_PLANE_v0.1` spreadsheet. This path is not a prerequisite for the current interactive pilot.
 
 ## Hash contract
 `command_hash = SHA256(canonical JSON)` over immutable input fields only:
@@ -46,16 +46,43 @@ Prepared but not enabled. A cloud worker needs a Google service account or equiv
 
 `status, command_hash, shadow_ir, notes` are excluded.
 
-## Current provider pilots
+## Provider verification contracts
 ### Cloudflare
 Shadow action: `CLOUDFLARE.CACHE.PURGE_URLS`
 
-The planner only permits HTTPS URLs on `neverjustsell.com` or its subdomains and only generates a scoped `/purge_cache` request using a `files` list. `purge_everything` and arbitrary hosts are rejected.
+Classification: `WRITE_IRREVERSIBLE`, future live approval floor `A3`.
+
+The planner:
+1. preflights the configured zone and requires the zone ID/name/status to match `neverjustsell.com`;
+2. constructs only a scoped `/purge_cache` request using a `files` list;
+3. treats HTTP 200 + provider `success=true` as request acceptance, not eviction proof;
+4. plans a GET probe for every target URL and requires observed `CF-Cache-Status` to be non-`HIT`;
+5. returns `UNVERIFIED` if evidence is inconclusive;
+6. explicitly declares rollback unsupported because evicted edge-cache entries cannot be restored to their previous state.
+
+Only HTTPS URLs on `neverjustsell.com` or its subdomains are accepted. `purge_everything` and arbitrary hosts are rejected.
 
 ### Cafe24
 Shadow action: `CAFE24.PRODUCT_STATUS.UPDATE`
 
-The planner only accepts `display` / `selling` status flags (`T` or `F`) with a required precondition marker and generates a version-pinned Admin API product update request. Mall ID, product number and access token remain Secret/Env references.
+Classification: `WRITE_REVERSIBLE`, approval floor `A2` for the planned reversible operation.
+
+The planner:
+1. reads the exact product before mutation and snapshots `product_no` plus every changed field;
+2. constructs only `display` / `selling` changes with `T` or `F`;
+3. reads the same product again and requires all expected fields to match exactly;
+4. treats readback mismatch as `UNVERIFIED`;
+5. builds rollback from the before-state snapshot and requires a final rollback readback;
+6. requires both `mall.read_product` and `mall.write_product` in the credential contract.
+
+Mall ID, product number and access token remain Secret/Env references.
+
+## Deployment isolation gate
+This code currently lives temporarily inside the P30 production repository. Commits on `ops/njs-execution-router-v0` are also observed by the repository's connected Cloudflare Workers Builds integration and can trigger non-production branch build/preview checks.
+
+That activity is separate from the NJS Shadow Adapter: the Shadow Runner itself still performs no Cloudflare/Cafe24 API transport. However, credential connection or `DUAL_RUN` promotion is blocked until one of the following is proven:
+- ops-branch builds are isolated previews with no production route/binding mutation for every connected Worker; or
+- the Execution Fabric is moved to a dedicated ops repository/backend that is not connected to P30 deployment automation.
 
 ## Safety
-No Cloudflare request, Cafe24 request, deployment, arbitrary shell, SQL, arbitrary URL, or production write is enabled in this branch. `SHADOW_EXECUTION` means request-plan generation, not live write authority.
+The NJS Router has no Cloudflare/Cafe24 provider credential and no live provider-send capability. `SHADOW_EXECUTION` means request and verification-plan generation, not live write authority. The current repository can still have independent CI/preview side effects from its existing Git/Cloudflare integration, which is why deployment isolation is now a blocking promotion gate.
