@@ -5,6 +5,7 @@ import { refreshSpaceAccess } from "./space-refresh.js";
 import { handleCourseDiscussionRequest } from "./course-discussions.js";
 import { guardRestrictedPostRequest, filterRestrictedPostsFromPublicLists } from "./privacy-guard.js";
 import { handleCommunityOpsRequest } from "./community-ops.js";
+import { injectPublicOperations } from "./public-ops-ui.js";
 
 function textError(message, status = 500) {
   return new Response(message, {
@@ -86,9 +87,10 @@ export default {
     let response = await production.fetch(request, env, ctx);
     try {
       response = await filterRestrictedPostsFromPublicLists(response, request, env);
+      response = await injectPublicOperations(response, request, env);
     } catch (error) {
-      console.error("public restricted-post filter failed closed", error);
-      return textError("공개 목록을 안전하게 구성하지 못했습니다.", 503);
+      console.error("public community surface guard failed closed", error);
+      return textError("공개 커뮤니티 화면을 안전하게 구성하지 못했습니다.", 503);
     }
     return addMemberSpaceNavigation(response, request);
   }
