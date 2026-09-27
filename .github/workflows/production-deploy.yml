@@ -1,4 +1,4 @@
-name: Production Workers deploy
+name: Production release
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
       - "deploy/production.flag"
 
 concurrency:
-  group: neverjustsell-production-workers
+  group: neverjustsell-production-release
   cancel-in-progress: false
 
 jobs:
@@ -63,7 +63,7 @@ jobs:
       - name: Reconcile course schema through runtime binding
         run: |
           node -e '
-          const expected="2026-09-26-mobile-learning-ux-v33";
+          const expected="2026-09-27-retention-knowledge-program-v1";
           let last=null;
           for(let i=0;i<8;i+=1){
             const r=await fetch("https://classroom.neverjustsell.com/migration-health?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
@@ -79,6 +79,10 @@ jobs:
               j?.program_schema?.ok &&
               j?.real_paid_course_sync?.ok &&
               j?.lesson_discussions?.ok &&
+              j?.knowledge_saves?.ok &&
+              j?.knowledge_ops?.ok &&
+              j?.knowledge_ops?.version==="2026-09-27-knowledge-ops-v2" &&
+              ["legacy","canonical"].includes(String(j?.knowledge_ops?.source_mode||"")) &&
               Number(j?.lesson_discussions?.total_seed_questions||0)>=23 &&
               Number(j?.lesson_discussions?.total_seed_answers||0)>=23 &&
               Number(first?.question_count||0)>=10 &&
@@ -93,6 +97,22 @@ jobs:
           console.error("Course runtime reconciliation did not converge:",JSON.stringify(last));
           process.exit(1);
           '
+
+      - name: Verify Knowledge bridge and Program V1 routes
+        run: |
+          node - <<'NODE'
+          const knowledge=await fetch("https://classroom.neverjustsell.com/knowledge/public?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const body=await knowledge.json().catch(()=>null);
+          console.log(JSON.stringify({knowledge_status:knowledge.status,knowledge:body},null,2));
+          if(!knowledge.ok || !body?.ok || body?.version!=="2026-09-27-knowledge-ops-v2" || !["legacy","canonical"].includes(String(body?.source_mode||""))) process.exit(1);
+          for(const path of ["/programs","/program-host/review"]){
+            const r=await fetch("https://classroom.neverjustsell.com"+path+"?deploy_check="+Date.now(),{redirect:"manual",headers:{"Cache-Control":"no-cache"}});
+            const location=r.headers.get("location")||"";
+            console.log(JSON.stringify({path,status:r.status,location}));
+            if(![302,303].includes(r.status) || !location.includes("/oauth/cafe24/customer/start")) process.exit(1);
+          }
+          NODE
+
       - name: Inspect real paid course production state
         run: |
           node -e '
@@ -295,8 +315,40 @@ jobs:
           ) process.exit(1);
           '
 
-  verify:
+  deploy-site:
     needs: deploy-community
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install site Worker dependencies
+        working-directory: site
+        run: npm install --no-audit --no-fund
+      - name: Test site Worker
+        working-directory: site
+        run: npm test
+      - name: Deploy site Worker
+        working-directory: site
+        run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Verify public Knowledge fallback or canonical source
+        run: |
+          node - <<'NODE'
+          const index=await fetch("https://www.neverjustsell.com/knowledge?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const body=await index.text();
+          console.log(JSON.stringify({status:index.status,bytes:body.length,knowledge_hub:body.includes("NJS KNOWLEDGE HUB")}));
+          if(!index.ok || !body.includes("NJS KNOWLEDGE HUB")) process.exit(1);
+          const saved=await fetch("https://www.neverjustsell.com/knowledge/saved?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          if(!saved.ok) process.exit(1);
+          NODE
+
+  verify:
+    needs: deploy-site
     runs-on: ubuntu-latest
     permissions:
       contents: read

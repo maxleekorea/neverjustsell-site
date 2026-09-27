@@ -57,6 +57,8 @@ jobs:
         run: node tests/program-participant-contract.mjs
       - name: Verify Program V1 UX guard contract
         run: node tests/program-ux-guard-contract.mjs
+      - name: Verify production release gate contract
+        run: node tests/production-release-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
