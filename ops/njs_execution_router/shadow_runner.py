@@ -11,6 +11,9 @@ import router
 from shadow_adapters import ShadowAdapterError, build_shadow_request_plan
 
 
+SHADOW_MUTABILITIES = {"WRITE_REVERSIBLE", "WRITE_IRREVERSIBLE"}
+
+
 def validate_shadow_action(command: Mapping[str, Any], registry: Iterable[Mapping[str, Any]], current_phase: str) -> Dict[str, Any]:
     rows = [dict(r) for r in registry if r.get("action") == command["action"]]
     if not rows:
@@ -18,8 +21,8 @@ def validate_shadow_action(command: Mapping[str, Any], registry: Iterable[Mappin
     r = rows[0]
     if r.get("status") not in {"PILOT", "ACTIVE"}:
         raise router.Reject("ACTION_DISABLED")
-    if r.get("mutability") != "WRITE_REVERSIBLE":
-        raise router.Block("SHADOW_ONLY_REVERSIBLE_WRITE")
+    if r.get("mutability") not in SHADOW_MUTABILITIES:
+        raise router.Block("SHADOW_WRITE_ACTION_REQUIRED")
     if current_phase != "SHADOW_EXECUTION" or command.get("mode") != "SHADOW_EXECUTION":
         raise router.Block("SHADOW_PHASE_REQUIRED")
     if router.PHASE_RANK[current_phase] < router.PHASE_RANK.get(str(r.get("enabled_phase")), 999):
@@ -34,6 +37,27 @@ def validate_shadow_action(command: Mapping[str, Any], registry: Iterable[Mappin
     if str(r.get("precondition_required", "")).upper() == "TRUE" and not command.get("precondition_json"):
         raise router.Block("PRECONDITION_REQUIRED")
     return r
+
+
+def validate_shadow_plan(plan: Mapping[str, Any], action_row: Mapping[str, Any]) -> None:
+    if plan.get("network_call_performed") is not False or plan.get("transport_state") != "NOT_SENT":
+        raise router.Reject("SHADOW_TRANSPORT_GUARD_FAILED")
+    if plan.get("mutability_semantics") != action_row.get("mutability"):
+        raise router.Reject("SHADOW_MUTABILITY_MISMATCH")
+    if str(action_row.get("postcondition_required", "")).upper() == "TRUE" and not plan.get("postcondition"):
+        raise router.Reject("SHADOW_POSTCONDITION_CONTRACT_REQUIRED")
+    if str(action_row.get("readback_required", "")).upper() == "TRUE" and not (
+        plan.get("postcondition") or plan.get("provider_ack")
+    ):
+        raise router.Reject("SHADOW_READBACK_CONTRACT_REQUIRED")
+    if action_row.get("mutability") == "WRITE_REVERSIBLE":
+        rollback = plan.get("rollback") or {}
+        if rollback.get("supported") is not True:
+            raise router.Reject("REVERSIBLE_ACTION_ROLLBACK_REQUIRED")
+    if action_row.get("mutability") == "WRITE_IRREVERSIBLE":
+        rollback = plan.get("rollback") or {}
+        if rollback.get("supported") is not False:
+            raise router.Reject("IRREVERSIBLE_ACTION_ROLLBACK_MUST_BE_FALSE")
 
 
 def plan_hash(plan: Mapping[str, Any]) -> str:
@@ -56,8 +80,7 @@ def run_shadow(command: Mapping[str, Any], registry: Iterable[Mapping[str, Any]]
         c = router.validate_schema(command)
         action_row = validate_shadow_action(c, registry, "SHADOW_EXECUTION")
         plan = build_shadow_request_plan(c, action_row)
-        if plan.get("network_call_performed") is not False or plan.get("transport_state") != "NOT_SENT":
-            raise router.Reject("SHADOW_TRANSPORT_GUARD_FAILED")
+        validate_shadow_plan(plan, action_row)
         output = {
             "shadow_execution": True,
             "request_plan_hash": plan_hash(plan),
