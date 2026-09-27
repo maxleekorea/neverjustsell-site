@@ -51,6 +51,8 @@ jobs:
         run: node tests/member-continuity-contract.mjs
       - name: Verify Knowledge Ops contract
         run: node tests/knowledge-ops-contract.mjs
+      - name: Verify canonical Knowledge fallback contract
+        run: node tests/knowledge-runtime-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
