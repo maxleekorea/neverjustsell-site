@@ -62,3 +62,6 @@ expected_head=32a2c5dbfa71bd39a3065e35a56e1610abf97b4e
 deploy_at=2026-09-27T15:25:00+09:00
 reason=activate-knowledge-canonical-after-exact-parity
 expected_head=f0075b28ae23501818b31359c86c3c972330b25e
+deploy_at=2026-09-27T16:14:00+09:00
+reason=remove-obsolete-home-qa-feed-and-enforce-knowledge-community-gateways
+expected_head=d3db0d2fcfc887b555107a7e2536ed3b60d25f99
