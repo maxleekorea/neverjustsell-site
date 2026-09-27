@@ -1,4 +1,5 @@
 import { getMemberSession } from "./spaces.js";
+import { notifyMember } from "./notifications.js";
 
 function esc(value) {
   return String(value ?? "")
@@ -48,7 +49,7 @@ function page(items, session) {
 
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>강의 질문 | NEVER JUST SELL Community</title><meta name="description" content="강의에서 시작된 질문을 커뮤니티에서 함께 답하는 공간"><style>
 *{box-sizing:border-box}body{margin:0;background:#f4f1ec;color:#171512;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;line-height:1.65}a{color:inherit}.shell{width:min(920px,calc(100% - 32px));margin:0 auto}.top{min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #ddd6cc}.brand{font-size:14px;font-weight:900;letter-spacing:.06em;text-decoration:none}.nav{display:flex;gap:14px;flex-wrap:wrap;font-size:13px}.hero{padding:52px 0 18px}.eyebrow{font-size:11px;font-weight:850;letter-spacing:.12em;color:#77502e}.hero h1{font-size:clamp(34px,6vw,56px);line-height:1.08;letter-spacing:-.05em;margin:8px 0 12px}.hero p{max-width:720px;color:#6f675f;margin:0}.course-group{margin-top:38px}.course-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.course-head h2{font-size:25px;margin:0}.course-head span{font-size:12px;color:#7c736a}.qa-list{display:grid;gap:10px}.qa{background:#fff;border:1px solid #ddd5cb;padding:24px;scroll-margin-top:20px}.qa-meta{display:flex;gap:9px;flex-wrap:wrap;font-size:11px;color:#786f66}.qa-meta span:first-child{font-weight:850;color:#765333}.qa h3{font-size:20px;line-height:1.5;margin:8px 0 16px}.replies{display:grid;gap:8px}.reply{background:#f7f4ef;border-left:3px solid #c2a381;padding:13px 15px;font-size:14px}.reply-who{font-size:11px;font-weight:850;color:#765333;margin-bottom:4px}.waiting{font-size:13px;color:#837970}.qa-actions{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-top:14px;padding-top:13px;border-top:1px solid #eee7df}.answer{flex:1}.answer summary{cursor:pointer;font-size:13px;font-weight:850;list-style:none}.answer summary::-webkit-details-marker{display:none}.answer textarea{width:100%;min-height:100px;margin-top:10px;border:1px solid #cfc6bb;padding:11px;font:inherit;resize:vertical}.answer button{margin-top:8px;border:0;background:#171512;color:#fff;padding:9px 13px;font-weight:800;cursor:pointer}.login-answer,.context{font-size:12px;font-weight:750}.context{white-space:nowrap;color:#6f675f}.empty{background:#fff;border:1px solid #ddd5cb;padding:30px;margin-top:28px;color:#716960}.foot{padding:30px 0 50px;border-top:1px solid #ddd6cc;margin-top:50px;color:#81786f;font-size:12px}@media(max-width:650px){.shell{width:calc(100% - 22px)}.top{align-items:flex-start;padding:14px 0}.hero{padding-top:36px}.qa{padding:18px}.qa-actions{display:block}.context{display:inline-block;margin-top:12px}.course-head{align-items:flex-start}}
-</style></head><body><header class="shell top"><a class="brand" href="/">NEVER JUST SELL COMMUNITY</a><nav class="nav"><a href="/">커뮤니티</a><a href="/write?intent=question">질문하기</a><a href="/spaces">내 모임</a><a href="https://classroom.neverjustsell.com/courses">강의</a></nav></header><main class="shell"><section class="hero"><div class="eyebrow">SHARED COURSE DISCUSSIONS</div><h1>강의에서 이어진 질문</h1><p>수강 중 생긴 질문과 대표 질문을 같은 원본으로 관리합니다. 공개된 질문은 누구나 읽을 수 있고, 회원은 이곳에서 답변을 보탤 수 있습니다. 답변은 해당 강의 차시에도 그대로 이어집니다.</p></section>${groupHtml || `<div class="empty">공개된 강의 질문이 아직 없습니다.</div>`}</main><footer class="shell foot">강의와 커뮤니티가 같은 대화를 공유합니다.</footer></body></html>`;
+</style></head><body><header class="shell top"><a class="brand" href="/">NEVER JUST SELL COMMUNITY</a><nav class="nav"><a href="/">커뮤니티</a><a href="/write?intent=question">질문하기</a><a href="/spaces">내 모임</a><a href="/notifications">알림</a><a href="https://classroom.neverjustsell.com/courses">강의</a></nav></header><main class="shell"><section class="hero"><div class="eyebrow">SHARED COURSE DISCUSSIONS</div><h1>강의에서 이어진 질문</h1><p>수강 중 생긴 질문과 대표 질문을 같은 원본으로 관리합니다. 공개된 질문은 누구나 읽을 수 있고, 회원은 이곳에서 답변을 보탤 수 있습니다. 답변은 해당 강의 차시에도 그대로 이어집니다.</p></section>${groupHtml || `<div class="empty">공개된 강의 질문이 아직 없습니다.</div>`}</main><footer class="shell foot">강의와 커뮤니티가 같은 대화를 공유합니다.</footer></body></html>`;
 }
 
 export async function handleCourseDiscussionRequest(request, env) {
@@ -91,6 +92,15 @@ export async function handleCourseDiscussionRequest(request, env) {
     if (!result?.ok) {
       const status = result?.error === "rate_limited" ? 429 : result?.error === "discussion_not_found" ? 404 : 400;
       return new Response(result?.error === "rate_limited" ? "짧은 시간에 답변을 너무 많이 등록했습니다." : "답변을 등록하지 못했습니다.", { status });
+    }
+    if (result.discussion_author_member_id) {
+      await notifyMember(env, {
+        memberId: result.discussion_author_member_id,
+        actorMemberId: session.member_id,
+        type: "course_reply",
+        title: `강의 질문 ‘${String(result.question || "").slice(0,80)}’에 새 답변이 달렸습니다.`,
+        targetUrl: `/course-questions#q-${encodeURIComponent(discussionId)}`
+      });
     }
     return redirect(`/course-questions#q-${encodeURIComponent(discussionId)}`);
   }
