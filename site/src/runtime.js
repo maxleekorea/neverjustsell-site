@@ -1,11 +1,12 @@
 import app from "./index.js";
 import {
-  KNOWLEDGE_ENTRIES,
+  LEGACY_KNOWLEDGE_ENTRIES,
+  loadKnowledgeEntries,
   findKnowledgeEntry,
   knowledgeSitemapXml,
   renderKnowledgeEntry,
   renderKnowledgeIndex
-} from "./knowledge-hub-v2.js";
+} from "./knowledge-runtime.js";
 import {
   renderSavedKnowledgePage,
   injectKnowledgeMemberIndex,
@@ -95,15 +96,15 @@ function activityCard({ eyebrow, title, summary, href, meta }) {
   return `<a class="njs-live-card" href="${esc(href)}"><span class="njs-live-eyebrow">${esc(eyebrow)}</span><h3>${esc(title)}</h3>${summary ? `<p>${esc(summary)}</p>` : ""}${meta ? `<span class="njs-live-meta">${esc(meta)}</span>` : ""}<strong>이어보기 →</strong></a>`;
 }
 
-async function injectHomeActivity(response, env) {
+async function injectHomeActivity(response, env, knowledgeEntries) {
   if (response.status !== 200 || !String(response.headers.get("Content-Type") || "").includes("text/html")) return response;
   const activity = await getPlatformActivity(env);
   if (!activity) return response;
 
   const qa = Array.isArray(activity.course_qa) ? activity.course_qa[0] : null;
   const post = Array.isArray(activity.posts) ? activity.posts[0] : null;
-  const knowledge = Array.isArray(KNOWLEDGE_ENTRIES) && KNOWLEDGE_ENTRIES.length
-    ? KNOWLEDGE_ENTRIES[KNOWLEDGE_ENTRIES.length - 1]
+  const knowledge = Array.isArray(knowledgeEntries) && knowledgeEntries.length
+    ? knowledgeEntries[knowledgeEntries.length - 1]
     : null;
   const cards = [];
 
@@ -157,13 +158,13 @@ async function injectHomeActivity(response, env) {
   return new Response(body.replace(marker, section + marker), { status: response.status, headers });
 }
 
-async function extendSitemap(response) {
+async function extendSitemap(response, entries) {
   if (response.status !== 200) return response;
   const body = await response.text();
   if (!body.includes("</urlset>")) return new Response(body, { status: response.status, headers: response.headers });
   const additions = [
     `${CANONICAL_SITE_ORIGIN}/start`,
-    ...knowledgeSitemapXml()
+    ...knowledgeSitemapXml(entries)
   ].map(url => `  <url><loc>${url}</loc></url>`).join("\n");
   const headers = new Headers(response.headers);
   headers.delete("Content-Length");
@@ -191,10 +192,7 @@ export default {
     if (url.pathname === "/auth/complete") {
       return new Response(null, {
         status: 302,
-        headers: {
-          Location: "/",
-          "Cache-Control": "no-store"
-        }
+        headers: { Location: "/", "Cache-Control": "no-store" }
       });
     }
 
@@ -207,29 +205,36 @@ export default {
     }
 
     if (request.method === "GET" && url.pathname === "/knowledge/catalog.json") {
-      return json({ ok: true, count: KNOWLEDGE_ENTRIES.length, items: KNOWLEDGE_ENTRIES });
+      return json({ ok: true, count: LEGACY_KNOWLEDGE_ENTRIES.length, items: LEGACY_KNOWLEDGE_ENTRIES });
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge" || url.pathname === "/knowledge/")) {
-      return injectKnowledgeMemberIndex(html(renderKnowledgeIndex()));
+      const { entries } = await loadKnowledgeEntries(env);
+      return injectKnowledgeMemberIndex(html(renderKnowledgeIndex(entries)));
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge/saved" || url.pathname === "/knowledge/saved/")) {
-      return html(renderSavedKnowledgePage(KNOWLEDGE_ENTRIES), 200, { "Cache-Control": "private, no-store" });
+      const { entries } = await loadKnowledgeEntries(env);
+      return html(renderSavedKnowledgePage(entries), 200, { "Cache-Control": "private, no-store" });
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/knowledge/")) {
+      const { entries } = await loadKnowledgeEntries(env);
       const slug = decodeURIComponent(url.pathname.slice("/knowledge/".length)).replace(/\/$/, "");
-      const entry = findKnowledgeEntry(slug);
-      if (entry) return injectMemberSaveControl(html(renderKnowledgeEntry(entry)), request);
+      const entry = findKnowledgeEntry(slug, entries);
+      if (entry) return injectMemberSaveControl(html(renderKnowledgeEntry(entry, entries)), request);
       return html('<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>지식을 찾을 수 없습니다 | NEVER JUST SELL</title></head><body><main style="max-width:720px;margin:80px auto;padding:20px;font-family:Arial,sans-serif"><h1>지식을 찾을 수 없습니다.</h1><p><a href="/knowledge">지식 허브로 돌아가기</a></p></main></body></html>', 404, { "Cache-Control": "no-store" });
     }
 
     let response = await app.fetch(request, env, ctx);
-    if (url.pathname === "/sitemap.xml") return extendSitemap(response);
+    if (url.pathname === "/sitemap.xml") {
+      const { entries } = await loadKnowledgeEntries(env);
+      return extendSitemap(response, entries);
+    }
     if (url.pathname === "/llms.txt") return extendLlms(response);
     if (request.method === "GET" && url.pathname === "/") {
-      response = await injectHomeActivity(response, env);
+      const { entries } = await loadKnowledgeEntries(env);
+      response = await injectHomeActivity(response, env, entries);
     }
     return injectKnowledgeNavigation(response);
   }
