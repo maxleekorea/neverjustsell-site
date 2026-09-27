@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import knowledgeAdminApp from "../worker/src/knowledge-admin.js";
 import {
   ensureKnowledgeOpsSchema,
   handleKnowledgePublic,
@@ -36,5 +37,26 @@ response = await handleKnowledgePublic(
 assert.equal(response.status, 405);
 body = await response.json();
 assert.equal(body.error, "method_not_allowed");
+
+response = await knowledgeAdminApp.fetch(
+  new Request("https://classroom.neverjustsell.com/course-admin/knowledge"),
+  { COURSE_ADMIN_PASSWORD: "test-secret" }
+);
+assert.equal(response.status, 200);
+let text = await response.text();
+assert.ok(text.includes("Knowledge Admin"));
+assert.ok(text.includes("기존 Course Admin 비밀번호"));
+
+response = await knowledgeAdminApp.fetch(
+  new Request("https://classroom.neverjustsell.com/course-admin/knowledge/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Origin: "https://classroom.neverjustsell.com" },
+    body: new URLSearchParams({ password: "wrong" })
+  }),
+  { COURSE_ADMIN_PASSWORD: "test-secret" }
+);
+assert.equal(response.status, 401);
+text = await response.text();
+assert.ok(text.includes("비밀번호가 올바르지 않습니다"));
 
 console.log("knowledge-ops contract: ok");
