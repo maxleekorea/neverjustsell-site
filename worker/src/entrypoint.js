@@ -4,10 +4,19 @@ import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
 import { listCommunityCourseDiscussions, replyToCommunityCourseDiscussion } from "./community-course-discussions.js";
+import { handleLessonDiscussionConsentPost, injectLessonDiscussionConsent } from "./lesson-discussion-consent.js";
 import { injectMemberNextActions } from "./member-onboarding.js";
+
+function isLessonDiscussionPost(request) {
+  const url = new URL(request.url);
+  return request.method === "POST" && url.pathname === "/classroom/discussions";
+}
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
   async fetch(request) {
+    if (isLessonDiscussionPost(request)) {
+      return handleLessonDiscussionConsentPost(request, this.env);
+    }
     return productionWorker.fetch(request, this.env, this.ctx);
   }
 
@@ -95,7 +104,16 @@ export class CommunityAuthRpc extends WorkerEntrypoint {
 
 export default {
   async fetch(request, env, ctx) {
-    const response = await productionWorker.fetch(request, env, ctx);
+    if (isLessonDiscussionPost(request)) {
+      return handleLessonDiscussionConsentPost(request, env);
+    }
+
+    let response = await productionWorker.fetch(request, env, ctx);
+    try {
+      response = await injectLessonDiscussionConsent(response, request);
+    } catch (error) {
+      console.error("lesson discussion consent injection failed", error);
+    }
     try {
       return await injectMemberNextActions(response, request);
     } catch (error) {
