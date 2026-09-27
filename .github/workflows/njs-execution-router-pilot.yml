@@ -43,7 +43,7 @@ jobs:
           python ops/njs_execution_router/router.py \
             --command "${{ steps.command.outputs.path }}" \
             --registry ops/njs_execution_router/fixtures/action-registry.json \
-            --phase SHADOW_ENCODE \
+            --phase ROUND_TRIP \
             --output njs-router-result.json
       - uses: actions/upload-artifact@v4
         if: steps.command.outputs.execute == 'true'
