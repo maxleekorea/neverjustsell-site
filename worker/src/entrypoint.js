@@ -10,6 +10,7 @@ import { listPublicCourseQa } from "./lesson-discussions.js";
 import { listCommunityCourseDiscussions, replyToCommunityCourseDiscussion } from "./community-course-discussions.js";
 import { handleLessonDiscussionConsentPost, injectLessonDiscussionConsent } from "./lesson-discussion-consent.js";
 import { injectMemberNextActions } from "./member-onboarding.js";
+import { ensureKnowledgeCanonicalBootstrap } from "./knowledge-canonical-bootstrap.js";
 
 function isLessonDiscussionPost(request) {
   const url = new URL(request.url);
@@ -27,6 +28,22 @@ function isProgramParticipant(request) {
 
 function isProgramReview(request) {
   return new URL(request.url).pathname.startsWith("/program-host/review");
+}
+
+function isMigrationHealth(request) {
+  const url = new URL(request.url);
+  return request.method === "GET" && url.pathname === "/migration-health";
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Robots-Tag": "noindex, nofollow, noarchive"
+    }
+  });
 }
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
@@ -133,6 +150,19 @@ export default {
     }
     if (isProgramReview(request)) {
       return programReviewApp.fetch(request, env, ctx);
+    }
+
+    if (isMigrationHealth(request)) {
+      try {
+        await ensureKnowledgeCanonicalBootstrap(env);
+      } catch (error) {
+        console.error("knowledge canonical bootstrap failed", error);
+        return json({
+          ok: false,
+          error: "knowledge_canonical_bootstrap_failed",
+          detail: String(error?.message || error)
+        }, 503);
+      }
     }
 
     let response = await productionWorker.fetch(request, env, ctx);
