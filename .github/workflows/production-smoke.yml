@@ -45,6 +45,8 @@ jobs:
         run: node tests/program-community-contract.mjs
       - name: Verify paid course commerce contract
         run: node tests/paid-course-commerce-contract.mjs
+      - name: Verify value activity measurement contract
+        run: node tests/value-events-contract.mjs
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
