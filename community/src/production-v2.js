@@ -3,6 +3,7 @@ import { handleSpaceRequest } from "./spaces.js";
 import { handleIntentWritePost } from "./intent-write.js";
 import { refreshSpaceAccess } from "./space-refresh.js";
 import { handleCourseDiscussionRequest } from "./course-discussions.js";
+import { guardRestrictedPostRequest, filterRestrictedPostsFromPublicLists } from "./privacy-guard.js";
 
 function textError(message, status = 500) {
   return new Response(message, {
@@ -27,6 +28,14 @@ async function addMemberSpaceNavigation(response, request) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    try {
+      const blocked = await guardRestrictedPostRequest(request, env);
+      if (blocked) return blocked;
+    } catch (error) {
+      console.error("restricted post guard failed closed", error);
+      return textError("게시글 공개 범위를 확인하지 못했습니다.", 503);
+    }
 
     if (url.pathname === "/course-questions" || url.pathname.startsWith("/course-questions/")) {
       try {
@@ -61,7 +70,13 @@ export default {
       return textError("글을 등록하는 중 오류가 발생했습니다.");
     }
 
-    const response = await production.fetch(request, env, ctx);
+    let response = await production.fetch(request, env, ctx);
+    try {
+      response = await filterRestrictedPostsFromPublicLists(response, request, env);
+    } catch (error) {
+      console.error("public restricted-post filter failed closed", error);
+      return textError("공개 목록을 안전하게 구성하지 못했습니다.", 503);
+    }
     return addMemberSpaceNavigation(response, request);
   }
 };
