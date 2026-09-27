@@ -46,7 +46,7 @@ The first contribution experience has an operating requirement as well as a tech
 
 ## Necessity progression
 
-The service should not try to feel indispensable on day one. It should earn that position in stages:
+The service should earn indispensability in stages:
 
 - Useful: I can get an answer or insight here.
 - Convenient: I can save it and resume later.
@@ -136,5 +136,5 @@ Secondary metrics:
 - Do not ship feature count as success; measure customer/business outcome.
 - Do not duplicate existing space/role/moderation/notification/Q&A foundations.
 - Do not infer 30-day retention before enough event history exists.
-- Prefer accumulated user value (saved knowledge, progress, program history, relationships, contribution archive) over dark-pattern lock-in.
+- Prefer accumulated user value over dark-pattern lock-in.
 - Every major feature must connect to the journey ladder and either shorten time-to-value, improve continuity, deepen progress, or increase useful contribution. Otherwise defer it.
