@@ -1,6 +1,8 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import productionWorker from "./production.js";
 import knowledgeAdminApp from "./knowledge-admin.js";
+import programParticipantApp from "./program-participant.js";
+import programReviewApp, { injectProgramReviewLink } from "./program-review.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
@@ -15,6 +17,15 @@ function isLessonDiscussionPost(request) {
 
 function isKnowledgeAdmin(request) {
   return new URL(request.url).pathname.startsWith("/course-admin/knowledge");
+}
+
+function isProgramParticipant(request) {
+  const path = new URL(request.url).pathname;
+  return path === "/programs" || path === "/programs/" || path.startsWith("/programs/");
+}
+
+function isProgramReview(request) {
+  return new URL(request.url).pathname.startsWith("/program-host/review");
 }
 
 export class CommunityAuthRpc extends WorkerEntrypoint {
@@ -115,12 +126,23 @@ export default {
     if (isKnowledgeAdmin(request)) {
       return knowledgeAdminApp.fetch(request, env, ctx);
     }
+    if (isProgramParticipant(request)) {
+      return programParticipantApp.fetch(request, env, ctx);
+    }
+    if (isProgramReview(request)) {
+      return programReviewApp.fetch(request, env, ctx);
+    }
 
     let response = await productionWorker.fetch(request, env, ctx);
     try {
       response = await injectLessonDiscussionConsent(response, request);
     } catch (error) {
       console.error("lesson discussion consent injection failed", error);
+    }
+    try {
+      response = await injectProgramReviewLink(response, request);
+    } catch (error) {
+      console.error("program review link injection failed", error);
     }
     try {
       return await injectMemberNextActions(response, request, env);
