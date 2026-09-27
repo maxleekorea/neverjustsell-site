@@ -1,0 +1,30 @@
+name: NJS Router CI
+
+on:
+  push:
+    branches:
+      - ops/njs-execution-router-v0
+    paths:
+      - 'ops/njs_execution_router/**'
+      - '!ops/njs_execution_router/inbox/**'
+      - '.github/workflows/njs-router-ci.yml'
+      - '.github/workflows/njs-execution-router-pilot.yml'
+  pull_request:
+    paths:
+      - 'ops/njs_execution_router/**'
+      - '.github/workflows/njs-router-ci.yml'
+      - '.github/workflows/njs-execution-router-pilot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Router safety and round-trip tests
+        run: python -m unittest discover -s ops/njs_execution_router/tests -v
