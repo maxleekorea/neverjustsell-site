@@ -16,6 +16,6 @@
   "mode": "SHADOW_ENCODE",
   "status": "VALIDATED",
   "command_hash": "86cf902541e89e1ba61afc1b7c83f38f648a5bae825085bcbe9e5567ec2e9ef6",
-  "shadow_ir": "N0|J0002|P30|A:SYS.GET|T:P30|L:A0|M:S1|I:86cf902541e8",
-  "notes": "Relayed from Drive Control Plane by active ChatGPT session; read-only"
+  "shadow_ir": "N1|C:86cf902541e89e1ba61afc1b7c83f38f648a5bae825085bcbe9e5567ec2e9ef6|P:P30|A:01|L:0|M:1",
+  "notes": "NJS-IR-0.2-REF; relayed from Drive by active ChatGPT session; read-only"
 }
