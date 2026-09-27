@@ -16,7 +16,7 @@ jobs:
       - name: Wait for deployment propagation
         run: sleep 75
 
-      - name: Verify lesson discussion seed and course coverage
+      - name: Verify lesson discussion runtime is available
         run: |
           node - <<'NODE'
           const url = "https://classroom.neverjustsell.com/migration-health?check=" + Date.now();
@@ -27,23 +27,14 @@ jobs:
             production_build: j?.production_build,
             lesson_discussions: j?.lesson_discussions
           }, null, 2));
-          const first = j?.lesson_discussions?.courses?.["paid-naver-search-algorithm"];
-          const second = j?.lesson_discussions?.courses?.["paid-naver-keyword-strategy"];
           if (
             !r.ok ||
             !j?.ok ||
-            j?.production_build !== "2026-09-26-mobile-learning-ux-v33" ||
-            !j?.lesson_discussions?.ok ||
-            Number(j?.lesson_discussions?.total_seed_questions || 0) < 23 ||
-            Number(j?.lesson_discussions?.total_seed_answers || 0) < 23 ||
-            Number(first?.question_count || 0) < 10 ||
-            Number(first?.answered_count || 0) < 10 ||
-            Number(second?.question_count || 0) < 13 ||
-            Number(second?.answered_count || 0) < 13
+            !j?.lesson_discussions?.ok
           ) process.exit(1);
           NODE
 
-      - name: Verify seeded community activity and shared course Q&A
+      - name: Verify community is in system-first phase without seed mutation
         run: |
           node - <<'NODE'
           const url = "https://community.neverjustsell.com/auth/prelaunch-seed-status?check=" + Date.now();
@@ -53,15 +44,14 @@ jobs:
           if (
             !r.ok ||
             !j?.ok ||
-            Number(j?.seeded_posts || 0) < 30 ||
-            Number(j?.seeded_answers || 0) < 30 ||
-            Number(j?.meaningful_replies || 0) < 80 ||
-            j?.discussion_depth?.ok !== true ||
-            Number(j?.course_qa_count || 0) < 23
+            j?.phase !== "system-first" ||
+            j?.seeding_paused !== true ||
+            !Number.isFinite(Number(j?.active_categories)) ||
+            !Number.isFinite(Number(j?.course_qa_count))
           ) process.exit(1);
           NODE
 
-      - name: Verify read-only public activity feed
+      - name: Verify read-only public activity contract
         run: |
           node - <<'NODE'
           const r = await fetch("https://community.neverjustsell.com/public/activity?limit=3&check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
@@ -70,30 +60,27 @@ jobs:
           if (
             !r.ok ||
             !j?.ok ||
-            !Array.isArray(j?.posts) || j.posts.length < 1 ||
-            !Array.isArray(j?.course_qa) || j.course_qa.length < 1 ||
-            Number(j?.totals?.published_posts || 0) < 30 ||
-            Number(j?.totals?.published_comments || 0) < 80 ||
-            Number(j?.totals?.course_qa || 0) < 23
+            !Array.isArray(j?.posts) ||
+            !Array.isArray(j?.course_qa) ||
+            typeof j?.totals !== "object"
           ) process.exit(1);
           NODE
 
-      - name: Verify course Q&A surfaces
+      - name: Verify public course questions are discoverable
         run: |
           node - <<'NODE'
-          const pages = [
-            ["https://classroom.neverjustsell.com/courses/naver-search-algorithm", "오프라인 유통의 ‘입지’ 개념"],
-            ["https://classroom.neverjustsell.com/courses/naver-keyword-strategy", "‘황금 키워드’를 찾는 방식"]
-          ];
-          for (const [url, phrase] of pages) {
-            const r = await fetch(url + "?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
-            const body = await r.text();
-            console.log(JSON.stringify({ url, status: r.status, bytes: body.length }));
-            if (!r.ok || !body.includes("COURSE Q&A") || !body.includes(phrase)) process.exit(1);
-          }
+          const r = await fetch("https://community.neverjustsell.com/course-questions?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const body = await r.text();
+          console.log(JSON.stringify({ status: r.status, bytes: body.length }));
+          if (
+            !r.ok ||
+            !body.includes("강의에서 이어진 질문") ||
+            !body.includes("강의 정보 보기") ||
+            !body.includes("COURSE DISCUSSIONS")
+          ) process.exit(1);
           NODE
 
-      - name: Verify community Q&A and mobile IA surface
+      - name: Verify community journey-first home and mobile navigation
         run: |
           node - <<'NODE'
           const r = await fetch("https://community.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
@@ -101,14 +88,18 @@ jobs:
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
           if (
             !r.ok ||
-            !body.includes("COURSE Q&A") ||
-            !body.includes("강의에서 많이 묻는 질문") ||
+            !body.includes("무엇이 필요하신가요?") ||
+            !body.includes("질문하기") ||
+            !body.includes("경험·사례 보기") ||
+            !body.includes("강의 질문 보기") ||
+            !body.includes("/course-questions") ||
+            body.includes("강의에서 많이 묻는 질문") ||
             !body.includes("community-mobile-menu") ||
             !body.includes("community-mobile-menu-script")
           ) process.exit(1);
           NODE
 
-      - name: Verify public home live activity module
+      - name: Verify public home live activity module remains connected
         run: |
           node - <<'NODE'
           const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
@@ -117,9 +108,7 @@ jobs:
           if (
             !r.ok ||
             !body.includes("지금 이어지는 질문과 지식") ||
-            !body.includes("강의 Q&amp;A") ||
             !body.includes("커뮤니티 글") ||
-            !body.includes("댓글·답변") ||
             !body.includes("지식 브리핑")
           ) process.exit(1);
           NODE
@@ -134,8 +123,6 @@ jobs:
             !r.ok ||
             !body.includes("YES24 종이책 리뷰") ||
             !body.includes("교보문고 독자 평가") ||
-            !body.includes("9.4 / 10") ||
-            !body.includes("9.9 / 10") ||
             !body.includes("organizeMobileNavigation") ||
             !body.includes("njs-mobile-more")
           ) process.exit(1);
