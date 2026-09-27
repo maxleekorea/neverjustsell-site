@@ -4,15 +4,9 @@ Status: approved product direction (D-036)
 
 ## Product outcome
 
-NJS does not optimize for universal daily visits. It optimizes for repeated value at the natural frequency of each use case and for accumulated value that makes returning useful.
+NJS optimizes for repeated value at the natural frequency of each use case and for accumulated value that makes returning useful. Universal daily visits are not the goal.
 
-Core loop:
-1. discover useful knowledge
-2. save / learn / join a program
-3. make progress or contribute experience
-4. receive contextual response, event, or next action
-5. curate strong contributions back into durable knowledge
-6. improve future discovery and repeat the loop
+Core loop: discover useful knowledge -> save/learn/join -> make progress or contribute -> receive contextual response/event/next action -> curate strong contributions into durable knowledge -> improve future discovery -> repeat.
 
 Q&A is one discussion type, not the center of the product.
 
@@ -35,7 +29,6 @@ First-session UX minimizes time-to-value. Registration, onboarding questions, no
 For founding/beta users, meaningful first contributions should receive a useful human response quickly enough to teach the member that the community is responsive. Do not replace this with generic automated replies.
 
 ## Necessity progression
-The service earns indispensability in stages:
 - Useful: I can get an answer or insight here.
 - Convenient: I can save it and resume later.
 - Personal: My learning and participation history is here.
@@ -46,39 +39,18 @@ The service earns indispensability in stages:
 Each stage preserves value from the previous stage. A new feature that does not deepen one of these stages is not a current priority.
 
 ## Continuity rule
-My Space is the continuity layer, not another feature directory. It answers:
-- What have I accumulated here?
-- Where did I stop?
-- What is the next useful action, if any?
+My Space is the continuity layer, not another feature directory. It answers: What have I accumulated here? Where did I stop? What is the next useful action, if any?
 
 Generic feature cards must not dominate once member-specific state exists. Prefer actual saved/progress/program state over links that merely advertise Knowledge, Courses, or Community.
 
 ## Primary product metric
 Weekly Value-Active Members (WVAM): distinct authenticated members who perform at least one qualifying value action within 7 days.
 
-Initial qualifying events:
-- knowledge_save
-- knowledge_revisit (after a meaningful revisit rule exists)
-- course_enroll
-- lesson_progress (minimum meaningful threshold required)
-- lesson_complete
-- program_checkin
-- program_reflection
-- program_milestone_complete
-- community_contribution
-- knowledge_promotion
+Initial qualifying events: knowledge_save, knowledge_revisit (after meaningful revisit rule exists), course_enroll, lesson_progress (minimum threshold), lesson_complete, program_checkin, program_reflection, program_milestone_complete, community_contribution, knowledge_promotion.
 
 Do not count raw page views, login events, notification opens, likes, or other low-signal clicks by default.
 
-Secondary metrics:
-- 30-day value-active members
-- cohort retention after sufficient history
-- course resume / completion
-- program check-in / completion
-- knowledge save / revisit
-- meaningful contribution and response coverage
-- contribution -> published knowledge conversion
-- recurring event participation -> subsequent return
+Secondary metrics: 30-day value-active members; cohort retention after sufficient history; course resume/completion; program check-in/completion; knowledge save/revisit; meaningful contribution and response coverage; contribution -> published knowledge conversion; recurring event participation -> subsequent return.
 
 ## Development priority
 ### Now
