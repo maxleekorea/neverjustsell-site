@@ -1,0 +1,58 @@
+[
+  {
+    "action": "P30.SYSTEM_STATUS.GET",
+    "capability": "P30 runtime/status read",
+    "adapter": "NJS_STATUS",
+    "mutability": "READ",
+    "approval_floor": "A0",
+    "enabled_phase": "SHADOW_ENCODE",
+    "target_allowlist": "P30",
+    "precondition_required": "FALSE",
+    "postcondition_required": "FALSE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "PILOT"
+  },
+  {
+    "action": "P30.DEPLOY_STATUS.GET",
+    "capability": "P30 deployment status read",
+    "adapter": "GITHUB/CLOUDFLARE",
+    "mutability": "READ",
+    "approval_floor": "A0",
+    "enabled_phase": "SHADOW_ENCODE",
+    "target_allowlist": "P30",
+    "precondition_required": "FALSE",
+    "postcondition_required": "FALSE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "PILOT"
+  },
+  {
+    "action": "GITHUB.WORKFLOW_STATUS.GET",
+    "capability": "GitHub Actions run status read",
+    "adapter": "GITHUB",
+    "mutability": "READ",
+    "approval_floor": "A0",
+    "enabled_phase": "SHADOW_ENCODE",
+    "target_allowlist": "maxleekorea/neverjustsell-site",
+    "precondition_required": "FALSE",
+    "postcondition_required": "FALSE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "PILOT"
+  },
+  {
+    "action": "P30.TEST_WORKFLOW.RUN",
+    "capability": "P30 reversible test workflow",
+    "adapter": "GITHUB",
+    "mutability": "WRITE_REVERSIBLE",
+    "approval_floor": "A2",
+    "enabled_phase": "DUAL_RUN",
+    "target_allowlist": "maxleekorea/neverjustsell-site",
+    "precondition_required": "TRUE",
+    "postcondition_required": "TRUE",
+    "readback_required": "TRUE",
+    "idempotency_required": "TRUE",
+    "status": "DISABLED"
+  }
+]
