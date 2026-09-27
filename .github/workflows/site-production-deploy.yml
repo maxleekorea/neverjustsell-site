@@ -31,20 +31,36 @@ jobs:
       - name: Verify public home and knowledge
         run: |
           node - <<'NODE'
-          const checks = [
-            ["https://www.neverjustsell.com/?check=" + Date.now(), ["그냥 팔지", "지금 이어지는 질문과 지식", "강의 Q&amp;A", "커뮤니티 글", "댓글·답변"]],
-            ["https://www.neverjustsell.com/knowledge?check=" + Date.now(), ["NJS KNOWLEDGE HUB", "지식"]]
-          ];
-          for (const [url, phrases] of checks) {
-            let ok = false;
-            for (let i = 0; i < 12; i += 1) {
-              const r = await fetch(url + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
-              const body = await r.text();
-              const state = Object.fromEntries(phrases.map((phrase) => [phrase, body.includes(phrase)]));
-              console.log(JSON.stringify({ url, attempt: i, status: r.status, bytes: body.length, state }));
-              if (r.ok && Object.values(state).every(Boolean)) { ok = true; break; }
-              await new Promise((resolve) => setTimeout(resolve, 3000));
-            }
-            if (!ok) process.exit(1);
+          const homeUrl = "https://www.neverjustsell.com/?check=" + Date.now();
+          let homeOk = false;
+          for (let i = 0; i < 12; i += 1) {
+            const r = await fetch(homeUrl + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
+            const body = await r.text();
+            const state = {
+              brand: body.includes("그냥 팔지"),
+              knowledge_gateway: body.includes('href="/knowledge"'),
+              community_gateway: body.includes('href="/community"'),
+              searchable_knowledge_copy: body.includes("검색할 수 있는 지식이 됩니다"),
+              obsolete_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
+            };
+            console.log(JSON.stringify({ url: homeUrl, attempt: i, status: r.status, bytes: body.length, state }));
+            if (r.ok && Object.values(state).every(Boolean)) { homeOk = true; break; }
+            await new Promise((resolve) => setTimeout(resolve, 3000));
           }
+          if (!homeOk) process.exit(1);
+
+          const knowledgeUrl = "https://www.neverjustsell.com/knowledge?check=" + Date.now();
+          let knowledgeOk = false;
+          for (let i = 0; i < 12; i += 1) {
+            const r = await fetch(knowledgeUrl + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
+            const body = await r.text();
+            const state = {
+              hub: body.includes("NJS KNOWLEDGE HUB"),
+              knowledge: body.includes("지식")
+            };
+            console.log(JSON.stringify({ url: knowledgeUrl, attempt: i, status: r.status, bytes: body.length, state }));
+            if (r.ok && Object.values(state).every(Boolean)) { knowledgeOk = true; break; }
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+          }
+          if (!knowledgeOk) process.exit(1);
           NODE
