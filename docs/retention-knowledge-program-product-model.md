@@ -44,6 +44,19 @@ The first-session UX should minimize time-to-value. Registration, onboarding que
 
 The first contribution experience has an operating requirement as well as a technical one: founding/beta users who make a meaningful first contribution should receive a useful human response quickly enough that they learn the community is responsive. Do not replace this with generic automated replies.
 
+## Necessity progression
+
+The service should not try to feel indispensable on day one. It should earn that position in stages:
+
+- Useful: I can get an answer or insight here.
+- Convenient: I can save it and resume later.
+- Personal: My learning and participation history is here.
+- Accountable: A program, host, or peers are expecting my next action.
+- Connected: My discussions and responses have continuity here.
+- Invested: My own contribution archive and recognized expertise are here.
+
+Each stage must preserve value created in the previous stage. A new feature that does not deepen one of these stages is not a current priority.
+
 ## Continuity rule
 
 My Space is the continuity layer, not another feature directory. Its job is to answer three questions with as little UI as possible:
