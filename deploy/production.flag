@@ -1,4 +1,4 @@
-deploy_at=2026-09-27T12:12:00+09:00
+deploy_at=2026-09-27T12:18:00+09:00
 reason=retry-final-payment-e2e-consistency-and-close-test-product
 expected_head=846b8a27a4401290ec2fce042a65d4c09f600408
 reason=fix-cafe24-refund-method-array-and-complete-final-e2e
@@ -55,3 +55,4 @@ reason=deploy-member-program-spaces-shared-course-discussions-and-privacy-guard
 reason=deploy-community-moderation-notifications-and-knowledge-promotion-before-seeding
 reason=deploy-learner-controlled-course-question-community-sharing
 reason=deploy-course-discussion-rpc-proxy-fix
+reason=align-community-auto-build-entrypoint-with-production-v2
