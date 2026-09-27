@@ -2,7 +2,8 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import productionWorker from "./production.js";
 import knowledgeAdminApp from "./knowledge-admin.js";
 import programParticipantApp from "./program-participant.js";
-import programReviewApp, { injectProgramReviewLink } from "./program-review.js";
+import { focusProgramParticipant } from "./program-participant-ux.js";
+import programReviewApp, { injectProgramReviewLink } from "./program-review-guard.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { getProgramCommunityProjection } from "./program-access.js";
 import { listPublicCourseQa } from "./lesson-discussions.js";
@@ -127,7 +128,8 @@ export default {
       return knowledgeAdminApp.fetch(request, env, ctx);
     }
     if (isProgramParticipant(request)) {
-      return programParticipantApp.fetch(request, env, ctx);
+      const response = await programParticipantApp.fetch(request, env, ctx);
+      return focusProgramParticipant(response, request);
     }
     if (isProgramReview(request)) {
       return programReviewApp.fetch(request, env, ctx);
