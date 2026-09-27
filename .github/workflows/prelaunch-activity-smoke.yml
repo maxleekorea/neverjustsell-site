@@ -114,13 +114,20 @@ jobs:
           ) process.exit(1);
           NODE
 
-      - name: Verify public home live activity module remains connected
+      - name: Verify public home exposes Knowledge and Community gateways without Q&A feed dependency
         run: |
           node - <<'NODE'
           const r = await fetch("https://www.neverjustsell.com/?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
-          if (!r.ok || !body.includes("지금 이어지는 질문과 지식") || !body.includes("커뮤니티 글") || !body.includes("지식 브리핑")) process.exit(1);
+          if (
+            !r.ok ||
+            !body.includes('href="/knowledge"') ||
+            !body.includes("경험이 쌓이면") ||
+            !body.includes("검색할 수 있는 지식이 됩니다") ||
+            !body.includes('href="/community"') ||
+            body.includes("지금 이어지는 질문과 지식")
+          ) process.exit(1);
           NODE
 
       - name: Verify public social proof and mobile IA asset
