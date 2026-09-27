@@ -30,6 +30,19 @@ function html(body, status = 200, extraHeaders = {}) {
   });
 }
 
+function json(body, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "public, max-age=120, s-maxage=600",
+      "X-Content-Type-Options": "nosniff",
+      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      ...extraHeaders
+    }
+  });
+}
+
 function esc(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -191,6 +204,10 @@ export default {
 
     if (request.method === "GET" && (url.pathname === "/start" || url.pathname === "/start/")) {
       return html(renderStartPage());
+    }
+
+    if (request.method === "GET" && url.pathname === "/knowledge/catalog.json") {
+      return json({ ok: true, count: KNOWLEDGE_ENTRIES.length, items: KNOWLEDGE_ENTRIES });
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge" || url.pathname === "/knowledge/")) {
