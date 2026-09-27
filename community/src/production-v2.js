@@ -6,6 +6,7 @@ import { handleCourseDiscussionRequest } from "./course-discussions.js";
 import { guardRestrictedPostRequest, filterRestrictedPostsFromPublicLists } from "./privacy-guard.js";
 import { handleCommunityOpsRequest } from "./community-ops.js";
 import { injectPublicOperations } from "./public-ops-ui.js";
+import { handleSafeModeration } from "./safe-moderation.js";
 
 function textError(message, status = 500) {
   return new Response(message, {
@@ -44,6 +45,8 @@ export default {
     }
 
     try {
+      const safeModeration = await handleSafeModeration(request, env);
+      if (safeModeration) return safeModeration;
       const opsResponse = await handleCommunityOpsRequest(request, env);
       if (opsResponse) return opsResponse;
     } catch (error) {
