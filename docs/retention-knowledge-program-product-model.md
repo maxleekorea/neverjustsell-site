@@ -31,6 +31,19 @@ NJS should become more useful as the member moves up the commitment curve. Do no
 
 The desired switching cost is accumulated utility: saved knowledge, progress, program history, relationships, and contribution archive. Do not create artificial friction that makes leaving difficult.
 
+## Journey activation criteria
+
+Do not treat account creation itself as activation. Initial activation is the first preserved value action, such as:
+
+- first knowledge save
+- first meaningful lesson progress or lesson completion
+- first program participation/check-in
+- first meaningful community contribution that receives contextual follow-up
+
+The first-session UX should minimize time-to-value. Registration, onboarding questions, notifications, or profile setup must not interrupt public value discovery unless they are required to preserve a user-requested action.
+
+The first contribution experience has an operating requirement as well as a technical one: founding/beta users who make a meaningful first contribution should receive a useful human response quickly enough that they learn the community is responsive. Do not replace this with generic automated replies.
+
 ## Continuity rule
 
 My Space is the continuity layer, not another feature directory. Its job is to answer three questions with as little UI as possible:
