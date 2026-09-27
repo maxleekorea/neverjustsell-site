@@ -7,18 +7,24 @@ Safety properties:
 - fail closed on schema/hash/action gate mismatch
 - no arbitrary shell/SQL/URL from command payload
 - NJS-IR is shadow metadata only; never executable authority
+- NJS-IR N1 is a reference IR: exact semantics come from full command-hash dereference
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, urllib.request, urllib.error
+import argparse, hashlib, json, os, re, urllib.request, urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional, Sequence
 
 PROTOCOL_VERSION = "NJS-CMD-0.1"
+IR_VERSION = "NJS-IR-0.2-REF"
 IMMUTABLE_HASH_FIELDS = (
     "job_id","protocol_version","created_at","project_id","action","target_type",
     "target_ref","refs_json","approval_level","requested_by","idempotency_key",
     "expected_state","precondition_json","payload_json","mode",
+)
+CRITICAL_ROUNDTRIP_FIELDS = (
+    "project_id","action","target_ref","refs_json","approval_level",
+    "idempotency_key","precondition_json",
 )
 REQUIRED_FIELDS = IMMUTABLE_HASH_FIELDS + ("status","command_hash","shadow_ir")
 APPROVAL_RANK = {"A0":0,"A1":1,"A2":2,"A3":3}
@@ -27,6 +33,16 @@ PHASE_RANK = {
     "SHADOW_EXECUTION":3, "DUAL_RUN":4, "LIMITED_AUTHORITY":5,
 }
 ALLOWED_MUTABILITY = {"READ","WRITE_REVERSIBLE","WRITE_IRREVERSIBLE"}
+ACTION_CODE = {
+    "P30.SYSTEM_STATUS.GET":"01",
+    "P30.DEPLOY_STATUS.GET":"02",
+    "GITHUB.WORKFLOW_STATUS.GET":"03",
+}
+MODE_CODE = {
+    "BASELINE":"0","SHADOW_ENCODE":"1","ROUND_TRIP":"2",
+    "SHADOW_EXECUTION":"3","DUAL_RUN":"4","LIMITED_AUTHORITY":"5",
+}
+APPROVAL_CODE = {"A0":"0","A1":"1","A2":"2","A3":"3"}
 
 class RouterError(Exception):
     pass
@@ -72,22 +88,63 @@ def result_hash(result: Mapping[str, Any]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 def shadow_ir(command: Mapping[str, Any], digest: Optional[str]=None) -> str:
+    """Build N1 Reference IR. Full hash is the canonical address; other fields are sanity checks."""
     digest=digest or command_hash(command)
-    action_alias={
-        "P30.SYSTEM_STATUS.GET":"SYS.GET",
-        "P30.DEPLOY_STATUS.GET":"DEP.GET",
-        "GITHUB.WORKFLOW_STATUS.GET":"GHWF.GET",
-    }.get(str(command.get("action")), "UNK")
-    job_alias=str(command["job_id"]).rsplit("-",1)[-1]
-    mode_alias={
-        "SHADOW_ENCODE":"S1","ROUND_TRIP":"S2","SHADOW_EXECUTION":"S3",
-        "DUAL_RUN":"S4","LIMITED_AUTHORITY":"S5","BASELINE":"S0",
-    }.get(str(command["mode"]),"SX")
+    action_code=ACTION_CODE.get(str(command.get("action")))
+    mode_code=MODE_CODE.get(str(command.get("mode")))
+    level_code=APPROVAL_CODE.get(str(command.get("approval_level")))
+    if not action_code or mode_code is None or level_code is None:
+        raise Reject("IR_CODE_UNDEFINED")
     return (
-        f"N0|J{job_alias}|{command['project_id']}|A:{action_alias}|"
-        f"T:{command['target_ref']}|L:{command['approval_level']}|"
-        f"M:{mode_alias}|I:{digest[:12]}"
+        f"N1|C:{digest}|P:{command['project_id']}|A:{action_code}|"
+        f"L:{level_code}|M:{mode_code}"
     )
+
+def parse_reference_ir(ir: str) -> Dict[str,str]:
+    parts=str(ir).split("|")
+    if not parts or parts[0] != "N1":
+        raise Reject("IR_VERSION_UNSUPPORTED")
+    parsed={}
+    for token in parts[1:]:
+        if ":" not in token:
+            raise Reject("IR_TOKEN_INVALID")
+        key,value=token.split(":",1)
+        if key in parsed or not key or not value:
+            raise Reject("IR_TOKEN_INVALID")
+        parsed[key]=value
+    required={"C","P","A","L","M"}
+    if set(parsed) != required:
+        raise Reject("IR_FIELDS_INVALID")
+    if not re.fullmatch(r"[0-9a-f]{64}", parsed["C"]):
+        raise Reject("IR_HASH_INVALID")
+    return parsed
+
+def resolve_reference_ir(ir: str, canonical_commands: Sequence[Mapping[str,Any]]) -> Dict[str,Any]:
+    """Resolve Reference IR through full command hash and verify redundant routing fields."""
+    ref=parse_reference_ir(ir)
+    matches=[]
+    for raw in canonical_commands:
+        try:
+            c=validate_schema(raw)
+        except RouterError:
+            continue
+        if c["command_hash"] == ref["C"]:
+            matches.append(c)
+    if len(matches) != 1:
+        raise Reject("IR_CANONICAL_LOOKUP_FAILED")
+    c=matches[0]
+    expected=shadow_ir(c,c["command_hash"])
+    if expected != ir:
+        raise Reject("IR_SANITY_MISMATCH")
+    return c
+
+def roundtrip_critical_view(command: Mapping[str,Any], canonical_commands: Sequence[Mapping[str,Any]]) -> Dict[str,Any]:
+    resolved=resolve_reference_ir(str(command["shadow_ir"]), canonical_commands)
+    src=normalize_command(command)
+    for field in CRITICAL_ROUNDTRIP_FIELDS:
+        if resolved.get(field) != src.get(field):
+            raise Reject(f"ROUNDTRIP_MISMATCH:{field}")
+    return {field:resolved.get(field) for field in CRITICAL_ROUNDTRIP_FIELDS}
 
 def validate_schema(command: Mapping[str, Any]) -> Dict[str, Any]:
     missing=[k for k in REQUIRED_FIELDS if k not in command or command[k] in (None,"")]
