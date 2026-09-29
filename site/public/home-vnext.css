@@ -183,3 +183,22 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--v-accent);outline-o
   html{scroll-behavior:auto}
   *,*:before,*:after{transition:none!important;animation:none!important}
 }
+
+/* VISUAL-QA-MOBILE-RHYTHM */
+@media(max-width:720px){
+  .vnext-hero{padding:48px 0 56px}
+  .vnext-hero-grid{gap:32px}
+  .vnext-flow-row{min-height:78px}
+  .vnext-problems,.vnext-loop,.vnext-now,.vnext-deeper,.vnext-proof{padding:64px 0}
+  .vnext-section-heading{margin-bottom:24px}
+  .vnext-section-heading h2,.vnext-section-row h2,.vnext-loop-intro h2,.vnext-proof h2{font-size:36px}
+  .vnext-loop-grid{gap:38px}
+  .vnext-loop-list li{min-height:auto;padding:18px 0}
+  .vnext-content-card,.vnext-content-card.is-program{min-height:260px}
+  .vnext-content-card h3{margin-top:34px}
+  .vnext-card-foot{padding-top:24px}
+  .vnext-deeper-grid>a,.vnext-deeper-grid>a:not(:last-child),.vnext-deeper-grid>a:not(:first-child){padding:22px 0}
+  .vnext-deeper-grid strong{margin-top:18px}
+  .vnext-deeper-grid em{margin-top:16px}
+  .vnext-proof-grid{gap:36px}
+}
