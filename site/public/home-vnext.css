@@ -202,3 +202,9 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--v-accent);outline-o
   .vnext-deeper-grid em{margin-top:16px}
   .vnext-proof-grid{gap:36px}
 }
+
+
+@media(max-width:1024px){
+  body.vnext-menu-open{overflow:hidden}
+  .vnext-nav.is-open{box-shadow:0 18px 34px rgba(16,17,20,.08)}
+}
