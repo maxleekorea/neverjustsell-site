@@ -26,6 +26,9 @@ async function check(path, expectedStatus, expectedText = null, expectedLocation
 }
 
 await check("/", 200, "NEVER JUST SELL");
+await check("/home-vnext", 200, "문제는 내 사업에");
+await check("/home-vnext", 200, "지금 필요한 것 찾기");
+await check("/home-vnext", 200, "포지셔닝");
 await check("/about", 200, "판매자가 아니라 사업가의 시선으로 봅니다.");
 await check("/book", 200, "9791124121061");
 await check("/book", 200, "9791124121122");
@@ -107,3 +110,23 @@ if (
 }
 
 console.log("Unified site launch checks passed.");
+
+response = await fetchPath("/home-vnext");
+body = await response.text();
+for (const expected of [
+  'href="/home-vnext.css"',
+  'src="/home-vnext-app.js"',
+  'class="vnext-problem-grid"',
+  'class="vnext-hero-product"',
+  '>지식</a>',
+  '>배우기</a>',
+  '>프로그램</a>',
+  '>커뮤니티</a>'
+]) {
+  if (!body.includes(expected)) throw new Error(`Home VNext missing: ${expected}`);
+}
+if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error("Home VNext preview must stay noindex");
+
+response = await fetchPath("/");
+body = await response.text();
+if (!body.includes("그냥 팔지")) throw new Error("Home VNext must remain isolated from production home on design branch");
