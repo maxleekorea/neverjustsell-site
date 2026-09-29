@@ -35,7 +35,8 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--v-accent);outline-o
 .vnext-my-space{min-height:42px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;background:var(--v-ink);color:#fff}
 .vnext-my-space:hover{background:var(--v-accent)}
 .vnext-menu-toggle{display:none;border:0;background:transparent;min-width:44px;min-height:44px;font-weight:800;color:var(--v-ink)}
-.vnext-kicker{font-size:11px;line-height:1.4;letter-spacing:.15em;font-weight:850;color:var(--v-accent);text-transform:uppercase}
+.vnext-nav-mobile{display:none}
+.vnext-kicker{font-size:12px;line-height:1.4;letter-spacing:.02em;font-weight:820;color:var(--v-accent)}
 .vnext-kicker-light{color:#9da9ff}
 .vnext-hero{padding:82px 0 94px}
 .vnext-hero-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(380px,.82fr);gap:80px;align-items:center}
@@ -48,7 +49,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--v-accent);outline-o
 .vnext-btn-primary:hover{background:var(--v-accent-dark)}
 .vnext-text-link{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:760;text-underline-offset:4px}
 .vnext-text-link:hover{text-decoration:underline}
-.vnext-hero-product{background:var(--v-white);border:1px solid var(--v-line);border-radius:28px;padding:16px;box-shadow:0 28px 70px rgba(16,17,20,.08);transform:rotate(1deg)}
+.vnext-hero-product{background:var(--v-white);border:1px solid var(--v-line);border-radius:28px;padding:16px;box-shadow:0 28px 70px rgba(16,17,20,.08)}
 .vnext-product-top{min-height:54px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:800;border-bottom:1px solid var(--v-line)}
 .vnext-live-dot{display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border-radius:999px;background:var(--v-soft);color:var(--v-accent);font-size:10px;letter-spacing:.1em}
 .vnext-flow-row{min-height:92px;padding:16px 14px;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:13px;align-items:center;border-bottom:1px solid var(--v-line)}
@@ -125,9 +126,11 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--v-accent);outline-o
   .vnext-nav{position:absolute;top:72px;left:0;right:0;display:none;flex-direction:column;align-items:stretch;gap:0;padding:10px 20px 20px;background:var(--v-paper);border-bottom:1px solid var(--v-line)}
   .vnext-nav.is-open{display:flex}
   .vnext-nav a{min-height:48px;display:flex;align-items:center;border-bottom:1px solid var(--v-line)}
+  .vnext-nav-mobile{display:flex;flex-direction:column;margin-top:10px;border-top:1px solid var(--v-line)}
+  .vnext-nav-mobile a:last-child{border-bottom:0}
   .vnext-search-link{display:none}
   .vnext-hero-grid,.vnext-loop-grid,.vnext-proof-grid{grid-template-columns:1fr;gap:48px}
-  .vnext-hero-product{max-width:680px;transform:none}
+  .vnext-hero-product{max-width:680px}
   .vnext-loop-grid{gap:58px}
   .vnext-content-grid{grid-template-columns:1fr 1fr}
   .vnext-content-card.is-program{grid-column:1/-1;min-height:300px}
