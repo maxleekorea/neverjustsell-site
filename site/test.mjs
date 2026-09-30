@@ -25,7 +25,7 @@ async function check(path, expectedStatus, expectedText = null, expectedLocation
   }
 }
 
-await check("/", 200, "NEVER JUST SELL");
+await check("/", 200, "브랜드와 마케팅을");
 await check("/home-vnext", 200, "문제는 내 사업에");
 await check("/home-vnext", 200, "지금 필요한 것 찾기");
 await check("/home-vnext", 200, "포지셔닝");
@@ -77,13 +77,15 @@ for (const expected of [
   'property="og:image"',
   'name="twitter:image"',
   'href="/favicon.svg"',
-  'class="njs-skip"',
-  'class="njs-mobile-services"'
+  'class="homev2-skip"',
+  'class="homev2-mobile-search"',
+  '지식에서 시작하기',
+  'pretendardvariable-dynamic-subset.min.css'
 ]) {
   if (!body.includes(expected)) throw new Error(`home launch markup missing: ${expected}`);
 }
+if (body.includes('content="noindex,nofollow"')) throw new Error("production home must be indexable");
 if (body.includes("workers.dev")) throw new Error("production-facing homepage contains workers.dev");
-
 if (!body.includes('href="https://classroom.neverjustsell.com/my-space">내 공간</a>')) {
   throw new Error("primary navigation must expose My Space");
 }
@@ -132,7 +134,7 @@ if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error(
 
 response = await fetchPath("/");
 body = await response.text();
-if (!body.includes("그냥 팔지")) throw new Error("Home VNext must remain isolated from production home on design branch");
+if (!body.includes("브랜드와 마케팅을") || body.includes("vnext-problem-grid")) throw new Error("Home VNext must remain isolated from production home");
 
 response = await fetchPath("/home-v2");
 body = await response.text();
@@ -157,4 +159,5 @@ if (body.includes("vnext-problem-grid") || body.includes("vnext-hero-product")) 
 
 response = await fetchPath("/");
 body = await response.text();
-if (!body.includes("그냥 팔지")) throw new Error("Home V2 must remain isolated from production home on design branch");
+if (!body.includes("브랜드와 마케팅을")) throw new Error("Home V2 production home contract missing");
+if (body.includes('content="noindex,nofollow"')) throw new Error("production home must not inherit preview noindex");
