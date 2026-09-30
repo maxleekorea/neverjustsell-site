@@ -11,7 +11,7 @@ function externalLink(href, label, className = "") {
   return '<a href="' + esc(href) + '" class="' + esc(className) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
 }
 
-export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
+export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin, preview = false }) {
   const mySpace = authOrigin + "/my-space";
   const courses = authOrigin + "/courses";
   const community = communityOrigin + "/";
@@ -23,6 +23,44 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
   const psychologyThumb = "https://i.ytimg.com/vi/5K2ax61C2HE/hqdefault.jpg";
   const bookImage = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";
   const profileImage = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png";
+  const homeHref = preview ? "/home-v2" : "/";
+  const pageTitle = preview
+    ? "NJS Home V2 Preview | NEVER JUST SELL"
+    : "브랜드와 마케팅을 실제 사업의 문제로 | NEVER JUST SELL";
+  const pageDescription = preview
+    ? "맥작가의 미디어, 학습, 커뮤니티를 연결하는 NEVER JUST SELL Home V2 프리뷰."
+    : "맥작가가 브랜드·마케팅·고객·콘텐츠·플랫폼을 실제 사업의 문제로 다룹니다. 영상, 지식, 강의와 커뮤니티를 연결하는 NEVER JUST SELL.";
+  const canonical = siteOrigin + "/";
+  const robots = preview ? "noindex,nofollow" : "index,follow,max-image-preview:large";
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": canonical + "#website",
+        url: canonical,
+        name: "NEVER JUST SELL",
+        inLanguage: "ko-KR"
+      },
+      {
+        "@type": "Person",
+        "@id": canonical + "#author",
+        name: "맥작가",
+        url: canonical + "about",
+        image: profileImage
+      },
+      {
+        "@type": "WebPage",
+        "@id": canonical + "#webpage",
+        url: canonical,
+        name: pageTitle,
+        description: pageDescription,
+        isPartOf: { "@id": canonical + "#website" },
+        about: { "@id": canonical + "#author" },
+        inLanguage: "ko-KR"
+      }
+    ]
+  });
 
   const html = [
     "<!doctype html>",
@@ -30,18 +68,31 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
     "<head>",
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">',
-    "<title>NJS Home V2 Preview | NEVER JUST SELL</title>",
-    '<meta name="description" content="맥작가의 미디어, 학습, 커뮤니티를 연결하는 NEVER JUST SELL Home V2 프리뷰.">',
-    '<meta name="robots" content="noindex,nofollow">',
+    "<title>" + esc(pageTitle) + "</title>",
+    '<meta name="description" content="' + esc(pageDescription) + '">',
+    '<meta name="robots" content="' + esc(robots) + '">',
+    '<link rel="canonical" href="' + esc(canonical) + '">',
+    '<meta property="og:type" content="website">',
+    '<meta property="og:title" content="' + esc(pageTitle) + '">',
+    '<meta property="og:description" content="' + esc(pageDescription) + '">',
+    '<meta property="og:url" content="' + esc(canonical) + '">',
+    '<meta property="og:image" content="' + esc(profileImage) + '">',
+    '<meta property="og:locale" content="ko_KR">',
+    '<meta property="og:site_name" content="NEVER JUST SELL">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:title" content="' + esc(pageTitle) + '">',
+    '<meta name="twitter:description" content="' + esc(pageDescription) + '">',
+    '<meta name="twitter:image" content="' + esc(profileImage) + '">',
     '<link rel="icon" href="/favicon.svg" type="image/svg+xml">',
     '<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">',
     '<link rel="stylesheet" href="/home-v2.css">',
+    preview ? "" : '<script type="application/ld+json">' + structuredData + "</script>",
     "</head>",
     '<body class="homev2-body">',
       '<a class="homev2-skip" href="#main-content">본문 바로가기</a>',
       '<header class="homev2-header">',
         '<div class="homev2-shell homev2-header-inner">',
-          '<a class="homev2-brand" href="/home-v2" aria-label="NEVER JUST SELL Home V2"><span class="homev2-brand-mark" aria-hidden="true">NJS</span><span>NEVER JUST SELL</span></a>',
+          '<a class="homev2-brand" href="' + esc(homeHref) + '" aria-label="NEVER JUST SELL Home"><span class="homev2-brand-mark" aria-hidden="true">NJS</span><span>NEVER JUST SELL</span></a>',
           '<a class="homev2-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>',
           '<button class="homev2-menu-toggle" type="button" aria-controls="homev2-nav" aria-expanded="false">메뉴</button>',
           '<nav class="homev2-nav" id="homev2-nav" aria-label="주요 메뉴">',
@@ -145,7 +196,7 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
         "</section>",
       "</main>",
 
-      '<footer class="homev2-footer"><div class="homev2-shell homev2-footer-grid"><div><a class="homev2-brand homev2-brand-footer" href="/home-v2"><span class="homev2-brand-mark" aria-hidden="true">NJS</span><span>NEVER JUST SELL</span></a><p>맥작가의 미디어, 학습, 커뮤니티를 연결합니다.</p></div><nav aria-label="하단 메뉴"><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="' + esc(courses) + '">배우기</a><a href="' + esc(community) + '">커뮤니티</a><a href="/book">책</a><a href="/lecture">강연</a><a href="/support">고객지원</a></nav><a class="homev2-footer-space" href="' + esc(mySpace) + '">내 공간 ↗</a></div></footer>',
+      '<footer class="homev2-footer"><div class="homev2-shell homev2-footer-grid"><div><a class="homev2-brand homev2-brand-footer" href="' + esc(homeHref) + '"><span class="homev2-brand-mark" aria-hidden="true">NJS</span><span>NEVER JUST SELL</span></a><p>맥작가의 미디어, 학습, 커뮤니티를 연결합니다.</p></div><nav aria-label="하단 메뉴"><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="' + esc(courses) + '">배우기</a><a href="' + esc(community) + '">커뮤니티</a><a href="/book">책</a><a href="/lecture">강연</a><a href="/support">고객지원</a></nav><a class="homev2-footer-space" href="' + esc(mySpace) + '">내 공간 ↗</a></div></footer>',
       '<script src="/home-v2-app.js" defer></script>',
     "</body>",
     "</html>"
@@ -155,7 +206,7 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store",
+      "Cache-Control": preview ? "no-store" : "public, max-age=120, s-maxage=600",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
       "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
