@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P20 Frozen Source Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "topic",
+    "research_cutoff",
+    "frozen_version",
+    "entries",
+    "sources",
+    "unknowns",
+    "use_rules"
+  ],
+  "properties": {
+    "case_id": {"type": "string"},
+    "topic": {"type": "string"},
+    "research_cutoff": {"type": "string"},
+    "frozen_version": {"type": "string"},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id","classification","statement","attribution","source_ids","limitations"],
+        "properties": {
+          "id": {"type": "string"},
+          "classification": {
+            "type": "string",
+            "enum": ["FACT","PARTY_CLAIM","THIRD_PARTY_CLAIM","ANALYSIS","UNKNOWN"]
+          },
+          "party": {"type": ["string","null"]},
+          "statement": {"type": "string"},
+          "attribution": {"type": "string"},
+          "source_ids": {"type": "array","items":{"type":"string"}},
+          "limitations": {"type": "string"}
+        }
+      }
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["date","event","source_ids"],
+        "properties": {
+          "date":{"type":"string"},
+          "event":{"type":"string"},
+          "source_ids":{"type":"array","items":{"type":"string"}}
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id","title","url","source_type","notes"],
+        "properties": {
+          "source_id":{"type":"string"},
+          "title":{"type":"string"},
+          "url":{"type":"string"},
+          "published_at":{"type":["string","null"]},
+          "source_type":{"type":"string"},
+          "notes":{"type":"string"}
+        }
+      }
+    },
+    "unknowns":{"type":"array","items":{"type":"string"}},
+    "use_rules":{"type":"array","items":{"type":"string"}}
+  }
+}
