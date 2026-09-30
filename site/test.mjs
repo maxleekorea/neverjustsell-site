@@ -25,7 +25,13 @@ async function check(path, expectedStatus, expectedText = null, expectedLocation
   }
 }
 
-await check("/", 200, "NEVER JUST SELL");
+await check("/", 200, "브랜드와 마케팅을");
+await check("/home-vnext", 200, "문제는 내 사업에");
+await check("/home-vnext", 200, "지금 필요한 것 찾기");
+await check("/home-vnext", 200, "포지셔닝");
+await check("/home-v2", 200, "브랜드와 마케팅을");
+await check("/home-v2", 200, "경쟁사가 쉽게 따라 하지 못하게 만드는 법");
+await check("/home-v2", 200, "『그냥 팔지 말라』에서");
 await check("/about", 200, "판매자가 아니라 사업가의 시선으로 봅니다.");
 await check("/book", 200, "9791124121061");
 await check("/book", 200, "9791124121122");
@@ -71,13 +77,17 @@ for (const expected of [
   'property="og:image"',
   'name="twitter:image"',
   'href="/favicon.svg"',
-  'class="njs-skip"',
-  'class="njs-mobile-services"'
+  'class="homev2-skip"',
+  'class="homev2-mobile-search"',
+  '지식에서 시작하기',
+  'YES24 종이책 리뷰',
+  '교보문고 독자 평가',
+  'pretendardvariable-dynamic-subset.min.css'
 ]) {
   if (!body.includes(expected)) throw new Error(`home launch markup missing: ${expected}`);
 }
+if (body.includes('content="noindex,nofollow"')) throw new Error("production home must be indexable");
 if (body.includes("workers.dev")) throw new Error("production-facing homepage contains workers.dev");
-
 if (!body.includes('href="https://classroom.neverjustsell.com/my-space">내 공간</a>')) {
   throw new Error("primary navigation must expose My Space");
 }
@@ -107,3 +117,51 @@ if (
 }
 
 console.log("Unified site launch checks passed.");
+
+response = await fetchPath("/home-vnext");
+body = await response.text();
+for (const expected of [
+  'href="/home-vnext.css"',
+  'src="/home-vnext-app.js"',
+  'class="vnext-problem-grid"',
+  'class="vnext-hero-product"',
+  '>지식</a>',
+  '>배우기</a>',
+  '>프로그램</a>',
+  '>커뮤니티</a>'
+]) {
+  if (!body.includes(expected)) throw new Error(`Home VNext missing: ${expected}`);
+}
+if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error("Home VNext preview must stay noindex");
+
+response = await fetchPath("/");
+body = await response.text();
+if (!body.includes("브랜드와 마케팅을") || body.includes("vnext-problem-grid")) throw new Error("Home VNext must remain isolated from production home");
+
+response = await fetchPath("/home-v2");
+body = await response.text();
+for (const expected of [
+  'href="/home-v2.css"',
+  'pretendardvariable-dynamic-subset.min.css',
+  'src="/home-v2-app.js"',
+  'class="homev2-feature"',
+  'class="homev2-mobile-search"',
+  '지식에서 시작하기',
+  'f7DDTrCNTPY',
+  '>콘텐츠</a>',
+  '>지식</a>',
+  '>배우기</a>',
+  '>커뮤니티</a>',
+  '책에서 NJS로',
+  'YES24 종이책 리뷰',
+  '교보문고 독자 평가'
+]) {
+  if (!body.includes(expected)) throw new Error(`Home V2 missing: ${expected}`);
+}
+if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error("Home V2 preview must stay noindex");
+if (body.includes("vnext-problem-grid") || body.includes("vnext-hero-product")) throw new Error("Home V2 must not regress to Home VNext product-loop UI");
+
+response = await fetchPath("/");
+body = await response.text();
+if (!body.includes("브랜드와 마케팅을")) throw new Error("Home V2 production home contract missing");
+if (body.includes('content="noindex,nofollow"')) throw new Error("production home must not inherit preview noindex");

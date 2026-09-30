@@ -1,3 +1,6 @@
+import { renderHomeVNextPage } from "./home-vnext.js";
+import { renderHomeV2Page } from "./home-v2.js";
+
 const DEFAULT_SITE_ORIGIN = "https://www.neverjustsell.com";
 const DEFAULT_AUTH_ORIGIN = "https://classroom.neverjustsell.com";
 const DEFAULT_COMMUNITY_ORIGIN = "https://community.neverjustsell.com";
@@ -532,6 +535,32 @@ export default {
       );
     }
     if (url.pathname === "/cart") return redirect(`${shopOrigin(env)}/order/basket.html`);
+
+    if (url.pathname === "/") {
+      return renderHomeV2Page({
+        siteOrigin: siteOrigin(env),
+        authOrigin: authOrigin(env),
+        communityOrigin: communityOrigin(env),
+        preview: false
+      });
+    }
+
+    if (url.pathname === "/home-vnext" || url.pathname === "/home-vnext/") {
+      return renderHomeVNextPage({
+        siteOrigin: siteOrigin(env),
+        authOrigin: authOrigin(env),
+        communityOrigin: communityOrigin(env)
+      });
+    }
+
+    if (url.pathname === "/home-v2" || url.pathname === "/home-v2/") {
+      return renderHomeV2Page({
+        siteOrigin: siteOrigin(env),
+        authOrigin: authOrigin(env),
+        communityOrigin: communityOrigin(env),
+        preview: true
+      });
+    }
 
     const data = pageData(url.pathname);
     if (data) return renderPage(request, env, data);
