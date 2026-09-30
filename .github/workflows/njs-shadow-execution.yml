@@ -1,0 +1,52 @@
+name: NJS Shadow Execution
+
+on:
+  push:
+    branches:
+      - ops/njs-execution-router-v0
+    paths:
+      - 'ops/njs_execution_router/shadow_inbox/*.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shadow-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Safety regression tests
+        run: python -m unittest discover -s ops/njs_execution_router/tests -v
+      - name: Select newly added immutable shadow command
+        id: command
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --diff-filter=A --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'ops/njs_execution_router/shadow_inbox/*.json')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo 'execute=false' >> "$GITHUB_OUTPUT"
+            echo 'No newly added shadow command. Modified existing commands are never re-executed.'
+          elif [ ${#files[@]} -eq 1 ]; then
+            echo 'execute=true' >> "$GITHUB_OUTPUT"
+            echo "path=${files[0]}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'Multiple shadow commands in one commit are blocked in pilot.' >&2
+            exit 2
+          fi
+      - name: Build request plan without network send
+        if: steps.command.outputs.execute == 'true'
+        run: |
+          python ops/njs_execution_router/shadow_runner.py \
+            --command "${{ steps.command.outputs.path }}" \
+            --registry ops/njs_execution_router/fixtures/action-registry.json \
+            --output njs-shadow-result.json
+      - uses: actions/upload-artifact@v4
+        if: steps.command.outputs.execute == 'true'
+        with:
+          name: njs-shadow-result
+          path: njs-shadow-result.json
