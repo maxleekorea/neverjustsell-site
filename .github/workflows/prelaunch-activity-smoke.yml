@@ -123,12 +123,11 @@ jobs:
             const body = await r.text();
             const checks = {
               ok: r.ok,
-              knowledge_link: body.includes('href="/knowledge"'),
-              experience_copy: body.includes("경험이 쌓이면"),
               home_v2_brand: body.includes("브랜드와 마케팅을"),
               knowledge_link: body.includes('href="/knowledge"'),
               community_link: body.includes("community.neverjustsell.com"),
               primary_cta: body.includes("지식에서 시작하기"),
+              reader_proof: body.includes("YES24 종이책 리뷰") && body.includes("교보문고 독자 평가"),
               indexable: !body.includes('content="noindex,nofollow"'),
               old_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
             };
@@ -141,14 +140,14 @@ jobs:
           process.exit(1);
           NODE
 
-      - name: Verify public social proof and mobile IA asset
+      - name: Verify Home V2 mobile navigation asset
         run: |
           node - <<'NODE'
-          const r = await fetch("https://www.neverjustsell.com/app.js?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
+          const r = await fetch("https://www.neverjustsell.com/home-v2-app.js?check=" + Date.now(), { headers: { "Cache-Control": "no-cache" } });
           const body = await r.text();
           console.log(JSON.stringify({ status: r.status, bytes: body.length }));
           if (
-            !r.ok || !body.includes("YES24 종이책 리뷰") || !body.includes("교보문고 독자 평가") ||
-            !body.includes("organizeMobileNavigation") || !body.includes("njs-mobile-more")
+            !r.ok || !body.includes(".homev2-menu-toggle") || !body.includes("#homev2-nav") ||
+            !body.includes("aria-expanded") || !body.includes("homev2-menu-open")
           ) process.exit(1);
           NODE
