@@ -125,8 +125,11 @@ jobs:
               ok: r.ok,
               knowledge_link: body.includes('href="/knowledge"'),
               experience_copy: body.includes("경험이 쌓이면"),
-              searchable_knowledge_copy: body.includes("검색할 수 있는 지식이 됩니다"),
-              community_link: body.includes('href="/community"'),
+              home_v2_brand: body.includes("브랜드와 마케팅을"),
+              knowledge_link: body.includes('href="/knowledge"'),
+              community_link: body.includes("community.neverjustsell.com"),
+              primary_cta: body.includes("지식에서 시작하기"),
+              indexable: !body.includes('content="noindex,nofollow"'),
               old_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
             };
             last = { status: r.status, bytes: body.length, attempt, checks };
