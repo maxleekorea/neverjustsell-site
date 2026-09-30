@@ -145,7 +145,7 @@ for (const expected of [
   '>지식</a>',
   '>배우기</a>',
   '>커뮤니티</a>',
-  'BOOK → NJS'
+  '책에서 NJS로'
 ]) {
   if (!body.includes(expected)) throw new Error(`Home V2 missing: ${expected}`);
 }
