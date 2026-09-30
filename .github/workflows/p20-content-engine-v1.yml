@@ -7,6 +7,12 @@ on:
     paths:
       - "ops/p20-content-engine-v1/**"
       - ".github/workflows/p20-content-engine-v1.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "ops/p20-content-engine-v1/**"
+      - ".github/workflows/p20-content-engine-v1.yml"
   workflow_dispatch:
     inputs:
       mode:
