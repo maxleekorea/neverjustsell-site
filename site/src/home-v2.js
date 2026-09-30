@@ -184,6 +184,13 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin, prev
           "</div>",
         "</section>",
 
+        '<section class="homev2-reader-proof" id="reader-proof">',
+          '<div class="homev2-shell homev2-reader-proof-grid">',
+            '<div class="homev2-reader-proof-copy"><p class="homev2-overline">독자 반응</p><h2>책으로 먼저 검증된<br>관점과 설명 방식.</h2><p>온라인 판매를 단기 기술이 아니라 유통·검색·고객 행동·브랜드가 연결된 사업 구조로 설명해 온 관점입니다.</p><small>출처: 2026-09-26 공개 도서 독자평가 · <a href="https://www.yes24.com/product/goods/171660478" target="_blank" rel="noopener noreferrer">YES24 확인 ↗</a></small></div>',
+            '<div class="homev2-reader-stats" aria-label="도서 독자 평가"><div><span>YES24 종이책 리뷰</span><strong>9.4 / 10</strong><small>리뷰 20건 · 한줄평 16건</small></div><div><span>교보문고 독자 평가</span><strong>9.9 / 10</strong><small>평가 19건</small></div></div>',
+          "</div>",
+        "</section>",
+
         '<section class="homev2-proof">',
           '<div class="homev2-shell homev2-proof-grid">',
             '<div class="homev2-profile"><img src="' + esc(profileImage) + '" alt="맥작가" loading="lazy"></div>',
