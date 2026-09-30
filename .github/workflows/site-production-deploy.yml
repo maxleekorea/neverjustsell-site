@@ -37,10 +37,11 @@ jobs:
             const r = await fetch(homeUrl + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
             const body = await r.text();
             const state = {
-              brand: body.includes("그냥 팔지"),
+              brand: body.includes("브랜드와 마케팅을"),
               knowledge_gateway: body.includes('href="/knowledge"'),
-              community_gateway: body.includes('href="/community"'),
-              searchable_knowledge_copy: body.includes("검색할 수 있는 지식이 됩니다"),
+              community_gateway: body.includes("community.neverjustsell.com"),
+              primary_cta: body.includes("지식에서 시작하기"),
+              indexable: !body.includes('content="noindex,nofollow"'),
               obsolete_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
             };
             console.log(JSON.stringify({ url: homeUrl, attempt: i, status: r.status, bytes: body.length, state }));
