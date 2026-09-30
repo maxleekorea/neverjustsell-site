@@ -29,6 +29,9 @@ await check("/", 200, "NEVER JUST SELL");
 await check("/home-vnext", 200, "문제는 내 사업에");
 await check("/home-vnext", 200, "지금 필요한 것 찾기");
 await check("/home-vnext", 200, "포지셔닝");
+await check("/home-v2", 200, "브랜드와 마케팅을");
+await check("/home-v2", 200, "경쟁사가 쉽게 따라 하지 못하게 만드는 법");
+await check("/home-v2", 200, "『그냥 팔지 말라』에서");
 await check("/about", 200, "판매자가 아니라 사업가의 시선으로 봅니다.");
 await check("/book", 200, "9791124121061");
 await check("/book", 200, "9791124121122");
@@ -130,3 +133,25 @@ if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error(
 response = await fetchPath("/");
 body = await response.text();
 if (!body.includes("그냥 팔지")) throw new Error("Home VNext must remain isolated from production home on design branch");
+
+response = await fetchPath("/home-v2");
+body = await response.text();
+for (const expected of [
+  'href="/home-v2.css"',
+  'src="/home-v2-app.js"',
+  'class="homev2-feature"',
+  'f7DDTrCNTPY',
+  '>콘텐츠</a>',
+  '>지식</a>',
+  '>배우기</a>',
+  '>커뮤니티</a>',
+  'BOOK → NJS'
+]) {
+  if (!body.includes(expected)) throw new Error(`Home V2 missing: ${expected}`);
+}
+if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error("Home V2 preview must stay noindex");
+if (body.includes("vnext-problem-grid") || body.includes("vnext-hero-product")) throw new Error("Home V2 must not regress to Home VNext product-loop UI");
+
+response = await fetchPath("/");
+body = await response.text();
+if (!body.includes("그냥 팔지")) throw new Error("Home V2 must remain isolated from production home on design branch");
