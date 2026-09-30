@@ -80,6 +80,8 @@ for (const expected of [
   'class="homev2-skip"',
   'class="homev2-mobile-search"',
   '지식에서 시작하기',
+  'YES24 종이책 리뷰',
+  '교보문고 독자 평가',
   'pretendardvariable-dynamic-subset.min.css'
 ]) {
   if (!body.includes(expected)) throw new Error(`home launch markup missing: ${expected}`);
@@ -150,7 +152,9 @@ for (const expected of [
   '>지식</a>',
   '>배우기</a>',
   '>커뮤니티</a>',
-  '책에서 NJS로'
+  '책에서 NJS로',
+  'YES24 종이책 리뷰',
+  '교보문고 독자 평가'
 ]) {
   if (!body.includes(expected)) throw new Error(`Home V2 missing: ${expected}`);
 }
