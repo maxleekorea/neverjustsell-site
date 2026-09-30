@@ -41,6 +41,7 @@ export function renderHomeV2Page({ siteOrigin, authOrigin, communityOrigin }) {
       '<header class="homev2-header">',
         '<div class="homev2-shell homev2-header-inner">',
           '<a class="homev2-brand" href="/home-v2" aria-label="NEVER JUST SELL Home V2"><span class="homev2-brand-mark" aria-hidden="true">NJS</span><span>NEVER JUST SELL</span></a>',
+          '<a class="homev2-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>',
           '<button class="homev2-menu-toggle" type="button" aria-controls="homev2-nav" aria-expanded="false">메뉴</button>',
           '<nav class="homev2-nav" id="homev2-nav" aria-label="주요 메뉴">',
             '<a href="/content">콘텐츠</a>',
