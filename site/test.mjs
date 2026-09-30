@@ -138,9 +138,11 @@ response = await fetchPath("/home-v2");
 body = await response.text();
 for (const expected of [
   'href="/home-v2.css"',
+  'pretendardvariable-dynamic-subset.min.css',
   'src="/home-v2-app.js"',
   'class="homev2-feature"',
   'class="homev2-mobile-search"',
+  '지식에서 시작하기',
   'f7DDTrCNTPY',
   '>콘텐츠</a>',
   '>지식</a>',
