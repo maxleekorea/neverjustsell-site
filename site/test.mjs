@@ -140,6 +140,7 @@ for (const expected of [
   'href="/home-v2.css"',
   'src="/home-v2-app.js"',
   'class="homev2-feature"',
+  'class="homev2-mobile-search"',
   'f7DDTrCNTPY',
   '>콘텐츠</a>',
   '>지식</a>',
