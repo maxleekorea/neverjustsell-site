@@ -26,10 +26,10 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--h2-accent);outline-
 .homev2-brand{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:900;letter-spacing:.06em;white-space:nowrap}
 .homev2-brand-mark{width:31px;height:31px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--h2-ink);border-radius:50%;font-size:8px;letter-spacing:.04em}
 .homev2-nav{display:flex;justify-content:center;gap:28px}
-.homev2-nav a,.homev2-utility a{font-size:14px;font-weight:720}
+.homev2-nav a,.homev2-utility a{min-height:44px;display:inline-flex;align-items:center;font-size:14px;font-weight:720}
 .homev2-nav a:hover,.homev2-utility>a:first-child:hover{opacity:.58}
 .homev2-utility{display:flex;align-items:center;gap:20px}
-.homev2-space{min-height:42px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;background:var(--h2-ink);color:#fff}
+.homev2-space{min-height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:999px;background:var(--h2-ink);color:#fff}
 .homev2-menu-toggle,.homev2-nav-mobile,.homev2-mobile-search{display:none}
 .homev2-overline{font-size:11px;line-height:1.4;letter-spacing:.13em;font-weight:850;text-transform:uppercase;color:var(--h2-muted)}
 .homev2-overline-light{color:#b4b8ae}
@@ -43,7 +43,7 @@ a:focus-visible,button:focus-visible{outline:3px solid var(--h2-accent);outline-
 .homev2-btn-dark{background:var(--h2-ink);color:#fff}
 .homev2-btn-dark:hover{background:var(--h2-accent)}
 .homev2-btn-light{background:#fff;color:var(--h2-ink)}
-.homev2-text-link{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:760;text-underline-offset:4px}
+.homev2-text-link{min-height:44px;display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:760;text-underline-offset:4px}
 .homev2-text-link:hover{text-decoration:underline}
 .homev2-feature{margin:0}
 .homev2-feature-link{display:block;border-top:1px solid var(--h2-ink);padding-top:13px}
