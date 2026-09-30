@@ -1,4 +1,5 @@
 import { renderHomeVNextPage } from "./home-vnext.js";
+import { renderHomeV2Page } from "./home-v2.js";
 
 const DEFAULT_SITE_ORIGIN = "https://www.neverjustsell.com";
 const DEFAULT_AUTH_ORIGIN = "https://classroom.neverjustsell.com";
@@ -537,6 +538,14 @@ export default {
 
     if (url.pathname === "/home-vnext" || url.pathname === "/home-vnext/") {
       return renderHomeVNextPage({
+        siteOrigin: siteOrigin(env),
+        authOrigin: authOrigin(env),
+        communityOrigin: communityOrigin(env)
+      });
+    }
+
+    if (url.pathname === "/home-v2" || url.pathname === "/home-v2/") {
+      return renderHomeV2Page({
         siteOrigin: siteOrigin(env),
         authOrigin: authOrigin(env),
         communityOrigin: communityOrigin(env)
