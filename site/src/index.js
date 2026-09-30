@@ -536,6 +536,15 @@ export default {
     }
     if (url.pathname === "/cart") return redirect(`${shopOrigin(env)}/order/basket.html`);
 
+    if (url.pathname === "/") {
+      return renderHomeV2Page({
+        siteOrigin: siteOrigin(env),
+        authOrigin: authOrigin(env),
+        communityOrigin: communityOrigin(env),
+        preview: false
+      });
+    }
+
     if (url.pathname === "/home-vnext" || url.pathname === "/home-vnext/") {
       return renderHomeVNextPage({
         siteOrigin: siteOrigin(env),
@@ -548,7 +557,8 @@ export default {
       return renderHomeV2Page({
         siteOrigin: siteOrigin(env),
         authOrigin: authOrigin(env),
-        communityOrigin: communityOrigin(env)
+        communityOrigin: communityOrigin(env),
+        preview: true
       });
     }
 
