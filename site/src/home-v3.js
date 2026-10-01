@@ -151,7 +151,7 @@ function renderRecent(youtube, knowledgeItems) {
 
 export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityOrigin, preview = true }) {
   const isPreview = preview === true;
-  const revision = "ae-20261001-04";
+  const revision = "ae-20261001-05";
   const homeHref = isPreview ? "/home-v3" : "/";
   const title = isPreview
     ? "NJS Home V3 Author Editorial Preview | NEVER JUST SELL"
