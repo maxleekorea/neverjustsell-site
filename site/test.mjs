@@ -1,4 +1,4 @@
-import worker from "./src/index.js";
+import worker from "./src/runtime.js";
 
 const env = {
   SITE_ORIGIN: "https://www.neverjustsell.com",
