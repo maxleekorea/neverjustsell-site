@@ -6,6 +6,7 @@ on:
       - "site/src/v31.js"
       - "site/public/v31.css"
       - "site/src/runtime.js"
+      - "site/v31-preview-server.mjs"
       - ".github/workflows/v31-visual-qa.yml"
 
 permissions:
@@ -15,23 +16,27 @@ jobs:
   capture:
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    env:
-      BASE_URL: https://design-njs-v31-restructure-neverjustsell-site.max-lee-korea.workers.dev
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-      - name: Wait for current preview
+      - name: Start local V3.1 preview
         shell: bash
+        working-directory: site
         run: |
           set -euo pipefail
-          for i in $(seq 1 24); do
-            page="$(curl -fsSL "$BASE_URL/v31" || true)"
+          node v31-preview-server.mjs > /tmp/v31-preview.log 2>&1 &
+          echo $! > /tmp/v31-preview.pid
+          for i in $(seq 1 20); do
+            page="$(curl -fsSL http://127.0.0.1:8789/v31 || true)"
             if [[ "$page" == *"v31-ia-01"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
               exit 0
             fi
-            sleep 5
+            sleep 1
           done
-          echo "V3.1 preview did not reach expected revision." >&2
+          cat /tmp/v31-preview.log
           exit 1
 
       - name: Capture pages
@@ -39,13 +44,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p screenshots
-          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=7000)
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
           pages=(home:/v31 content:/v31/content knowledge:/v31/knowledge about:/v31/about book:/v31/book lecture:/v31/lecture)
           for item in "${pages[@]}"; do
             name="${item%%:*}"
             path="${item#*:}"
-            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "$BASE_URL$path"
-            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "$BASE_URL$path"
+            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "http://127.0.0.1:8789$path"
+            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "http://127.0.0.1:8789$path"
           done
           file screenshots/*.png
 
