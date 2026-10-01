@@ -71,7 +71,7 @@ try {
 
   for (const expected of [
     'name="robots" content="noindex,nofollow,noarchive"',
-    'name="njs-preview-revision" content="ae-20261001-04"',
+    'name="njs-preview-revision" content="ae-20261001-05"',
     'href="/home-v3.css"',
     'src="/home-v3-app.js"',
     "팔리는 순간만",
@@ -115,7 +115,7 @@ try {
   body = await response.text();
   for (const expected of [
     'name="robots" content="index,follow,max-image-preview:large"',
-    'name="njs-home-revision" content="ae-20261001-04"',
+    'name="njs-home-revision" content="ae-20261001-05"',
     '<link rel="canonical" href="https://www.neverjustsell.com/">',
     'property="og:image"',
     'name="twitter:image"',
