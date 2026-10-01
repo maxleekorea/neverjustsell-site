@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 18); do
-            if curl -fsSL "$PREVIEW_URL" | grep -q "팔리는 순간만"; then
+            if curl -fsSL "$PREVIEW_URL" | grep -q "NJS Home V3 Author Editorial Preview"; then
               exit 0
             fi
             sleep 5
