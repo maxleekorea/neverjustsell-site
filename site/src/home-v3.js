@@ -168,7 +168,7 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>NJS Home V3 Author Editorial Preview | NEVER JUST SELL</title>
 <meta name="description" content="『그냥 팔지 말라』 저자 맥작가의 관점에서 시작해 지식, 학습과 커뮤니티로 이어지는 NEVER JUST SELL Home V3 프리뷰.">
-<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="robots" content="noindex,nofollow,noarchive">\n<meta name="njs-preview-revision" content="ae-20261001-03">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
