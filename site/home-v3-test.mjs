@@ -81,7 +81,7 @@ try {
     "강의는 준비 중",
     "마케팅을 좁게 보지 않는 데에는",
     "누군가 해본 경험은",
-    "최근에 이어진 생각",
+    "최근에 다룬 생각들",
     "v3-mobile-search"
   ]) {
     if (!body.includes(expected)) throw new Error("Home V3 missing: " + expected);
