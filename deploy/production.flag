@@ -65,3 +65,6 @@ expected_head=f0075b28ae23501818b31359c86c3c972330b25e
 deploy_at=2026-09-27T16:14:00+09:00
 reason=remove-obsolete-home-qa-feed-and-enforce-knowledge-community-gateways
 expected_head=d3db0d2fcfc887b555107a7e2536ed3b60d25f99
+deploy_at=2026-10-01T14:46:00+09:00
+reason=launch-home-v3-author-editorial
+expected_head=41a3830a1389b2ca7cd767a10daae86d4ee2c2ff
