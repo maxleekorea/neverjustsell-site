@@ -75,7 +75,7 @@ let body = await response.text();
 for (const expected of [
   '<link rel="canonical" href="https://www.neverjustsell.com/">',
   'name="robots" content="index,follow,max-image-preview:large"',
-  'name="njs-home-revision" content="ae-20261001-05"',
+  'name="njs-home-revision" content="ae-20261001-04"',
   'property="og:image"',
   'name="twitter:image"',
   '"@type":"WebSite"',
