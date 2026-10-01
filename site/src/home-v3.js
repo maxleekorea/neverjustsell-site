@@ -149,7 +149,45 @@ function renderRecent(youtube, knowledgeItems) {
   </div></section>`;
 }
 
-export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityOrigin }) {
+export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityOrigin, preview = true }) {
+  const isPreview = preview === true;
+  const revision = "ae-20261001-04";
+  const homeHref = isPreview ? "/home-v3" : "/";
+  const title = isPreview
+    ? "NJS Home V3 Author Editorial Preview | NEVER JUST SELL"
+    : "NEVER JUST SELL | 맥작가의 마케팅·브랜딩 지식과 학습";
+  const description = "『그냥 팔지 말라』 저자 맥작가의 콘텐츠, 지식, 학습과 커뮤니티를 연결하는 NEVER JUST SELL.";
+  const canonical = siteOrigin + "/";
+  const structuredData = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": canonical + "#website",
+        url: canonical,
+        name: "NEVER JUST SELL",
+        inLanguage: "ko-KR"
+      },
+      {
+        "@type": "Person",
+        "@id": siteOrigin + "/about#person",
+        name: "맥작가",
+        url: siteOrigin + "/about",
+        jobTitle: "작가·사업가"
+      },
+      {
+        "@type": "WebPage",
+        "@id": canonical + "#webpage",
+        url: canonical,
+        name: title,
+        description,
+        inLanguage: "ko-KR",
+        isPartOf: { "@id": canonical + "#website" },
+        about: { "@id": siteOrigin + "/about#person" }
+      }
+    ]
+  }).replaceAll("<", "\\u003c");
+
   const [{ entries }, youtubeItems] = await Promise.all([
     loadKnowledgeEntries(env),
     loadYoutubeFeed()
@@ -166,9 +204,26 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NJS Home V3 Author Editorial Preview | NEVER JUST SELL</title>
-<meta name="description" content="『그냥 팔지 말라』 저자 맥작가의 관점에서 시작해 지식, 학습과 커뮤니티로 이어지는 NEVER JUST SELL Home V3 프리뷰.">
-<meta name="robots" content="noindex,nofollow,noarchive">\n<meta name="njs-preview-revision" content="ae-20261001-03">
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(description)}">
+${isPreview
+  ? `<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="njs-preview-revision" content="${revision}">`
+  : `<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="njs-home-revision" content="${revision}">
+<link rel="canonical" href="${esc(canonical)}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${esc(canonical)}">
+<meta property="og:image" content="${esc(HERO_IMAGE)}">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="NEVER JUST SELL">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(HERO_IMAGE)}">
+<script type="application/ld+json">${structuredData}</script>`}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -180,7 +235,7 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <a class="v3-skip" href="#main-content">본문 바로가기</a>
 <header class="v3-header">
   <div class="v3-shell v3-header-inner">
-    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>
+    <a class="v3-brand" href="${homeHref}" aria-label="${isPreview ? "NJS Home V3 Preview" : "NEVER JUST SELL 홈"}"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>
     <a class="v3-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>
     <button class="v3-menu-toggle" type="button" aria-controls="v3-nav" aria-expanded="false">메뉴</button>
     <nav class="v3-nav" id="v3-nav" aria-label="주요 메뉴">
@@ -265,18 +320,21 @@ ${renderRecent(youtube, recent)}
 </section>
 </main>
 
-<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><a class="v3-brand" href="/home-v3"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a><p>맥작가의 미디어, 지식, 학습과 커뮤니티를 연결합니다.</p></div><nav><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="${esc(courses)}">배우기</a><a href="${esc(community)}">커뮤니티</a><a href="/book">책</a><a href="/about">맥작가</a></nav></div></footer>
+<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><a class="v3-brand" href="${homeHref}"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a><p>맥작가의 미디어, 지식, 학습과 커뮤니티를 연결합니다.</p></div><nav><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="${esc(courses)}">배우기</a><a href="${esc(community)}">커뮤니티</a><a href="/book">책</a><a href="/about">맥작가</a></nav></div></footer>
 <script src="/home-v3-app.js" defer></script>
 </body></html>`;
 
+  const headers = {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": isPreview ? "no-store" : "public, max-age=120, s-maxage=600",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+  };
+  if (isPreview) headers["X-Robots-Tag"] = "noindex, nofollow, noarchive";
+
   return new Response(body, {
     status: 200,
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Robots-Tag": "noindex, nofollow, noarchive",
-      "X-Content-Type-Options": "nosniff",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
-    }
+    headers
   });
 }
