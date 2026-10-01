@@ -115,12 +115,23 @@ export default {
       return json({ ok: true, count: LEGACY_KNOWLEDGE_ENTRIES.length, items: LEGACY_KNOWLEDGE_ENTRIES });
     }
 
+    if (request.method === "GET" && url.pathname === "/") {
+      return renderHomeV3Page({
+        env,
+        siteOrigin: CANONICAL_SITE_ORIGIN,
+        authOrigin: CLASSROOM_ORIGIN,
+        communityOrigin: "https://community.neverjustsell.com",
+        preview: url.hostname !== "www.neverjustsell.com"
+      });
+    }
+
     if (request.method === "GET" && (url.pathname === "/home-v3" || url.pathname === "/home-v3/")) {
       return renderHomeV3Page({
         env,
         siteOrigin: CANONICAL_SITE_ORIGIN,
         authOrigin: CLASSROOM_ORIGIN,
-        communityOrigin: "https://community.neverjustsell.com"
+        communityOrigin: "https://community.neverjustsell.com",
+        preview: true
       });
     }
 
