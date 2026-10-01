@@ -27,7 +27,7 @@ const originalFetch = globalThis.fetch;
 globalThis.fetch = async (input, init) => {
   const url = String(input instanceof Request ? input.url : input);
   if (url.startsWith("https://www.youtube.com/feeds/videos.xml")) {
-    return new Response(`<?xml version="1.0"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"><entry><yt:videoId>qJ1C1preview</yt:videoId><title>최근 영상: 마케팅은 왜 자꾸 더 어려워지는가</title><published>2026-09-30T03:00:00Z</published></entry></feed>`, {
+    return new Response(`<?xml version="1.0"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"><entry><yt:videoId>BLMi5zdy2-M</yt:videoId><title>스마트스토어 현실, 검색순위에 매출이 묶이면 위험한 이유</title><published>2026-09-30T03:00:00Z</published></entry></feed>`, {
       status:200,
       headers:{ "Content-Type":"application/xml" }
     });
