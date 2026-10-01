@@ -23,7 +23,7 @@ const env={
 globalThis.fetch=async (input)=>{
   const url=String(input instanceof Request?input.url:input);
   if(url.startsWith("https://www.youtube.com/feeds/videos.xml")){
-    return new Response(\`<?xml version="1.0"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"><entry><yt:videoId>abc123</yt:videoId><title>최근 영상 테스트</title><published>${now}</published></entry></feed>\`,{status:200,headers:{"Content-Type":"application/xml"}});
+    return new Response(`<?xml version="1.0"?><feed xmlns:yt="http://www.youtube.com/xml/schemas/2015"><entry><yt:videoId>abc123</yt:videoId><title>최근 영상 테스트</title><published>${now}</published></entry></feed>`,{status:200,headers:{"Content-Type":"application/xml"}});
   }
   throw new Error("Unexpected external fetch: "+url);
 };
