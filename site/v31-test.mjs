@@ -38,7 +38,7 @@ async function check(path, expected){
 }
 
 try{
-  let body=await check("/v31",["v31-ia-01","지금 바뀌는 것과","마케팅 지식","지식은 정리해서 남기고","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
+  let body=await check("/v31",["v31-ia-02","지금 바뀌는 것과","마케팅 지식","지식은 정리해서 남기고","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.1 must not expose internal English product jargon");
 
   body=await check("/v31/content",["맥작가 칼럼","지금 알아야 할 변화","브리핑 테스트","책 해석","사례"]);
@@ -52,7 +52,7 @@ try{
   const prod=await runtime.fetch(new Request("https://www.neverjustsell.com/"),env,{});
   const prodBody=await prod.text();
   if(!prodBody.includes("ae-20261001-04")) throw new Error("Production root must remain current Home V3 while V3.1 is preview-only");
-  if(prodBody.includes("v31-ia-01")) throw new Error("V3.1 preview must not leak into production root");
+  if(prodBody.includes("v31-ia-02")) throw new Error("V3.1 preview must not leak into production root");
 
   console.log("NJS V3.1 restructure preview checks passed.");
 } finally {
