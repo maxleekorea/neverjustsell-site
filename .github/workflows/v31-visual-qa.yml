@@ -1,6 +1,9 @@
 name: NJS V3.1 visual QA
 
 on:
+  push:
+    branches:
+      - "design/njs-v31-restructure"
   pull_request:
     paths:
       - "site/src/v31.js"
