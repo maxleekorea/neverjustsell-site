@@ -95,9 +95,13 @@ function renderCurrent(youtube, knowledge) {
         <span class="v3-current-media"><img src="${esc(youtube.thumbnail)}" alt="" loading="lazy"></span>
         <span class="v3-current-body"><small>YOUTUBE · ${esc(dateKo(youtube.published))}</small><strong>${esc(youtube.title)}</strong><em>영상 보기 ↗</em></span>
       </a>`
-    : `<a class="v3-current-feature v3-current-feature-text" href="/knowledge/${encodeURIComponent(knowledge.slug)}">
-        <span class="v3-current-art">KNOWLEDGE</span>
-        <span class="v3-current-body"><small>${esc(String(knowledge.type || "지식").toUpperCase())} · ${esc(knowledge.updated)}</small><strong>${esc(knowledge.title)}</strong><em>지식 보기 →</em></span>
+    : `<a class="v3-current-feature v3-current-feature-knowledge" href="/knowledge/${encodeURIComponent(knowledge.slug)}">
+        <span class="v3-current-knowledge-art">
+          <small>KNOWLEDGE · ${esc(String(knowledge.type || "지식").toUpperCase())}</small>
+          <strong>${esc(knowledge.title)}</strong>
+          <p>${esc(knowledge.summary)}</p>
+          <em>지식 보기 →</em>
+        </span>
       </a>`;
 
   const side = youtube && knowledge
@@ -130,9 +134,11 @@ function renderRecent(youtube, knowledgeItems) {
     </a>`);
   }
   for (const item of knowledgeItems) {
-    cards.push(`<a class="v3-content-card" href="/knowledge/${encodeURIComponent(item.slug)}">
-      <span class="v3-content-media v3-content-art">KNOWLEDGE</span>
-      <small>${esc(String(item.type || "지식").toUpperCase())} · ${esc(item.updated)}</small><strong>${esc(item.title)}</strong><em>읽기 →</em>
+    cards.push(`<a class="v3-content-card v3-content-card-knowledge" href="/knowledge/${encodeURIComponent(item.slug)}">
+      <span class="v3-content-media v3-content-text-art"><small>KNOWLEDGE</small><b>${esc(item.title)}</b></span>
+      <small>${esc(String(item.type || "지식").toUpperCase())} · ${esc(item.updated)}</small>
+      <p>${esc(item.summary)}</p>
+      <em>읽기 →</em>
     </a>`);
   }
   if (!cards.length) return "";
