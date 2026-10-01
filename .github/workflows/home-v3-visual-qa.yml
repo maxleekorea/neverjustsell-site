@@ -24,7 +24,7 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 18); do
-            if curl -fsSL "$PREVIEW_URL" | grep -q "v3-current-knowledge-art"; then
+            if curl -fsSL "$PREVIEW_URL" | grep -q "ae-20261001-03"; then
               exit 0
             fi
             sleep 5
