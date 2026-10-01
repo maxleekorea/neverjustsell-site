@@ -37,7 +37,7 @@ jobs:
             const r = await fetch(homeUrl + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
             const body = await r.text();
             const state = {
-              revision: body.includes('name="njs-home-revision" content="ae-20261001-04"'),
+              revision: body.includes('name="njs-home-revision" content="ae-20261001-05"'),
               hero: body.includes("팔리는 순간만"),
               knowledge_gateway: body.includes('href="/knowledge"'),
               community_gateway: body.includes("community.neverjustsell.com"),
