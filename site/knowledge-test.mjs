@@ -45,9 +45,9 @@ body = await response.text();
 assert(response.status === 200, "home must return 200 through runtime");
 assert(body.includes('href="/knowledge"'), "home Knowledge gateway missing");
 assert(body.includes("https://community.neverjustsell.com/"), "home Community gateway missing");
-assert(body.includes("질문과 실행 경험이 쌓이고"), "community-to-knowledge explanation missing");
-assert(body.includes("좋은 사례는 다시 지식과 콘텐츠를 더 정확하게 만드는 재료가 됩니다"), "knowledge feedback loop explanation missing");
-assert(body.includes("지식에서 시작하기"), "home primary knowledge CTA missing");
+assert(body.includes("질문과 실행 경험, 결과와 반례가 쌓이면"), "community-to-knowledge explanation missing");
+assert(body.includes("좋은 질문과 경험은 콘텐츠와 지식, 다음 학습을 더 정확하게 만듭니다"), "knowledge feedback loop explanation missing");
+assert(body.includes("지식 둘러보기"), "home primary knowledge CTA missing");
 assert(!body.includes("지금 이어지는 질문과 지식"), "obsolete Q&A-centric home feed must stay removed");
 assert(!body.includes("njs-live-activity-style"), "obsolete live activity module must stay removed");
 

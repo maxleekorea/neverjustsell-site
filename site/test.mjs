@@ -1,4 +1,4 @@
-import worker from "./src/index.js";
+import worker from "./src/runtime.js";
 
 const env = {
   SITE_ORIGIN: "https://www.neverjustsell.com",
@@ -8,7 +8,7 @@ const env = {
 };
 
 async function fetchPath(path) {
-  return worker.fetch(new Request(`https://preview.invalid${path}`), env);
+  return worker.fetch(new Request(`https://www.neverjustsell.com${path}`), env);
 }
 
 async function check(path, expectedStatus, expectedText = null, expectedLocation = null) {
@@ -25,7 +25,7 @@ async function check(path, expectedStatus, expectedText = null, expectedLocation
   }
 }
 
-await check("/", 200, "브랜드와 마케팅을");
+await check("/", 200, "팔리는 순간만");
 await check("/home-vnext", 200, "문제는 내 사업에");
 await check("/home-vnext", 200, "지금 필요한 것 찾기");
 await check("/home-vnext", 200, "포지셔닝");
@@ -74,15 +74,24 @@ let response = await fetchPath("/");
 let body = await response.text();
 for (const expected of [
   '<link rel="canonical" href="https://www.neverjustsell.com/">',
+  'name="robots" content="index,follow,max-image-preview:large"',
+  'name="njs-home-revision" content="ae-20261001-04"',
   'property="og:image"',
   'name="twitter:image"',
+  '"@type":"WebSite"',
+  '"@type":"Person"',
+  '"@type":"WebPage"',
   'href="/favicon.svg"',
-  'class="homev2-skip"',
-  'class="homev2-mobile-search"',
-  '지식에서 시작하기',
-  'YES24 종이책 리뷰',
-  '교보문고 독자 평가',
-  'pretendardvariable-dynamic-subset.min.css'
+  'class="v3-skip"',
+  'class="v3-mobile-search"',
+  'href="/home-v3.css"',
+  'src="/home-v3-app.js"',
+  '팔리는 순간만',
+  '지식 둘러보기',
+  '9.4 / 10',
+  '9.9 / 10',
+  'pretendardvariable-dynamic-subset.min.css',
+  'fonts.googleapis.com/css2?family=Noto+Serif+KR'
 ]) {
   if (!body.includes(expected)) throw new Error(`home launch markup missing: ${expected}`);
 }
@@ -136,7 +145,7 @@ if (!body.includes('name="robots" content="noindex,nofollow"')) throw new Error(
 
 response = await fetchPath("/");
 body = await response.text();
-if (!body.includes("브랜드와 마케팅을") || body.includes("vnext-problem-grid")) throw new Error("Home VNext must remain isolated from production home");
+if (!body.includes("팔리는 순간만") || body.includes("vnext-problem-grid")) throw new Error("Home VNext must remain isolated from production home");
 
 response = await fetchPath("/home-v2");
 body = await response.text();
@@ -163,5 +172,5 @@ if (body.includes("vnext-problem-grid") || body.includes("vnext-hero-product")) 
 
 response = await fetchPath("/");
 body = await response.text();
-if (!body.includes("브랜드와 마케팅을")) throw new Error("Home V2 production home contract missing");
-if (body.includes('content="noindex,nofollow"')) throw new Error("production home must not inherit preview noindex");
+if (!body.includes("팔리는 순간만")) throw new Error("Home V3 production home contract missing");
+if (body.includes('content="noindex,nofollow"') || body.includes('content="noindex,nofollow,noarchive"')) throw new Error("production home must not inherit preview noindex");

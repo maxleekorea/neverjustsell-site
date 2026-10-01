@@ -37,13 +37,16 @@ jobs:
             const r = await fetch(homeUrl + "&attempt=" + i, { headers: { "Cache-Control": "no-cache" } });
             const body = await r.text();
             const state = {
-              brand: body.includes("브랜드와 마케팅을"),
+              revision: body.includes('name="njs-home-revision" content="ae-20261001-04"'),
+              hero: body.includes("팔리는 순간만"),
               knowledge_gateway: body.includes('href="/knowledge"'),
               community_gateway: body.includes("community.neverjustsell.com"),
-              primary_cta: body.includes("지식에서 시작하기"),
-              reader_proof: body.includes("YES24 종이책 리뷰") && body.includes("교보문고 독자 평가"),
-              indexable: !body.includes('content="noindex,nofollow"'),
-              obsolete_live_feed_absent: !body.includes("지금 이어지는 질문과 지식")
+              primary_cta: body.includes("지식 둘러보기"),
+              reader_proof: body.includes("9.4 / 10") && body.includes("9.9 / 10"),
+              canonical: body.includes('<link rel="canonical" href="https://www.neverjustsell.com/">'),
+              seo: body.includes('name="robots" content="index,follow,max-image-preview:large"') && body.includes('property="og:image"') && body.includes('name="twitter:image"'),
+              indexable: !body.includes('content="noindex,nofollow'),
+              v2_absent: !body.includes("브랜드와 마케팅을")
             };
             console.log(JSON.stringify({ url: homeUrl, attempt: i, status: r.status, bytes: body.length, state }));
             if (r.ok && Object.values(state).every(Boolean)) { homeOk = true; break; }

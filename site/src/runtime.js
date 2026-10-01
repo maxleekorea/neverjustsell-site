@@ -13,6 +13,7 @@ import {
   injectMemberSaveControl
 } from "./knowledge-member.js";
 import { renderStartPage, safeSiteReturnTo } from "./onboarding.js";
+import { renderHomeV3Page } from "./home-v3.js";
 
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
 const CLASSROOM_ORIGIN = "https://classroom.neverjustsell.com";
@@ -112,6 +113,26 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/knowledge/catalog.json") {
       return json({ ok: true, count: LEGACY_KNOWLEDGE_ENTRIES.length, items: LEGACY_KNOWLEDGE_ENTRIES });
+    }
+
+    if (request.method === "GET" && url.pathname === "/") {
+      return renderHomeV3Page({
+        env,
+        siteOrigin: CANONICAL_SITE_ORIGIN,
+        authOrigin: CLASSROOM_ORIGIN,
+        communityOrigin: "https://community.neverjustsell.com",
+        preview: url.hostname !== "www.neverjustsell.com"
+      });
+    }
+
+    if (request.method === "GET" && (url.pathname === "/home-v3" || url.pathname === "/home-v3/")) {
+      return renderHomeV3Page({
+        env,
+        siteOrigin: CANONICAL_SITE_ORIGIN,
+        authOrigin: CLASSROOM_ORIGIN,
+        communityOrigin: "https://community.neverjustsell.com",
+        preview: true
+      });
     }
 
     if (request.method === "GET" && (url.pathname === "/knowledge" || url.pathname === "/knowledge/")) {

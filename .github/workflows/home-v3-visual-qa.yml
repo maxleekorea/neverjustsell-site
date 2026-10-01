@@ -1,0 +1,55 @@
+name: Home V3 visual QA
+
+on:
+  pull_request:
+    paths:
+      - "site/src/home-v3.js"
+      - "site/public/home-v3.css"
+      - ".github/workflows/home-v3-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PREVIEW_URL: https://design-njs-home-v3-author-editorial-neverjustsell-site.max-lee-korea.workers.dev/home-v3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm preview is current
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 18); do
+            page="$(curl -fsSL "$PREVIEW_URL")"
+            if [[ "$page" == *"ae-20261001-04"* && "$page" == *'href="/support">고객지원'* ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Preview did not reach the expected Home V3 revision." >&2
+          exit 1
+
+      - name: Capture desktop and mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          google-chrome --version
+          mkdir -p screenshots
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=7000)
+          google-chrome "${common[@]}" --window-size=1440,1200 --screenshot=screenshots/desktop-first.png "$PREVIEW_URL"
+          google-chrome "${common[@]}" --window-size=390,844 --screenshot=screenshots/mobile-first.png "$PREVIEW_URL"
+          google-chrome "${common[@]}" --window-size=1440,8000 --screenshot=screenshots/desktop-long.png "$PREVIEW_URL"
+          google-chrome "${common[@]}" --window-size=390,9000 --screenshot=screenshots/mobile-long.png "$PREVIEW_URL"
+          file screenshots/*.png
+
+      - name: Upload visual QA screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-v3-visual-qa
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7
