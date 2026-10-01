@@ -171,7 +171,7 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <a class="v3-skip" href="#main-content">본문 바로가기</a>
 <header class="v3-header">
   <div class="v3-shell v3-header-inner">
-    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>
+    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>\n    <a class="v3-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>
     <button class="v3-menu-toggle" type="button" aria-controls="v3-nav" aria-expanded="false">메뉴</button>
     <nav class="v3-nav" id="v3-nav" aria-label="주요 메뉴">
       <a href="/content">콘텐츠</a>
