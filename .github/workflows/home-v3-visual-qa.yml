@@ -24,7 +24,9 @@ jobs:
         run: |
           set -euo pipefail
           for i in $(seq 1 18); do
-            if curl -fsSL "$PREVIEW_URL" | grep -q "ae-20261001-05"; then
+            page="$(curl -fsSL "$PREVIEW_URL")"
+            if printf '%s' "$page" | grep -q "ae-20261001-04" \
+              && printf '%s' "$page" | grep -q 'href="/support">고객지원'; then
               exit 0
             fi
             sleep 5
