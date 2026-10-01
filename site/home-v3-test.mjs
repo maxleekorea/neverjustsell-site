@@ -71,6 +71,7 @@ try {
 
   for (const expected of [
     'name="robots" content="noindex,nofollow,noarchive"',
+    'name="njs-preview-revision" content="ae-20261001-04"',
     'href="/home-v3.css"',
     'src="/home-v3-app.js"',
     "팔리는 순간만",
@@ -103,10 +104,35 @@ try {
     if (body.includes(forbidden)) throw new Error("Home V3 forbidden public state leaked: " + forbidden);
   }
 
-  response = await runtime.fetch(new Request("https://preview.invalid/"), env, {});
+  response = await runtime.fetch(new Request("https://www.neverjustsell.com/"), env, {});
+  if (response.status !== 200) throw new Error("Production Home V3 root must return 200");
+  if (response.headers.get("Cache-Control") !== "public, max-age=120, s-maxage=600") {
+    throw new Error("Production Home V3 root must use public cache policy");
+  }
+  if (String(response.headers.get("X-Robots-Tag") || "").includes("noindex")) {
+    throw new Error("Production Home V3 root must not emit noindex header");
+  }
   body = await response.text();
-  if (!body.includes("브랜드와 마케팅을")) throw new Error("Production root must remain Home V2 on Home V3 branch");
-  if (body.includes('href="/home-v3.css"')) throw new Error("Home V3 must remain isolated from production root");
+  for (const expected of [
+    'name="robots" content="index,follow,max-image-preview:large"',
+    'name="njs-home-revision" content="ae-20261001-04"',
+    '<link rel="canonical" href="https://www.neverjustsell.com/">',
+    'property="og:image"',
+    'name="twitter:image"',
+    '"@type":"WebSite"',
+    '"@type":"Person"',
+    '"@type":"WebPage"',
+    'href="/home-v3.css"',
+    'src="/home-v3-app.js"',
+    'href="/" aria-label="NEVER JUST SELL 홈"',
+    "팔리는 순간만",
+    "지식 둘러보기",
+    "누군가 해본 경험은"
+  ]) {
+    if (!body.includes(expected)) throw new Error("Production Home V3 missing: " + expected);
+  }
+  if (body.includes("브랜드와 마케팅을")) throw new Error("Production root must not fall back to Home V2");
+  if (body.includes('name="robots" content="noindex')) throw new Error("Production Home V3 must be indexable");
 
   const staleDate = "2020-01-01T00:00:00Z";
   globalThis.fetch = async (input) => {
@@ -141,7 +167,7 @@ try {
   if (body.includes('class="v3-current"')) throw new Error("Stale data must not create a current editorial section");
   if (body.includes("STALE YOUTUBE MUST NOT BE NOW")) throw new Error("Stale YouTube must not appear as current content");
 
-  console.log("Home V3 isolated preview checks passed.");
+  console.log("Home V3 preview + production release checks passed.");
 } finally {
   globalThis.fetch = originalFetch;
 }
