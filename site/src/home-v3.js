@@ -164,7 +164,7 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <meta name="description" content="『그냥 팔지 말라』 저자 맥작가의 관점에서 시작해 지식, 학습과 커뮤니티로 이어지는 NEVER JUST SELL Home V3 프리뷰.">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/home-v3.css">
 </head>
 <body class="v3-body">
