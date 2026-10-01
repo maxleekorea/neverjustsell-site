@@ -21,7 +21,7 @@ function daysSince(value) {
 function dateKo(value) {
   const d = new Date(value);
   return Number.isFinite(d.getTime())
-    ? ${d.getUTCFullYear()}.${String(d.getUTCMonth()+1).padStart(2,"0")}.${String(d.getUTCDate()).padStart(2,"0")}
+    ? d.getUTCFullYear() + "." + String(d.getUTCMonth()+1).padStart(2,"0") + "." + String(d.getUTCDate()).padStart(2,"0")
     : "";
 }
 
