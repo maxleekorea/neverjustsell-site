@@ -73,17 +73,16 @@ try {
     'name="robots" content="noindex,nofollow,noarchive"',
     'href="/home-v3.css"',
     'src="/home-v3-app.js"',
-    "사업을 해본 사람에게 배우는",
+    "팔리는 순간만",
     "Home V3 fresh YouTube test",
     "Home V3 fresh Knowledge test",
-    "NOW · 실제 최신 데이터",
-    "현재 구매 가능",
-    "준비 중",
-    "현재 열린 회차 없음",
-    "강연·컨설팅",
-    "강의·프로그램",
-    "책·전자책",
-    "혼자 막힌 문제를 묻고"
+    "지금 이야기하는 것",
+    "배우고, 해보고",
+    "강의는 준비 중",
+    "마케팅을 좁게 보지 않는 데에는",
+    "누군가 해본 경험은",
+    "최근에 이어진 생각",
+    "v3-mobile-search"
   ]) {
     if (!body.includes(expected)) throw new Error("Home V3 missing: " + expected);
   }
@@ -92,6 +91,12 @@ try {
     "무료 강의 수강 신청",
     "모집 중",
     "product_no=13",
+    "사업을 해본 사람에게 배우는",
+    "LG 탭북2",
+    "ARCHIVAL PROOF",
+    "현재 열린 회차 없음",
+    "아직 판매 상품 없음",
+    "판매 가능한 것은 분명하게",
     "vnext-problem-grid",
     "homev2-feature"
   ]) {
@@ -133,7 +138,7 @@ try {
 
   response = await runtime.fetch(new Request("https://preview.invalid/home-v3"), staleEnv, {});
   body = await response.text();
-  if (body.includes('class="v3-now"')) throw new Error("Stale data must not create a NOW section");
+  if (body.includes('class="v3-current"')) throw new Error("Stale data must not create a current editorial section");
   if (body.includes("STALE YOUTUBE MUST NOT BE NOW")) throw new Error("Stale YouTube must not appear as current content");
 
   console.log("Home V3 isolated preview checks passed.");
