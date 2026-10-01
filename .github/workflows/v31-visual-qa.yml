@@ -1,0 +1,58 @@
+name: NJS V3.1 visual QA
+
+on:
+  pull_request:
+    paths:
+      - "site/src/v31.js"
+      - "site/public/v31.css"
+      - "site/src/runtime.js"
+      - ".github/workflows/v31-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE_URL: https://design-njs-v31-restructure-neverjustsell-site.max-lee-korea.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for current preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 24); do
+            page="$(curl -fsSL "$BASE_URL/v31" || true)"
+            if [[ "$page" == *"v31-ia-01"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "V3.1 preview did not reach expected revision." >&2
+          exit 1
+
+      - name: Capture pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=7000)
+          pages=(home:/v31 content:/v31/content knowledge:/v31/knowledge about:/v31/about book:/v31/book lecture:/v31/lecture)
+          for item in "${pages[@]}"; do
+            name="${item%%:*}"
+            path="${item#*:}"
+            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "$BASE_URL$path"
+            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "$BASE_URL$path"
+          done
+          file screenshots/*.png
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: njs-v31-visual-qa
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7
