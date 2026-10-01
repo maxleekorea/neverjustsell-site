@@ -320,7 +320,7 @@ ${renderRecent(youtube, recent)}
 </section>
 </main>
 
-<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><a class="v3-brand" href="${homeHref}"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a><p>맥작가의 미디어, 지식, 학습과 커뮤니티를 연결합니다.</p></div><nav><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="${esc(courses)}">배우기</a><a href="${esc(community)}">커뮤니티</a><a href="/book">책</a><a href="/about">맥작가</a></nav></div></footer>
+<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><a class="v3-brand" href="${homeHref}"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a><p>맥작가의 미디어, 지식, 학습과 커뮤니티를 연결합니다.</p></div><nav><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="${esc(courses)}">배우기</a><a href="${esc(community)}">커뮤니티</a><a href="/book">책</a><a href="/about">맥작가</a><a href="/support">고객지원</a></nav></div></footer>
 <script src="/home-v3-app.js" defer></script>
 </body></html>`;
 
