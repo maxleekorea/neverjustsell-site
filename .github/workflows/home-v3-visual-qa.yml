@@ -25,8 +25,7 @@ jobs:
           set -euo pipefail
           for i in $(seq 1 18); do
             page="$(curl -fsSL "$PREVIEW_URL")"
-            if printf '%s' "$page" | grep -q "ae-20261001-04" \
-              && printf '%s' "$page" | grep -q 'href="/support">고객지원'; then
+            if [[ "$page" == *"ae-20261001-04"* && "$page" == *'href="/support">고객지원'* ]]; then
               exit 0
             fi
             sleep 5
