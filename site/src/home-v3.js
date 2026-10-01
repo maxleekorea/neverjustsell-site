@@ -164,14 +164,18 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <meta name="description" content="『그냥 팔지 말라』 저자 맥작가의 관점에서 시작해 지식, 학습과 커뮤니티로 이어지는 NEVER JUST SELL Home V3 프리뷰.">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">\n<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/home-v3.css">
 </head>
 <body class="v3-body">
 <a class="v3-skip" href="#main-content">본문 바로가기</a>
 <header class="v3-header">
   <div class="v3-shell v3-header-inner">
-    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>\n    <a class="v3-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>
+    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>
+    <a class="v3-mobile-search" href="/knowledge" aria-label="지식 검색">검색</a>
     <button class="v3-menu-toggle" type="button" aria-controls="v3-nav" aria-expanded="false">메뉴</button>
     <nav class="v3-nav" id="v3-nav" aria-label="주요 메뉴">
       <a href="/content">콘텐츠</a>
