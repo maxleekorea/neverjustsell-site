@@ -87,31 +87,36 @@ function dateKo(value) {
   return `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
-function renderNow(youtube, knowledge) {
+function renderCurrent(youtube, knowledge) {
   if (!youtube && !knowledge) return "";
-  const primary = youtube
-    ? `<article class="v3-now-feature">
-        <span class="v3-status v3-status-live">${esc(youtube.freshness)} · ${esc(dateKo(youtube.published))}</span>
-        <h2>${esc(youtube.title)}</h2>
-        <p>최근 공개된 맥작가 YouTube 콘텐츠입니다. 공개 날짜가 freshness 기준을 넘으면 이 영역에서 자동으로 빠집니다.</p>
-        <a href="${esc(youtube.url)}" target="_blank" rel="noopener noreferrer">영상 보기 ↗</a>
-      </article>`
-    : `<article class="v3-now-feature">
-        <span class="v3-status v3-status-live">최근 업데이트 · ${esc(knowledge.updated)}</span>
-        <h2>${esc(knowledge.title)}</h2>
+
+  const feature = youtube
+    ? `<a class="v3-current-feature" href="${esc(youtube.url)}" target="_blank" rel="noopener noreferrer">
+        <span class="v3-current-media"><img src="${esc(youtube.thumbnail)}" alt="" loading="lazy"></span>
+        <span class="v3-current-body"><small>YOUTUBE · ${esc(dateKo(youtube.published))}</small><strong>${esc(youtube.title)}</strong><em>영상 보기 ↗</em></span>
+      </a>`
+    : `<a class="v3-current-feature v3-current-feature-text" href="/knowledge/${encodeURIComponent(knowledge.slug)}">
+        <span class="v3-current-art">KNOWLEDGE</span>
+        <span class="v3-current-body"><small>${esc(String(knowledge.type || "지식").toUpperCase())} · ${esc(knowledge.updated)}</small><strong>${esc(knowledge.title)}</strong><em>지식 보기 →</em></span>
+      </a>`;
+
+  const side = youtube && knowledge
+    ? `<a class="v3-current-side-card" href="/knowledge/${encodeURIComponent(knowledge.slug)}">
+        <small>KNOWLEDGE · ${esc(knowledge.updated)}</small>
+        <strong>${esc(knowledge.title)}</strong>
         <p>${esc(knowledge.summary)}</p>
-        <a href="/knowledge/${encodeURIComponent(knowledge.slug)}">지식 보기 →</a>
-      </article>`;
+        <em>읽기 →</em>
+      </a>`
+    : `<div class="v3-current-side-card v3-current-side-note">
+        <small>NJS</small>
+        <strong>콘텐츠에서 끝나지 않도록.</strong>
+        <p>영상에서 시작한 생각을 지식으로 다시 찾고, 필요하면 배우고 묻는 흐름으로 이어갑니다.</p>
+      </div>`;
 
-  const rail = [
-    youtube && knowledge ? `<article><span>KNOWLEDGE · ${esc(knowledge.updated)}</span><strong>${esc(knowledge.title)}</strong><small>${esc(knowledge.summary)}</small><a href="/knowledge/${encodeURIComponent(knowledge.slug)}">읽기 →</a></article>` : "",
-    `<article class="v3-now-rule"><span>LIVE RULE</span><strong>실제 최신 항목만 노출</strong><small>새 강의·프로그램·커뮤니티 활동이 freshness gate를 통과할 때만 이 영역에 추가됩니다.</small></article>`
-  ].join("");
-
-  return `<section class="v3-now" aria-labelledby="v3-now-title">
+  return `<section class="v3-current" aria-labelledby="v3-current-title">
     <div class="v3-shell">
-      <p class="v3-kicker v3-kicker-light" id="v3-now-title">NOW · 실제 최신 데이터</p>
-      <div class="v3-now-layout">${primary}<div class="v3-now-rail">${rail}</div></div>
+      <div class="v3-current-head"><p class="v3-kicker v3-kicker-light">NOW</p><h2 id="v3-current-title">지금 이야기하는 것.</h2></div>
+      <div class="v3-current-grid">${feature}<div class="v3-current-side">${side}<p class="v3-current-note">맥작가의 현재 관점과 최근 콘텐츠를 기준으로 연결합니다.</p></div></div>
     </div>
   </section>`;
 }
@@ -119,21 +124,22 @@ function renderNow(youtube, knowledge) {
 function renderRecent(youtube, knowledgeItems) {
   const cards = [];
   if (youtube) {
-    cards.push(`<a class="v3-content-card" href="${esc(youtube.url)}" target="_blank" rel="noopener noreferrer">
+    cards.push(`<a class="v3-content-card v3-content-card-video" href="${esc(youtube.url)}" target="_blank" rel="noopener noreferrer">
       <span class="v3-content-media"><img src="${esc(youtube.thumbnail)}" alt="" loading="lazy"></span>
-      <small>YOUTUBE · ${esc(dateKo(youtube.published))}</small><strong>${esc(youtube.title)}</strong>
+      <small>YOUTUBE · ${esc(dateKo(youtube.published))}</small><strong>${esc(youtube.title)}</strong><em>보기 ↗</em>
     </a>`);
   }
   for (const item of knowledgeItems) {
-    cards.push(`<a class="v3-content-card v3-content-knowledge" href="/knowledge/${encodeURIComponent(item.slug)}">
+    cards.push(`<a class="v3-content-card" href="/knowledge/${encodeURIComponent(item.slug)}">
       <span class="v3-content-media v3-content-art">KNOWLEDGE</span>
-      <small>${esc(String(item.type || "지식").toUpperCase())} · ${esc(item.updated)}</small><strong>${esc(item.title)}</strong>
+      <small>${esc(String(item.type || "지식").toUpperCase())} · ${esc(item.updated)}</small><strong>${esc(item.title)}</strong><em>읽기 →</em>
     </a>`);
   }
   if (!cards.length) return "";
+
   return `<section class="v3-section v3-recent"><div class="v3-shell">
-    <div class="v3-section-head"><div><p class="v3-kicker">RECENT</p><h2>최근 콘텐츠.</h2></div><a class="v3-text-link" href="/content">전체 보기 →</a></div>
-    <div class="v3-content-grid">${cards.slice(0,3).join("")}</div>
+    <div class="v3-section-head"><div><p class="v3-kicker">RECENT</p><h2>최근에 이어진 생각.</h2></div><a class="v3-text-link" href="/content">콘텐츠 전체 보기 →</a></div>
+    <div class="v3-content-grid">${cards.slice(0, 3).join("")}</div>
   </div></section>`;
 }
 
@@ -146,6 +152,7 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
   const recent = recentKnowledge(entries, 2);
   const youtube = youtubeCurrent(youtubeItems);
   const mySpace = authOrigin + "/my-space";
+  const courses = authOrigin + "/courses";
   const community = communityOrigin + "/";
 
   const body = `<!doctype html>
@@ -153,8 +160,8 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NJS Home V3 Preview | NEVER JUST SELL</title>
-<meta name="description" content="맥작가의 실제 사업 경험, 책, 지식, 강의와 커뮤니티를 연결하는 Home V3 격리 프리뷰.">
+<title>NJS Home V3 Author Editorial Preview | NEVER JUST SELL</title>
+<meta name="description" content="『그냥 팔지 말라』 저자 맥작가의 관점에서 시작해 지식, 학습과 커뮤니티로 이어지는 NEVER JUST SELL Home V3 프리뷰.">
 <meta name="robots" content="noindex,nofollow,noarchive">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -164,99 +171,91 @@ export async function renderHomeV3Page({ env, siteOrigin, authOrigin, communityO
 <a class="v3-skip" href="#main-content">본문 바로가기</a>
 <header class="v3-header">
   <div class="v3-shell v3-header-inner">
-    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview">NJS <span>NEVER JUST SELL</span></a>
+    <a class="v3-brand" href="/home-v3" aria-label="NJS Home V3 Preview"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a>
     <button class="v3-menu-toggle" type="button" aria-controls="v3-nav" aria-expanded="false">메뉴</button>
     <nav class="v3-nav" id="v3-nav" aria-label="주요 메뉴">
-      <a href="/class">강의·프로그램</a>
-      <a href="/book">책·전자책</a>
+      <a href="/content">콘텐츠</a>
       <a href="/knowledge">지식</a>
+      <a href="${esc(courses)}">배우기</a>
       <a href="${esc(community)}">커뮤니티</a>
       <a href="/about">맥작가</a>
     </nav>
     <div class="v3-utility"><a href="/knowledge">검색</a><a class="v3-space" href="${esc(mySpace)}">내 공간</a></div>
   </div>
 </header>
+
 <main id="main-content">
-<section class="v3-hero v3-section">
+<section class="v3-hero">
   <div class="v3-shell v3-hero-grid">
     <div class="v3-hero-copy">
-      <p class="v3-kicker">『그냥 팔지 말라』 저자 맥작가</p>
-      <h1>사업을 해본 사람에게 배우는<br><em>마케팅과 비즈니스.</em></h1>
-      <p class="v3-lead">노스페이스 영업·MD, 효성 해외영업, 제조업 창업과 온라인 커머스까지. 직접 만들고 팔고 부딪힌 경험을 강의, 책, 지식과 커뮤니티로 나눕니다.</p>
-      <div class="v3-actions"><a class="v3-btn v3-btn-primary" href="/knowledge">지식 둘러보기</a><a class="v3-text-link" href="/about">맥작가 알아보기 →</a></div>
-      <p class="v3-provisional">Preview: 현재 Hero 이미지는 임시 자산이며 Production 승격 전 브랜드 촬영이 필요합니다.</p>
+      <p class="v3-kicker">『그냥 팔지 말라』 저자 맥작가 · NEVER JUST SELL</p>
+      <h1>팔리는 순간만<br><em>보지 않습니다.</em></h1>
+      <p class="v3-lead">상품이 만들어지고, 고객에게 발견되고, 선택되고, 다시 관계로 이어지는 전체를 봅니다. 책과 영상에서 시작한 생각을 NJS에서 지식과 학습, 커뮤니티로 이어갑니다.</p>
+      <div class="v3-actions"><a class="v3-btn v3-btn-primary" href="/knowledge">지식 둘러보기</a><a class="v3-text-link" href="#njs-loop">NJS가 이어지는 방식 ↓</a></div>
     </div>
-    <figure class="v3-hero-photo"><img src="${esc(HERO_IMAGE)}" alt="맥작가" loading="eager" fetchpriority="high"><figcaption>맥작가 · Preview용 임시 이미지</figcaption></figure>
+    <figure class="v3-hero-photo"><img src="${esc(HERO_IMAGE)}" alt="맥작가" loading="eager" fetchpriority="high"><figcaption><strong>맥작가</strong><span>브랜딩 · 마케팅 · 사업</span></figcaption></figure>
   </div>
 </section>
 
-${renderNow(youtube, knowledge)}
+${renderCurrent(youtube, knowledge)}
 
-<section class="v3-section v3-offers">
+<section class="v3-section v3-loop" id="njs-loop">
   <div class="v3-shell">
-    <div class="v3-section-head"><div><p class="v3-kicker">USE NJS</p><h2>지금 이용할 수 있는 것.</h2></div><p>판매 가능한 것은 분명하게, 준비 중인 것은 준비 중이라고 보여줍니다.</p></div>
-    <div class="v3-offers-grid">
-      <article class="v3-book-live">
-        <div class="v3-book-cover"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지" loading="lazy"></div>
-        <div><span class="v3-status v3-status-live">현재 구매 가능</span><h3>『그냥 팔지 말라』</h3><p>현재 실제 출간된 책입니다. 판매처는 책 상세에서 확인합니다.</p><a class="v3-btn v3-btn-primary v3-btn-small" href="/book">책 보기</a></div>
-      </article>
-      <div class="v3-offer-list">
-        <article><span class="v3-status v3-status-prep">준비 중</span><h3>동영상 강의</h3><p>실제 강의 2종이 준비되어 있지만 현재 판매·공개 상태가 아닙니다.</p></article>
-        <article><span class="v3-status v3-status-wait">아직 판매 상품 없음</span><h3>전자책</h3><p>새 재해석 전자책이 실제 상품으로 준비되기 전까지 판매 CTA를 만들지 않습니다.</p></article>
-        <article><span class="v3-status v3-status-wait">현재 열린 회차 없음</span><h3>완독 프로그램</h3><p>실제 모집 run이 생길 때만 일정·가격·신청 상태를 표시합니다.</p></article>
-        <article><span class="v3-status v3-status-info">안내 제공</span><h3>강연·컨설팅</h3><p>서비스 안내는 존재하지만 현재 예약·문의 전환 동선은 준비가 더 필요합니다.</p></article>
+    <div class="v3-loop-intro"><p class="v3-kicker">HOW NJS WORKS</p><h2>배우고, 해보고,<br>묻고, 다시 쌓입니다.</h2><p>책이나 영상에서 알게 된 생각이 실제 사업에서 끝까지 이어지도록 합니다. 필요한 지식을 찾고, 구조적으로 배우고, 실행 중 생긴 질문과 경험을 나누면 그 결과가 다시 누군가의 지식이 됩니다.</p></div>
+    <div class="v3-loop-grid">
+      <a href="/knowledge"><span>01</span><small>KNOWLEDGE</small><strong>이해한다</strong><p>문제와 개념을 빠르게 이해하고 필요할 때 다시 찾습니다.</p><em>지식 둘러보기 →</em></a>
+      <div><span>02</span><small>STRUCTURED LEARNING</small><strong>배운다</strong><p>한 주제를 순서대로 익히고 실제 적용까지 이어가는 학습 경로입니다.</p><em>강의는 준비 중</em></div>
+      <a href="${esc(community)}"><span>03</span><small>COMMUNITY</small><strong>해보고 묻는다</strong><p>실행하다 막힌 문제와 직접 해본 경험을 사람들과 나눕니다.</p><em>커뮤니티 보기 →</em></a>
+      <div><span>04</span><small>FEEDBACK</small><strong>다시 쌓인다</strong><p>좋은 질문과 경험은 콘텐츠와 지식, 다음 학습을 더 정확하게 만듭니다.</p><em>반복되는 학습 루프</em></div>
+    </div>
+  </div>
+</section>
+
+<section class="v3-section v3-author">
+  <div class="v3-shell v3-author-grid">
+    <figure class="v3-author-photo"><img src="${esc(LECTURE_IMAGE)}" alt="강연 중인 맥작가" loading="lazy"></figure>
+    <div class="v3-author-copy">
+      <p class="v3-kicker">WHY 맥작가</p>
+      <h2>마케팅을 좁게 보지 않는 데에는<br>이유가 있습니다.</h2>
+      <p class="v3-author-lead">판매 기술 하나를 오래 다룬 경력이 아니라, 현장과 상품, 글로벌 B2B와 제조, 온라인 커머스까지 서로 다른 사업 구조를 직접 지나왔습니다.</p>
+      <div class="v3-author-proof">
+        <div><span>01</span><strong>현장 · 상품 · 데이터</strong><p>노스페이스 현장 영업에서 영업MD로 역할을 넓히며 매장, 상품, 수요와 재고를 함께 봤습니다.</p></div>
+        <div><span>02</span><strong>시장개척 · 제조 · 글로벌 B2B</strong><p>효성 해외영업에서 신규 시장을 개척했고, 이후 제조·R&D·수출 사업을 장기간 운영했습니다.</p></div>
+        <div><span>03</span><strong>온라인 커머스 · 저술</strong><p>온라인 판매망을 직접 운영한 뒤 경험과 관점을 책, 강의와 콘텐츠로 구조화해 왔습니다.</p></div>
       </div>
+      <a class="v3-text-link" href="/about">맥작가와 NJS의 관점 보기 →</a>
     </div>
   </div>
 </section>
 
-<section class="v3-section v3-story">
-  <div class="v3-shell v3-story-grid">
-    <div class="v3-story-copy"><p class="v3-kicker">WHY 맥작가</p><h2>경력이 아니라,<br>직접 지나온 사업의 경로.</h2>
-      <ol>
-        <li><b>노스페이스</b><span>영업 → 영업 MD</span></li>
-        <li><b>효성</b><span>해외영업 · 글로벌 B2B</span></li>
-        <li><b>2011–2012</b><span>창업 · 마이팝 법인 설립</span></li>
-        <li><b>제조업</b><span>B2B · OEM/ODM · 수출</span></li>
-        <li><b>온라인 커머스</b><span>스마트스토어 판매망 운영</span></li>
-        <li><b>현재</b><span>『그냥 팔지 말라』 저자 · NJS</span></li>
-      </ol>
-    </div>
-    <div class="v3-story-media">
-      <img src="${esc(LECTURE_IMAGE)}" alt="맥작가 강연" loading="lazy">
-      <div class="v3-archive"><span>ARCHIVAL PROOF</span><strong>LG 탭북2 · VIEWS · 제조 제품</strong><small>과거 원본을 확보한 뒤 실제 증거 이미지로 교체합니다. 현재 사진을 과거 경력 증거처럼 사용하지 않습니다.</small></div>
+<section class="v3-book">
+  <div class="v3-shell v3-book-grid">
+    <div class="v3-book-art"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지" loading="lazy"></div>
+    <div class="v3-book-copy">
+      <p class="v3-kicker">BOOK → NJS</p>
+      <h2>책에서 시작한 질문을<br>계속 이어갑니다.</h2>
+      <p>『그냥 팔지 말라』는 판매 요령만을 다루기보다 고객과 유통, 검색과 브랜드를 함께 보자는 문제의식에서 출발했습니다. NJS에서는 그 질문을 더 넓은 사업의 문제로 이어갑니다.</p>
+      <div class="v3-ratings" aria-label="도서 독자 평가"><div><span>YES24</span><strong>9.4 / 10</strong><small>리뷰 20건 · 한줄평 16건</small></div><div><span>교보문고</span><strong>9.9 / 10</strong><small>평가 19건</small></div></div>
+      <div class="v3-actions"><a class="v3-btn v3-btn-primary" href="/book">책 이야기 보기</a><a class="v3-text-link" href="/content">관련 콘텐츠 보기 →</a></div>
     </div>
   </div>
 </section>
-
-<section class="v3-book-proof">
-  <div class="v3-shell v3-book-proof-grid">
-    <div class="v3-book-art"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어" loading="lazy"></div>
-    <div><p class="v3-kicker">BOOK & TRUST</p><h2>책으로 먼저 만난 사람에게,<br>그 다음을 보여줍니다.</h2><p>『그냥 팔지 말라』에서 시작한 문제의식을 강의, 지식, 콘텐츠와 커뮤니티에서 더 넓은 사업의 문제로 이어갑니다.</p>
-      <div class="v3-ratings"><div><span>YES24</span><strong>9.4 / 10</strong></div><div><span>교보문고</span><strong>9.9 / 10</strong></div></div>
-      <a class="v3-text-link" href="/book">책 자세히 보기 →</a>
-    </div>
-  </div>
-</section>
-
-<section class="v3-section v3-return"><div class="v3-shell">
-  <div class="v3-section-head"><div><p class="v3-kicker">COME BACK FOR</p><h2>한 번 보고 끝나지 않는 이유.</h2></div></div>
-  <div class="v3-return-grid">
-    <a href="/knowledge"><span>01</span><h3>필요할 때 검색하기</h3><p>마케팅과 온라인 커머스 지식을 문제 상황에서 다시 찾습니다.</p></a>
-    <a href="/content"><span>02</span><h3>영상에서 본 내용 다시 찾기</h3><p>영상의 아이디어를 지식과 관련 자료로 이어봅니다.</p></a>
-    <a href="/knowledge"><span>03</span><h3>바뀐 시장 빠르게 이해하기</h3><p>신선도 기준을 통과한 브리핑만 최신 정보로 다룹니다.</p></a>
-    <a href="${esc(community)}"><span>04</span><h3>혼자 막힌 문제 묻기</h3><p>실제 질문과 경험을 사람들과 나눕니다.</p></a>
-  </div>
-</div></section>
 
 <section class="v3-community">
-  <div class="v3-shell v3-community-inner"><div><p class="v3-kicker v3-kicker-light">COMMUNITY</p><h2>혼자 막힌 문제를 묻고,<br>다른 사람의 실제 경험을 참고하는 곳.</h2><p>Home에서는 커뮤니티 내부 구조를 설명하지 않습니다. 실제 organic 활동이 freshness 기준을 통과하면 최근 질문을 연결하고, 그렇지 않으면 이 가치와 진입점만 유지합니다.</p></div><a class="v3-community-link" href="${esc(community)}">커뮤니티 둘러보기 →</a></div>
+  <div class="v3-shell v3-community-grid">
+    <div class="v3-community-copy"><p class="v3-kicker v3-kicker-light">COMMUNITY OF PRACTICE</p><h2>누군가 해본 경험은<br>다른 사람의 다음 판단이 됩니다.</h2><p>맥작가가 일방적으로 말하는 곳에 머물지 않습니다. 질문과 실행 경험, 결과와 반례가 쌓이면 다른 사람의 선택에 도움이 되고, 좋은 사례는 다시 지식과 콘텐츠를 더 정확하게 만듭니다.</p><a class="v3-btn v3-btn-light" href="${esc(community)}">커뮤니티 둘러보기</a></div>
+    <div class="v3-community-flow" aria-label="커뮤니티 학습 흐름"><div><span>01</span><strong>묻는다</strong><p>지금 막힌 문제를 구체적으로 묻습니다.</p></div><div><span>02</span><strong>해본다</strong><p>조언을 실제 상황에 적용해 봅니다.</p></div><div><span>03</span><strong>남긴다</strong><p>과정과 결과, 실패와 반례를 나눕니다.</p></div><div><span>04</span><strong>다시 배운다</strong><p>축적된 경험이 다음 사람의 판단을 돕습니다.</p></div></div>
+  </div>
 </section>
 
 ${renderRecent(youtube, recent)}
 
+<section class="v3-continuity">
+  <div class="v3-shell v3-continuity-inner"><div><p class="v3-kicker">CONTINUE</p><h2>이미 이어서 보고 있나요?</h2><p>저장한 지식과 학습 중인 내용을 내 공간에서 계속할 수 있습니다.</p></div><a class="v3-btn v3-btn-primary" href="${esc(mySpace)}">내 공간으로</a></div>
+</section>
 </main>
-<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><strong>NJS · NEVER JUST SELL</strong><p>실제 사업 경험을 책, 강의, 지식과 커뮤니티로 연결합니다.</p></div><nav><a href="/class">강의</a><a href="/book">책</a><a href="/knowledge">지식</a><a href="${esc(community)}">커뮤니티</a><a href="/lecture">강연·컨설팅</a></nav></div></footer>
+
+<footer class="v3-footer"><div class="v3-shell v3-footer-grid"><div><a class="v3-brand" href="/home-v3"><span class="v3-brand-mark">NJS</span><span class="v3-brand-name">NEVER JUST SELL</span></a><p>맥작가의 미디어, 지식, 학습과 커뮤니티를 연결합니다.</p></div><nav><a href="/content">콘텐츠</a><a href="/knowledge">지식</a><a href="${esc(courses)}">배우기</a><a href="${esc(community)}">커뮤니티</a><a href="/book">책</a><a href="/about">맥작가</a></nav></div></footer>
 <script src="/home-v3-app.js" defer></script>
 </body></html>`;
 
@@ -265,7 +264,7 @@ ${renderRecent(youtube, recent)}
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
-      "X-Robots-Tag": "noindex, nofollow, noarchive",
+      "X-Robots-Tag": "noindex, nofollow,noarchive",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin"
     }
