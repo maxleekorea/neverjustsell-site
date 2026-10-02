@@ -34,7 +34,7 @@ jobs:
           echo $! > /tmp/v33-preview.pid
           for i in $(seq 1 20); do
             page="$(curl -fsSL http://127.0.0.1:8789/v33 || true)"
-            if [[ "$page" == *"v33-korean-editorial-01"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
+            if [[ "$page" == *"v33-korean-editorial-01"* && "$page" == *"팔기 전에"* ]]; then
               exit 0
             fi
             sleep 1
