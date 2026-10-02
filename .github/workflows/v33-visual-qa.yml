@@ -1,0 +1,66 @@
+name: NJS V3.3 Korean editorial visual QA
+
+on:
+  push:
+    branches:
+      - "design/njs-v33-korean-editorial"
+  pull_request:
+    paths:
+      - "site/src/v33.js"
+      - "site/public/v33.css"
+      - "site/src/runtime.js"
+      - "site/v33-preview-server.mjs"
+      - ".github/workflows/v33-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start local V3.3 preview
+        shell: bash
+        working-directory: site
+        run: |
+          set -euo pipefail
+          node v33-preview-server.mjs > /tmp/v33-preview.log 2>&1 &
+          echo $! > /tmp/v33-preview.pid
+          for i in $(seq 1 20); do
+            page="$(curl -fsSL http://127.0.0.1:8789/v33 || true)"
+            if [[ "$page" == *"v33-korean-editorial-01"* && "$page" == *"팔기 전에"* ]]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/v33-preview.log
+          exit 1
+
+      - name: Capture pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
+          pages=(home:/v33 content:/v33/content knowledge:/v33/knowledge about:/v33/about book:/v33/book lecture:/v33/lecture)
+          for item in "${pages[@]}"; do
+            name="${item%%:*}"
+            path="${item#*:}"
+            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "http://127.0.0.1:8789$path"
+            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "http://127.0.0.1:8789$path"
+          done
+          file screenshots/*.png
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: njs-v33-visual-qa
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7

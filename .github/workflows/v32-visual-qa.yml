@@ -1,0 +1,66 @@
+name: NJS V3.2 hybrid visual QA
+
+on:
+  push:
+    branches:
+      - "design/njs-v32-hybrid-editorial"
+  pull_request:
+    paths:
+      - "site/src/v32.js"
+      - "site/public/v32.css"
+      - "site/src/runtime.js"
+      - "site/v32-preview-server.mjs"
+      - ".github/workflows/v32-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start local V3.2 preview
+        shell: bash
+        working-directory: site
+        run: |
+          set -euo pipefail
+          node v32-preview-server.mjs > /tmp/v32-preview.log 2>&1 &
+          echo $! > /tmp/v32-preview.pid
+          for i in $(seq 1 20); do
+            page="$(curl -fsSL http://127.0.0.1:8789/v32 || true)"
+            if [[ "$page" == *"v32-hybrid-01"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/v32-preview.log
+          exit 1
+
+      - name: Capture pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
+          pages=(home:/v32 content:/v32/content knowledge:/v32/knowledge about:/v32/about book:/v32/book lecture:/v32/lecture)
+          for item in "${pages[@]}"; do
+            name="${item%%:*}"
+            path="${item#*:}"
+            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "http://127.0.0.1:8789$path"
+            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "http://127.0.0.1:8789$path"
+          done
+          file screenshots/*.png
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: njs-v32-visual-qa
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7
