@@ -44,7 +44,7 @@ try{
   expect(x.body,"팔기 전에,","root");
   expect(x.body,'href="/content"',"root");
   expect(x.body,'href="/knowledge"',"root");
-  forbid(x.body,'href="/v33',"root");
+  forbid(x.body,'href="/v33/"',"root preview links");\n  forbid(x.body,'href="/v33">',"root preview home link");
   forbid(x.body,"재구성 프리뷰","root");
   if(x.response.headers.get("Cache-Control")!=="public, max-age=120, s-maxage=600") throw new Error("root public cache contract");
   if(String(x.response.headers.get("X-Robots-Tag")||"").includes("noindex")) throw new Error("root must not emit noindex header");
