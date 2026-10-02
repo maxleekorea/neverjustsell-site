@@ -61,14 +61,14 @@ function currentVideo(items) {
 }
 
 function nav(communityOrigin, authOrigin) {
-  return \`<header class="r32-header"><div class="r32-shell r32-header-inner">
+  return `<header class="r32-header"><div class="r32-shell r32-header-inner">
     <a class="r32-brand" href="/v32">NEVER JUST SELL</a>
     <nav class="r32-nav">
-      <a href="/v32/content">콘텐츠</a><a href="/v32/knowledge">지식</a><a href="\${esc(authOrigin)}/courses">배우기</a><a href="\${esc(communityOrigin)}/">커뮤니티</a><a href="/v32/about">맥작가</a>
+      <a href="/v32/content">콘텐츠</a><a href="/v32/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v32/about">맥작가</a>
       <details class="r32-more"><summary>더보기</summary><div><a href="/v32/book">책</a><a href="/v32/lecture">강연·컨설팅</a></div></details>
     </nav>
     <a class="r32-search" href="/v32/knowledge">검색</a>
-  </div></header>\`;
+  </div></header>`;
 }
 function footer(communityOrigin, authOrigin) {
   return `<footer class="r32-footer"><div class="r32-shell r32-footer-grid">
@@ -115,7 +115,7 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
           <li><b>04</b><div><strong>경험이 쌓인다</strong><p>검토할 가치가 있는 경험을 다시 정리합니다.</p></div></li>
           <li><b>05</b><div><strong>다시 배운다</strong><p>쌓인 지식과 경험으로 다음 판단을 더 잘합니다.</p></div></li>
         </ol>
-        <a href="\${esc(communityOrigin)}/">커뮤니티에서 현실의 질문 보기 →</a>
+        <a href="${esc(communityOrigin)}/">커뮤니티에서 현실의 질문 보기 →</a>
       </aside>
     </div>
   </div></section>
