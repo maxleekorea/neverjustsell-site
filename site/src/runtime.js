@@ -21,6 +21,11 @@ import { renderV33Page } from "./v33.js";
 const CANONICAL_SITE_ORIGIN = "https://www.neverjustsell.com";
 const CLASSROOM_ORIGIN = "https://classroom.neverjustsell.com";
 
+function v33ProductionEnabled(env) {
+  return String(env?.SITE_RELEASE || "").trim().toLowerCase() === "v33";
+}
+
+
 function html(body, status = 200, extraHeaders = {}) {
   return new Response(body, {
     status,
@@ -145,6 +150,21 @@ export default {
         siteOrigin: CANONICAL_SITE_ORIGIN,
         authOrigin: CLASSROOM_ORIGIN,
         communityOrigin: "https://community.neverjustsell.com"
+      });
+    }
+
+    if (
+      request.method === "GET" &&
+      v33ProductionEnabled(env) &&
+      ["/", "/content", "/about", "/book", "/lecture"].includes(url.pathname)
+    ) {
+      return renderV33Page({
+        request,
+        env,
+        siteOrigin: CANONICAL_SITE_ORIGIN,
+        authOrigin: CLASSROOM_ORIGIN,
+        communityOrigin: "https://community.neverjustsell.com",
+        preview: false
       });
     }
 
