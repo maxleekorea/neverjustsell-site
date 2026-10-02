@@ -44,6 +44,7 @@ try{
   expect(x.body,"팔기 전에,","root");
   expect(x.body,'href="/content"',"root");
   expect(x.body,'href="/knowledge"',"root");
+  expect(x.body,'href="https://classroom.neverjustsell.com/my-space">내 공간</a>',"root member continuity");
   forbid(x.body,'href="/v33/"',"root preview links");
   forbid(x.body,'href="/v33">',"root preview home link");
   forbid(x.body,"재구성 프리뷰","root");
@@ -62,6 +63,8 @@ try{
   x=await html("/book");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/book">',"book");
   expect(x.body,'"@type":"Book"',"book");
+  expect(x.body,"9791124121061","book print isbn");
+  expect(x.body,"9791124121122","book ebook isbn");
   expect(x.body,'href="/store">스토어 보기</a>',"book");
   forbid(x.body,'href="/book">책 자세히 보기</a>',"book");
 
