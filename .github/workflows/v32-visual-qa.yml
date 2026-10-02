@@ -34,7 +34,7 @@ jobs:
           echo $! > /tmp/v32-preview.pid
           for i in $(seq 1 20); do
             page="$(curl -fsSL http://127.0.0.1:8789/v32 || true)"
-            if [[ "$page" == *"v32-ia-02"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
+            if [[ "$page" == *"v32-hybrid-01"* && "$page" == *"지식은 정리해서 남기고"* ]]; then
               exit 0
             fi
             sleep 1
