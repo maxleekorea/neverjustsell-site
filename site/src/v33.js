@@ -132,7 +132,7 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
     <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지금 읽을 것</p><h2>요즘, 무엇이<br>달라지고 있나.</h2></div><p>빨리 바뀌는 소식은 브리핑으로 짧게 정리합니다. 오래 두고 볼 생각은 칼럼과 지식으로 남깁니다.</p></div>
     <div class="r33-now-grid">
       ${briefBlock}
-      <div class="r33-column-preview"><span>맥작가 칼럼</span><h3>첫 글을 준비하고 있습니다.</h3><p>한 가지 문제를 오래 붙잡고, 맥작가의 경험과 근거를 함께 풀어내는 글입니다. 없는 글을 채워 넣지는 않습니다.</p><a href="/v33/content#column">칼럼 영역 보기 →</a></div>
+      <div class="r33-column-preview"><span>맥작가 칼럼</span><h3>첫 글을 준비하고 있습니다.</h3><p>한 가지 문제를 오래 붙잡고, 맥작가의 경험과 근거를 함께 풀어내는 글입니다. 첫 글이 올라오면 이 자리에서 바로 볼 수 있습니다.</p><a href="/v33/content#column">칼럼 영역 보기 →</a></div>
       ${videoBlock}
     </div>
   </div></section>
@@ -169,9 +169,9 @@ function contentPage({briefs,videos}) {
   return `<main>
   <section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">콘텐츠</p><h1>짧게 볼 것과<br>오래 읽을 것을 나눴습니다.</h1><p>빠르게 변하는 소식은 브리핑에서, 한 가지 문제를 오래 파고든 글은 칼럼에서 봅니다. 영상과 책 해석, 사례도 주제별로 모읍니다.</p></div></section>
   <section class="r33-content-tabs"><div class="r33-shell"><a href="#column">칼럼</a><a href="#briefing">브리핑</a><a href="#video">영상</a><a href="#books">책 해석</a><a href="#case">사례</a></div></section>
-  <section class="r33-section" id="column"><div class="r33-shell r33-two-col"><div><p class="r33-eyebrow">맥작가 칼럼</p><h2>한 번 더 생각해볼 문제를 길게 씁니다.</h2><p>한 줄 요약으로 끝내기 어려운 문제를 경험과 근거를 붙여 차근차근 풀어냅니다.</p></div><div class="r33-empty-editorial"><span>프리뷰 전용 자리</span><strong>첫 칼럼이 등록되면 이곳에 가장 최근 글이 표시됩니다.</strong><p>없는 글을 만들어 채우지 않습니다.</p></div></div></section>
+  <section class="r33-section" id="column"><div class="r33-shell r33-two-col"><div><p class="r33-eyebrow">맥작가 칼럼</p><h2>한 번 더 생각해볼 문제를 길게 씁니다.</h2><p>한 줄 요약으로 끝내기 어려운 문제를 경험과 근거를 붙여 차근차근 풀어냅니다.</p></div><div class="r33-empty-editorial"><span>준비 중</span><strong>첫 칼럼이 올라오면 이곳에서 바로 볼 수 있습니다.</strong><p>아직 공개한 글은 없습니다.</p></div></div></section>
   <section class="r33-section r33-muted" id="briefing"><div class="r33-shell"><div class="r33-section-head"><div><p class="r33-eyebrow">브리핑</p><h2>요즘 달라진 것, 먼저 짚습니다.</h2></div><p>무슨 일이 있었는지보다, 내 일에 어떤 변화가 생기는지를 먼저 봅니다.</p></div>
-    ${brief ? `<a class="r33-wide-story" href="/knowledge/${encodeURIComponent(brief.slug)}"><span>${esc(brief.updated)}</span><h3>${esc(brief.title)}</h3><p>${esc(brief.summary)}</p><em>브리핑 읽기 →</em></a>` : `<div class="r33-empty-editorial"><strong>현재 freshness 기준을 통과한 브리핑이 없습니다.</strong><p>새 브리핑이 등록되면 자동으로 나타납니다.</p></div>`}
+    ${brief ? `<a class="r33-wide-story" href="/knowledge/${encodeURIComponent(brief.slug)}"><span>${esc(brief.updated)}</span><h3>${esc(brief.title)}</h3><p>${esc(brief.summary)}</p><em>브리핑 읽기 →</em></a>` : `<div class="r33-empty-editorial"><strong>지금 보여드릴 새 브리핑이 없습니다.</strong><p>새 소식이 생기면 확인해서 정리합니다.</p></div>`}
   </div></section>
   <section class="r33-section" id="video"><div class="r33-shell r33-two-col"><div><p class="r33-eyebrow">영상</p><h2>글보다 말이<br>빠를 때가 있습니다.</h2></div>
     ${video ? `<a class="r33-video-feature" href="${esc(video.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(video.thumbnail)}" alt=""><span>${esc(dateKo(video.published))}</span><strong>${esc(video.title)}</strong></a>` : `<div class="r33-empty-editorial">최근 영상 없음</div>`}
@@ -185,7 +185,7 @@ function knowledgePage(knowledge) {
   return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>고객, 브랜드, 유통, 온라인 판매를 하면서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다. 최신 뉴스와 커뮤니티 글은 섞지 않습니다.</p></div></section>
   <section class="r33-section"><div class="r33-shell"><div class="r33-knowledge-list">
   ${knowledge.slice(0,12).map((x)=>`<a href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("")}
-  </div><a class="r33-btn r33-btn-dark" href="/knowledge">현재 지식 허브 열기</a></div></section></main>`;
+  </div><a class="r33-btn r33-btn-dark" href="/knowledge">지식 전체 보기</a></div></section></main>`;
 }
 
 function aboutPage() {
@@ -198,13 +198,13 @@ function aboutPage() {
 }
 
 function bookPage() {
-  return `<main><section class="r33-book-hero"><div class="r33-shell r33-book-grid"><div class="r33-book-cover"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지"></div><div><p class="r33-eyebrow">책</p><h1>그냥 팔지 말라<br>스마트스토어</h1><p>검색 순위와 광고만 쫓다 보면 놓치는 것이 있습니다. 고객이 왜 찾고, 왜 고르고, 왜 다시 오는지를 상품과 유통, 브랜드까지 함께 살펴봅니다.</p><div class="r33-ratings"><div><span>YES24</span><b>9.4 / 10</b></div><div><span>교보문고</span><b>9.9 / 10</b></div></div><a class="r33-btn r33-btn-dark" href="/book">현재 책 페이지 보기</a></div></div></section>
+  return `<main><section class="r33-book-hero"><div class="r33-shell r33-book-grid"><div class="r33-book-cover"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지"></div><div><p class="r33-eyebrow">책</p><h1>그냥 팔지 말라<br>스마트스토어</h1><p>검색 순위와 광고만 쫓다 보면 놓치는 것이 있습니다. 고객이 왜 찾고, 왜 고르고, 왜 다시 오는지를 상품과 유통, 브랜드까지 함께 살펴봅니다.</p><div class="r33-ratings"><div><span>YES24</span><b>9.4 / 10</b></div><div><span>교보문고</span><b>9.9 / 10</b></div></div><a class="r33-btn r33-btn-dark" href="/book">책 자세히 보기</a></div></div></section>
   <section class="r33-section r33-muted"><div class="r33-shell r33-book-points"><div><span>01</span><h2>검색보다 먼저 고객을 봅니다.</h2></div><div><span>02</span><h2>판매와 브랜드를 따로 떼어 보지 않습니다.</h2></div><div><span>03</span><h2>책에서 끝내지 않고 NJS에서 다시 이어갑니다.</h2></div></div></section></main>`;
 }
 
 function lecturePage() {
   return `<main><section class="r33-lecture-hero"><div class="r33-shell r33-lecture-grid"><div><p class="r33-eyebrow">강연·컨설팅</p><h1>정해진 강의안을<br>그대로 들고 가지 않습니다.</h1><p>같은 마케팅 이야기라도 조직마다 막히는 지점이 다릅니다. 실제 과제를 먼저 듣고 주제를 맞춰 구성합니다.</p></div><figure><img src="${esc(LECTURE_IMAGE)}" alt="맥작가 강연"></figure></div></section>
-  <section class="r33-section"><div class="r33-shell"><div class="r33-lecture-topics"><article><span>01</span><h2>마케팅·브랜드</h2><p>누구에게, 왜 선택받는지부터 봅니다.</p></article><article><span>02</span><h2>온라인 커머스·유통</h2><p>광고 기법보다 시장과 유통 구조를 먼저 짚습니다.</p></article><article><span>03</span><h2>AI와 사업</h2><p>도구 소개보다 조사하고 판단하고 운영하는 방식이 어떻게 달라지는지 봅니다.</p></article></div><div class="r33-contact-note"><strong>현재 공개 신청 동선은 준비 중입니다.</strong><p>실제 문의·예약 경로가 확정되기 전에는 신청 가능한 것처럼 표시하지 않습니다.</p></div></div></section></main>`;
+  <section class="r33-section"><div class="r33-shell"><div class="r33-lecture-topics"><article><span>01</span><h2>마케팅·브랜드</h2><p>누구에게, 왜 선택받는지부터 봅니다.</p></article><article><span>02</span><h2>온라인 커머스·유통</h2><p>광고 기법보다 시장과 유통 구조를 먼저 짚습니다.</p></article><article><span>03</span><h2>AI와 사업</h2><p>도구 소개보다 조사하고 판단하고 운영하는 방식이 어떻게 달라지는지 봅니다.</p></article></div><div class="r33-contact-note"><strong>온라인 신청은 아직 준비 중입니다.</strong><p>문의 방법이 정리되면 이곳에서 안내하겠습니다.</p></div></div></section></main>`;
 }
 
 export async function renderV33Page({request,env,siteOrigin,authOrigin,communityOrigin}) {
