@@ -68,3 +68,6 @@ expected_head=d3db0d2fcfc887b555107a7e2536ed3b60d25f99
 deploy_at=2026-10-01T14:46:00+09:00
 reason=launch-home-v3-author-editorial
 expected_head=41a3830a1389b2ca7cd767a10daae86d4ee2c2ff
+deploy_at=2026-10-02T21:34:22+09:00
+reason=launch-njs-v33-korean-editorial
+release_base=b8c30a409ff558973e0bb74135a935e39f1cbbdc
