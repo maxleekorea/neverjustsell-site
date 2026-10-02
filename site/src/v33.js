@@ -262,10 +262,51 @@ function contentPage({briefs,videos}) {
 }
 
 function knowledgePage(knowledge) {
-  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>고객, 브랜드, 유통, 온라인 판매를 하면서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다. 최신 뉴스와 커뮤니티 글은 섞지 않습니다.</p></div></section>
-  <section class="r33-section"><div class="r33-shell"><div class="r33-knowledge-list">
-  ${knowledge.slice(0,12).map((x)=>`<a href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("")}
-  </div><a class="r33-btn r33-btn-dark" href="/knowledge">지식 전체 보기</a></div></section></main>`;
+  const cards=knowledge.slice(0,50).map((x)=>`<a data-r33-knowledge-card data-search="${esc([x.title,x.summary,x.type,x.category,...(Array.isArray(x.keywords)?x.keywords:[])].join(" ").toLowerCase())}" href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("");
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>판매와 운영 과정에서 자주 막히는 문제를 개념과 사례로 정리해 둡니다.</p></div></section>
+  <section class="r33-service-body r33-knowledge-hub"><div class="r33-shell">
+    <div class="r33-index-search"><label for="r33-knowledge-search">찾고 싶은 지식</label><div><input id="r33-knowledge-search" type="search" placeholder="키워드나 문제를 입력하세요" autocomplete="off"><span id="r33-knowledge-count">${knowledge.length}개</span></div></div>
+    <div class="r33-knowledge-list" id="r33-knowledge-results">${cards}</div>
+    <p class="r33-knowledge-empty" id="r33-knowledge-empty" hidden>검색 결과가 없습니다.</p>
+    <a class="r33-editorial-link" href="/knowledge/saved">내 학습함 →</a>
+  </div></section>
+  <script>(function(){const input=document.querySelector("#r33-knowledge-search"),cards=[...document.querySelectorAll("[data-r33-knowledge-card]")],count=document.querySelector("#r33-knowledge-count"),empty=document.querySelector("#r33-knowledge-empty");if(!input)return;function run(){const q=(input.value||"").trim().toLowerCase();let visible=0;cards.forEach(card=>{const ok=!q||(card.dataset.search||"").includes(q);card.hidden=!ok;if(ok)visible+=1;});count.textContent=visible+"개";empty.hidden=visible!==0;}input.addEventListener("input",run);run();})();</script></main>`;
+}
+
+function classPage(authOrigin) {
+  const course=authOrigin+"/courses/online-commerce-basics";
+  const mySpace=authOrigin+"/my-space";
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>지금 필요한 주제부터 차례대로 보고, 내 일에 직접 적용해 봅니다.</p><div class="r33-service-hero-links"><a href="${esc(course)}">무료 강의 보기 →</a><a href="${esc(mySpace)}">내 강의실에서 이어보기 →</a></div></div></section>
+  <section class="r33-service-body"><div class="r33-shell"><div class="r33-editorial-list r33-learning-list">
+    <article><p>유통과 시장</p><h2>유통사와 네이버 검색의 구조</h2></article>
+    <article><p>검색과 탐색</p><h2>키워드와 롱테일, 탐색 행동</h2></article>
+    <article><p>마케팅·브랜드·AI</p><h2>인포먼스, 브랜드, 고객 경험과 AI</h2></article>
+  </div></div></section></main>`;
+}
+
+function storePage(authOrigin) {
+  const course=authOrigin+"/courses/online-commerce-basics";
+  const mySpace=authOrigin+"/my-space";
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">스토어</p><h1>지금 이용할 수 있는<br>콘텐츠.</h1></div></section>
+  <section class="r33-service-body"><div class="r33-shell">
+    <a class="r33-store-feature" href="${esc(course)}"><span>온라인 강의</span><h2>온라인 판매를 사업의 언어로 배우는 강의</h2><p>유통의 본질부터 검색, 키워드, 마케팅, 브랜드와 AI까지 연결해서 봅니다.</p><em>강의 자세히 보기 →</em></a>
+    <div class="r33-upcoming"><p class="r33-eyebrow">다음에 열릴 것</p>
+      <div><span>전자책</span><strong>준비 중</strong><p>판매와 구매 후 열람 흐름을 준비하고 있습니다.</p></div>
+      <div><span>프로그램</span><strong>모집 시 안내</strong><p>완독·챌린지·코호트형 프로그램은 실제 모집이 열릴 때 안내합니다.</p></div>
+    </div>
+    <div class="r33-service-footlinks"><a href="${esc(mySpace)}">구매한 콘텐츠 보기 →</a><a href="/support">주문·이용 도움 →</a></div>
+  </div></section></main>`;
+}
+
+function supportPage(authOrigin, shopOrigin) {
+  const mySpace=authOrigin+"/my-space";
+  const orders=shopOrigin+"/myshop/order/list.html";
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">고객지원</p><h1>필요한 곳으로<br>바로 이동합니다.</h1></div></section>
+  <section class="r33-service-body"><div class="r33-shell"><div class="r33-support-index">
+    <a href="${esc(mySpace)}"><span>강의·내 공간</span><strong>내 강의실에서 이어보기</strong><em>→</em></a>
+    <a href="${esc(orders)}"><span>주문·결제</span><strong>주문 및 결제 내역 확인</strong><em>→</em></a>
+    <a href="${esc(orders)}"><span>취소·환불</span><strong>취소·환불 신청</strong><em>→</em></a>
+  </div></div></section></main>`;
 }
 
 function aboutPage() {
@@ -308,6 +349,18 @@ export async function renderV33Page({request,env,siteOrigin,authOrigin,community
     body=knowledgePage(knowledge);
     title=isPreview ? "지식 에디토리얼 프리뷰 | NJS" : "지식 | NEVER JUST SELL";
     description="고객, 브랜드, 유통과 온라인 판매에서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다.";
+  } else if (routePath==="/class") {
+    body=classPage(authOrigin);
+    title=isPreview ? "배우기 통합 프리뷰 | NJS" : "배우기 | NEVER JUST SELL";
+    description="맥작가의 강의를 찾고 기존 강의실에서 학습을 이어가는 NJS 학습 입구.";
+  } else if (routePath==="/store") {
+    body=storePage(authOrigin);
+    title=isPreview ? "스토어 통합 프리뷰 | NJS" : "스토어 | NEVER JUST SELL";
+    description="강의, 전자책과 프로그램의 현재 판매·준비 상태를 구분해 연결합니다.";
+  } else if (routePath==="/support") {
+    body=supportPage(authOrigin, String(env?.SHOP_ORIGIN || "https://neverjustsell.cafe24.com").replace(/\/$/,""));
+    title=isPreview ? "고객지원 통합 프리뷰 | NJS" : "고객지원 | NEVER JUST SELL";
+    description="강의 이용, 주문·결제, 취소·환불에 필요한 실제 경로를 안내합니다.";
   } else if (routePath==="/about") {
     body=aboutPage();
     title=isPreview ? "맥작가 에디토리얼 프리뷰 | NJS" : "맥작가 | NEVER JUST SELL";
