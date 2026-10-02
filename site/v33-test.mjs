@@ -42,9 +42,12 @@ try{
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.3 must not expose internal English product jargon");
 
   body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
-  body=await check("/v33/knowledge",["필요할 때","지식 테스트 1","지식 테스트 2"]);
+  body=await check("/v33/knowledge",["필요할 때","지식 검색","지식 테스트 1","지식 테스트 2","현재 지식 허브 열기","내 학습함"]);
   if(body.includes("브리핑 테스트")) throw new Error("Briefing must be excluded from V3.3 knowledge page");
 
+  await check("/v33/class",["읽은 것을","강의 전체 보기","강의 수강과 진도는 기존 강의실에서 그대로 이어집니다.","https://classroom.neverjustsell.com/my-space"]);
+  await check("/v33/store",["살 수 있는 것만","전자책","준비 중","구매한 콘텐츠 보기"]);
+  await check("/v33/support",["이용 중 막힌 곳을","주문·결제 확인","취소·환불 신청","https://neverjustsell.cafe24.com/myshop/order/list.html"]);
   await check("/v33/about",["마케팅만","따로 떼어 보지 않습니다","현장과 상품","시장과 제조"]);
   await check("/v33/book",["그냥 팔지 말라","YES24","교보문고"]);
   await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","온라인 신청은 아직 준비 중"]);
