@@ -87,11 +87,11 @@ function footer(communityOrigin, authOrigin) {
 }
 function productionizeLinks(html) {
   return String(html)
-    .replaceAll('href="/v33/content"', 'href="/content"')
-    .replaceAll('href="/v33/knowledge"', 'href="/knowledge"')
-    .replaceAll('href="/v33/about"', 'href="/about"')
-    .replaceAll('href="/v33/book"', 'href="/book"')
-    .replaceAll('href="/v33/lecture"', 'href="/lecture"')
+    .replaceAll('href="/v33/content', 'href="/content')
+    .replaceAll('href="/v33/knowledge', 'href="/knowledge')
+    .replaceAll('href="/v33/about', 'href="/about')
+    .replaceAll('href="/v33/book', 'href="/book')
+    .replaceAll('href="/v33/lecture', 'href="/lecture')
     .replaceAll('href="/v33"', 'href="/"');
 }
 
