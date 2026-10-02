@@ -263,45 +263,49 @@ function contentPage({briefs,videos}) {
 
 function knowledgePage(knowledge) {
   const cards=knowledge.slice(0,50).map((x)=>`<a data-r33-knowledge-card data-search="${esc([x.title,x.summary,x.type,x.category,...(Array.isArray(x.keywords)?x.keywords:[])].join(" ").toLowerCase())}" href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("");
-  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>고객, 브랜드, 유통, 온라인 판매를 하면서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다. 최신 뉴스와 커뮤니티 글은 섞지 않습니다.</p></div></section>
-  <section class="r33-section r33-knowledge-hub"><div class="r33-shell">
-    <div class="r33-knowledge-tools"><label for="r33-knowledge-search">지식 검색</label><input id="r33-knowledge-search" type="search" placeholder="키워드나 문제를 입력하세요" autocomplete="off"><span id="r33-knowledge-count">${knowledge.length}개</span></div>
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>판매와 운영 과정에서 자주 막히는 문제를 개념과 사례로 정리해 둡니다.</p></div></section>
+  <section class="r33-service-body r33-knowledge-hub"><div class="r33-shell">
+    <div class="r33-index-search"><label for="r33-knowledge-search">찾고 싶은 지식</label><div><input id="r33-knowledge-search" type="search" placeholder="키워드나 문제를 입력하세요" autocomplete="off"><span id="r33-knowledge-count">${knowledge.length}개</span></div></div>
     <div class="r33-knowledge-list" id="r33-knowledge-results">${cards}</div>
     <p class="r33-knowledge-empty" id="r33-knowledge-empty" hidden>검색 결과가 없습니다.</p>
-    <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/knowledge">현재 지식 허브 열기</a><a class="r33-link" href="/knowledge/saved">내 학습함 →</a></div>
+    <a class="r33-editorial-link" href="/knowledge/saved">내 학습함 →</a>
   </div></section>
   <script>(function(){const input=document.querySelector("#r33-knowledge-search"),cards=[...document.querySelectorAll("[data-r33-knowledge-card]")],count=document.querySelector("#r33-knowledge-count"),empty=document.querySelector("#r33-knowledge-empty");if(!input)return;function run(){const q=(input.value||"").trim().toLowerCase();let visible=0;cards.forEach(card=>{const ok=!q||(card.dataset.search||"").includes(q);card.hidden=!ok;if(ok)visible+=1;});count.textContent=visible+"개";empty.hidden=visible!==0;}input.addEventListener("input",run);run();})();</script></main>`;
 }
 
 function classPage(authOrigin) {
-  const courses=authOrigin+"/courses";
+  const course=authOrigin+"/courses/online-commerce-basics";
   const mySpace=authOrigin+"/my-space";
-  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>한 번에 많은 정보를 쌓기보다 필요한 주제를 순서대로 이해하고, 실제 사업에 적용하는 흐름으로 이어갑니다.</p><div class="r33-actions"><a class="r33-btn r33-btn-dark" href="${esc(courses)}">강의 전체 보기</a><a class="r33-link" href="${esc(mySpace)}">내 공간 →</a></div></div></section>
-  <section class="r33-section r33-muted"><div class="r33-shell"><div class="r33-service-grid">
-    <article><span>01</span><h2>유통과 시장</h2><p>상품을 파는 기술보다 먼저 시장과 유통이 어떻게 움직이는지 이해합니다.</p></article>
-    <article><span>02</span><h2>검색과 탐색</h2><p>키워드와 노출을 설정값이 아니라 고객이 찾고 비교하는 행동으로 봅니다.</p></article>
-    <article><span>03</span><h2>마케팅·브랜드·AI</h2><p>단기 성과와 장기 경쟁력, 그리고 AI를 실제 운영에 연결하는 방법을 다룹니다.</p></article>
-  </div><div class="r33-service-note"><strong>강의 수강과 진도는 기존 강의실에서 그대로 이어집니다.</strong><p>NJS는 강의를 찾고 이해하는 입구를 맡고, 실제 수강·진도·회원 권한은 강의실의 현재 운영 구조를 유지합니다.</p></div></div></section></main>`;
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>지금 필요한 주제부터 차례대로 보고, 내 일에 직접 적용해 봅니다.</p><div class="r33-service-hero-links"><a href="${esc(course)}">무료 강의 보기 →</a><a href="${esc(mySpace)}">내 강의실에서 이어보기 →</a></div></div></section>
+  <section class="r33-service-body"><div class="r33-shell"><div class="r33-editorial-list r33-learning-list">
+    <article><p>유통과 시장</p><h2>유통사와 네이버 검색의 구조</h2></article>
+    <article><p>검색과 탐색</p><h2>키워드와 롱테일, 탐색 행동</h2></article>
+    <article><p>마케팅·브랜드·AI</p><h2>인포먼스, 브랜드, 고객 경험과 AI</h2></article>
+  </div></div></section></main>`;
 }
 
 function storePage(authOrigin) {
+  const course=authOrigin+"/courses/online-commerce-basics";
   const mySpace=authOrigin+"/my-space";
-  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">스토어</p><h1>살 수 있는 것만<br>분명하게 보여줍니다.</h1><p>강의, 전자책, 프로그램과 앞으로 추가될 상품을 한곳에서 연결합니다. 아직 판매하지 않는 것은 준비 중 상태로 구분합니다.</p></div></section>
-  <section class="r33-section"><div class="r33-shell"><div class="r33-service-grid r33-store-grid">
-    <a href="/class"><span>강의</span><h2>배우기</h2><p>현재 이용 가능한 강의와 학습 경로를 확인합니다.</p><em>강의 보기 →</em></a>
-    <article><span>전자책</span><h2>준비 중</h2><p>전자책 판매와 구매 후 열람 흐름을 준비하고 있습니다.</p></article>
-    <article><span>프로그램</span><h2>회차별 운영</h2><p>완독, 챌린지, 코호트형 프로그램은 실제 모집이 열릴 때만 안내합니다.</p></article>
-  </div><div class="r33-actions r33-service-actions"><a class="r33-btn r33-btn-dark" href="${esc(mySpace)}">구매한 콘텐츠 보기</a><a class="r33-link" href="/support">주문·이용 도움 →</a></div></div></section></main>`;
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">스토어</p><h1>지금 이용할 수 있는<br>콘텐츠.</h1></div></section>
+  <section class="r33-service-body"><div class="r33-shell">
+    <a class="r33-store-feature" href="${esc(course)}"><span>온라인 강의</span><h2>온라인 판매를 사업의 언어로 배우는 강의</h2><p>유통의 본질부터 검색, 키워드, 마케팅, 브랜드와 AI까지 연결해서 봅니다.</p><em>강의 자세히 보기 →</em></a>
+    <div class="r33-upcoming"><p class="r33-eyebrow">다음에 열릴 것</p>
+      <div><span>전자책</span><strong>준비 중</strong><p>판매와 구매 후 열람 흐름을 준비하고 있습니다.</p></div>
+      <div><span>프로그램</span><strong>모집 시 안내</strong><p>완독·챌린지·코호트형 프로그램은 실제 모집이 열릴 때 안내합니다.</p></div>
+    </div>
+    <div class="r33-service-footlinks"><a href="${esc(mySpace)}">구매한 콘텐츠 보기 →</a><a href="/support">주문·이용 도움 →</a></div>
+  </div></section></main>`;
 }
 
 function supportPage(authOrigin, shopOrigin) {
   const mySpace=authOrigin+"/my-space";
   const orders=shopOrigin+"/myshop/order/list.html";
-  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">고객지원</p><h1>이용 중 막힌 곳을<br>빠르게 찾습니다.</h1><p>강의 이용, 주문·결제, 취소·환불처럼 실제로 필요한 경로를 기능별로 나눴습니다.</p></div></section>
-  <section class="r33-section r33-muted"><div class="r33-shell"><div class="r33-support-list">
-    <article><span>01</span><div><h2>강의·내 공간 이용</h2><p>수강 중인 강의, 진도와 구매 콘텐츠는 내 공간에서 확인합니다.</p><a href="${esc(mySpace)}">내 공간 열기 →</a></div></article>
-    <article><span>02</span><div><h2>주문·결제 확인</h2><p>구매한 상품과 결제 상태는 Cafe24 주문내역에서 확인합니다.</p><a href="${esc(orders)}">주문 내역 보기 →</a></div></article>
-    <article><span>03</span><div><h2>취소·환불 신청</h2><p>취소가 필요한 주문은 주문내역에서 해당 주문의 취소 신청을 진행합니다.</p><a href="${esc(orders)}">취소 신청하기 →</a></div></article>
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">고객지원</p><h1>필요한 곳으로<br>바로 이동합니다.</h1></div></section>
+  <section class="r33-service-body"><div class="r33-shell"><div class="r33-support-index">
+    <a href="${esc(mySpace)}"><span>강의·내 공간</span><strong>내 강의실에서 이어보기</strong><em>→</em></a>
+    <a href="${esc(orders)}"><span>주문·결제</span><strong>주문 및 결제 내역 확인</strong><em>→</em></a>
+    <a href="${esc(orders)}"><span>취소·환불</span><strong>취소·환불 신청</strong><em>→</em></a>
   </div></div></section></main>`;
 }
 
