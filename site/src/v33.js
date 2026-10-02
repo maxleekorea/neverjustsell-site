@@ -262,10 +262,47 @@ function contentPage({briefs,videos}) {
 }
 
 function knowledgePage(knowledge) {
+  const cards=knowledge.slice(0,50).map((x)=>`<a data-r33-knowledge-card data-search="${esc([x.title,x.summary,x.type,x.category,...(Array.isArray(x.keywords)?x.keywords:[])].join(" ").toLowerCase())}" href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("");
   return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>고객, 브랜드, 유통, 온라인 판매를 하면서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다. 최신 뉴스와 커뮤니티 글은 섞지 않습니다.</p></div></section>
-  <section class="r33-section"><div class="r33-shell"><div class="r33-knowledge-list">
-  ${knowledge.slice(0,12).map((x)=>`<a href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("")}
-  </div><a class="r33-btn r33-btn-dark" href="/knowledge">지식 전체 보기</a></div></section></main>`;
+  <section class="r33-section r33-knowledge-hub"><div class="r33-shell">
+    <div class="r33-knowledge-tools"><label for="r33-knowledge-search">지식 검색</label><input id="r33-knowledge-search" type="search" placeholder="키워드나 문제를 입력하세요" autocomplete="off"><span id="r33-knowledge-count">${knowledge.length}개</span></div>
+    <div class="r33-knowledge-list" id="r33-knowledge-results">${cards}</div>
+    <p class="r33-knowledge-empty" id="r33-knowledge-empty" hidden>검색 결과가 없습니다.</p>
+    <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/knowledge">현재 지식 허브 열기</a><a class="r33-link" href="/knowledge/saved">내 학습함 →</a></div>
+  </div></section>
+  <script>(function(){const input=document.querySelector("#r33-knowledge-search"),cards=[...document.querySelectorAll("[data-r33-knowledge-card]")],count=document.querySelector("#r33-knowledge-count"),empty=document.querySelector("#r33-knowledge-empty");if(!input)return;function run(){const q=(input.value||"").trim().toLowerCase();let visible=0;cards.forEach(card=>{const ok=!q||(card.dataset.search||"").includes(q);card.hidden=!ok;if(ok)visible+=1;});count.textContent=visible+"개";empty.hidden=visible!==0;}input.addEventListener("input",run);run();})();</script></main>`;
+}
+
+function classPage(authOrigin) {
+  const courses=authOrigin+"/courses";
+  const mySpace=authOrigin+"/my-space";
+  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>한 번에 많은 정보를 쌓기보다 필요한 주제를 순서대로 이해하고, 실제 사업에 적용하는 흐름으로 이어갑니다.</p><div class="r33-actions"><a class="r33-btn r33-btn-dark" href="${esc(courses)}">강의 전체 보기</a><a class="r33-link" href="${esc(mySpace)}">내 공간 →</a></div></div></section>
+  <section class="r33-section r33-muted"><div class="r33-shell"><div class="r33-service-grid">
+    <article><span>01</span><h2>유통과 시장</h2><p>상품을 파는 기술보다 먼저 시장과 유통이 어떻게 움직이는지 이해합니다.</p></article>
+    <article><span>02</span><h2>검색과 탐색</h2><p>키워드와 노출을 설정값이 아니라 고객이 찾고 비교하는 행동으로 봅니다.</p></article>
+    <article><span>03</span><h2>마케팅·브랜드·AI</h2><p>단기 성과와 장기 경쟁력, 그리고 AI를 실제 운영에 연결하는 방법을 다룹니다.</p></article>
+  </div><div class="r33-service-note"><strong>강의 수강과 진도는 기존 강의실에서 그대로 이어집니다.</strong><p>NJS는 강의를 찾고 이해하는 입구를 맡고, 실제 수강·진도·회원 권한은 강의실의 현재 운영 구조를 유지합니다.</p></div></div></section></main>`;
+}
+
+function storePage(authOrigin) {
+  const mySpace=authOrigin+"/my-space";
+  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">스토어</p><h1>살 수 있는 것만<br>분명하게 보여줍니다.</h1><p>강의, 전자책, 프로그램과 앞으로 추가될 상품을 한곳에서 연결합니다. 아직 판매하지 않는 것은 준비 중 상태로 구분합니다.</p></div></section>
+  <section class="r33-section"><div class="r33-shell"><div class="r33-service-grid r33-store-grid">
+    <a href="/class"><span>강의</span><h2>배우기</h2><p>현재 이용 가능한 강의와 학습 경로를 확인합니다.</p><em>강의 보기 →</em></a>
+    <article><span>전자책</span><h2>준비 중</h2><p>전자책 판매와 구매 후 열람 흐름을 준비하고 있습니다.</p></article>
+    <article><span>프로그램</span><h2>회차별 운영</h2><p>완독, 챌린지, 코호트형 프로그램은 실제 모집이 열릴 때만 안내합니다.</p></article>
+  </div><div class="r33-actions r33-service-actions"><a class="r33-btn r33-btn-dark" href="${esc(mySpace)}">구매한 콘텐츠 보기</a><a class="r33-link" href="/support">주문·이용 도움 →</a></div></div></section></main>`;
+}
+
+function supportPage(authOrigin, shopOrigin) {
+  const mySpace=authOrigin+"/my-space";
+  const orders=shopOrigin+"/myshop/order/list.html";
+  return `<main><section class="r33-page-hero"><div class="r33-shell"><p class="r33-eyebrow">고객지원</p><h1>이용 중 막힌 곳을<br>빠르게 찾습니다.</h1><p>강의 이용, 주문·결제, 취소·환불처럼 실제로 필요한 경로를 기능별로 나눴습니다.</p></div></section>
+  <section class="r33-section r33-muted"><div class="r33-shell"><div class="r33-support-list">
+    <article><span>01</span><div><h2>강의·내 공간 이용</h2><p>수강 중인 강의, 진도와 구매 콘텐츠는 내 공간에서 확인합니다.</p><a href="${esc(mySpace)}">내 공간 열기 →</a></div></article>
+    <article><span>02</span><div><h2>주문·결제 확인</h2><p>구매한 상품과 결제 상태는 Cafe24 주문내역에서 확인합니다.</p><a href="${esc(orders)}">주문 내역 보기 →</a></div></article>
+    <article><span>03</span><div><h2>취소·환불 신청</h2><p>취소가 필요한 주문은 주문내역에서 해당 주문의 취소 신청을 진행합니다.</p><a href="${esc(orders)}">취소 신청하기 →</a></div></article>
+  </div></div></section></main>`;
 }
 
 function aboutPage() {
@@ -308,6 +345,18 @@ export async function renderV33Page({request,env,siteOrigin,authOrigin,community
     body=knowledgePage(knowledge);
     title=isPreview ? "지식 에디토리얼 프리뷰 | NJS" : "지식 | NEVER JUST SELL";
     description="고객, 브랜드, 유통과 온라인 판매에서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다.";
+  } else if (routePath==="/class") {
+    body=classPage(authOrigin);
+    title=isPreview ? "배우기 통합 프리뷰 | NJS" : "배우기 | NEVER JUST SELL";
+    description="맥작가의 강의를 찾고 기존 강의실에서 학습을 이어가는 NJS 학습 입구.";
+  } else if (routePath==="/store") {
+    body=storePage(authOrigin);
+    title=isPreview ? "스토어 통합 프리뷰 | NJS" : "스토어 | NEVER JUST SELL";
+    description="강의, 전자책과 프로그램의 현재 판매·준비 상태를 구분해 연결합니다.";
+  } else if (routePath==="/support") {
+    body=supportPage(authOrigin, String(env?.SHOP_ORIGIN || "https://neverjustsell.cafe24.com").replace(/\/$/,""));
+    title=isPreview ? "고객지원 통합 프리뷰 | NJS" : "고객지원 | NEVER JUST SELL";
+    description="강의 이용, 주문·결제, 취소·환불에 필요한 실제 경로를 안내합니다.";
   } else if (routePath==="/about") {
     body=aboutPage();
     title=isPreview ? "맥작가 에디토리얼 프리뷰 | NJS" : "맥작가 | NEVER JUST SELL";
