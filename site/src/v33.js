@@ -286,7 +286,7 @@ export async function renderV33Page({request,env,siteOrigin,authOrigin,community
   const url=new URL(request.url);
   const isPreview=preview===true;
   const routePath=isPreview
-    ? (url.pathname.replace(/^\\/v33/, "") || "/")
+    ? (url.pathname.replace(/^\/v33/, "") || "/")
     : url.pathname;
   const [{entries},videos]=await Promise.all([loadKnowledgeEntries(env),loadYoutubeFeed()]);
   const {briefs,knowledge}=splitKnowledge(entries);
