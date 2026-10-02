@@ -41,11 +41,11 @@ try{
   let body=await check("/v33",["v33-korean-editorial-01","팔기 전에","왜 사는지를 봅니다","배운다","요즘, 무엇이","필요할 때","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.3 must not expose internal English product jargon");
 
-  body=await check("/v33/content",["맥작가 칼럼","지금 알아야 할 변화","브리핑 테스트","책 해석","사례"]);
-  body=await check("/v33/knowledge",["뉴스가 지나간 뒤에도","지식 테스트 1","지식 테스트 2"]);
+  body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
+  body=await check("/v33/knowledge",["필요할 때","지식 테스트 1","지식 테스트 2"]);
   if(body.includes("브리핑 테스트")) throw new Error("Briefing must be excluded from V3.3 knowledge page");
 
-  await check("/v33/about",["마케팅을","사업 안에서 봅니다","현장과 상품","시장과 제조"]);
+  await check("/v33/about",["마케팅만","따로 떼어 보지 않습니다","현장과 상품","시장과 제조"]);
   await check("/v33/book",["그냥 팔지 말라","YES24","교보문고"]);
   await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","현재 공개 신청 동선은 준비 중"]);
 
@@ -54,7 +54,7 @@ try{
   if(!prodBody.includes("ae-20261001-04")) throw new Error("Production root must remain current Home V3 while V3.3 is preview-only");
   if(prodBody.includes("v33-korean-editorial-01")) throw new Error("V3.3 preview must not leak into production root");
 
-  console.log("NJS V3.3 restructure preview checks passed.");
+  console.log("NJS V3.3 Korean editorial preview checks passed.");
 } finally {
   globalThis.fetch=originalFetch;
 }
