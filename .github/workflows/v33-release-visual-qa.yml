@@ -1,0 +1,80 @@
+name: NJS V3.3 release visual QA
+
+on:
+  push:
+    branches:
+      - "release/njs-v33-preflight"
+  pull_request:
+    paths:
+      - "site/src/v33.js"
+      - "site/src/runtime.js"
+      - "site/public/v33.css"
+      - "site/v33-release-preview-server.mjs"
+      - "site/v33-release-test.mjs"
+      - "site/wrangler.jsonc"
+      - ".github/workflows/v33-release-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Start local V3.3 release preview
+        shell: bash
+        working-directory: site
+        run: |
+          set -euo pipefail
+          node v33-release-preview-server.mjs > /tmp/v33-release-preview.log 2>&1 &
+          for i in $(seq 1 20); do
+            page="$(curl -fsSL http://127.0.0.1:8790/ || true)"
+            if [[ "$page" == *"v33-20261002-01"* && "$page" == *"팔기 전에"* && "$page" != *"재구성 프리뷰"* ]]; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/v33-release-preview.log
+          exit 1
+
+      - name: Verify public metadata and preserved Knowledge
+        shell: bash
+        run: |
+          set -euo pipefail
+          home="$(curl -fsSL http://127.0.0.1:8790/)"
+          content="$(curl -fsSL http://127.0.0.1:8790/content)"
+          knowledge="$(curl -fsSL http://127.0.0.1:8790/knowledge)"
+          [[ "$home" == *'name="robots" content="index,follow,max-image-preview:large"'* ]]
+          [[ "$home" == *'<link rel="canonical" href="https://www.neverjustsell.com/">'* ]]
+          [[ "$content" == *'<link rel="canonical" href="https://www.neverjustsell.com/content">'* ]]
+          [[ "$knowledge" == *"NJS KNOWLEDGE HUB"* ]]
+          [[ "$knowledge" == *'id="search"'* ]]
+
+      - name: Capture exact release routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p screenshots
+          common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
+          pages=(home:/ content:/content knowledge:/knowledge about:/about book:/book lecture:/lecture)
+          for item in "${pages[@]}"; do
+            name="${item%%:*}"
+            path="${item#*:}"
+            google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "http://127.0.0.1:8790$path"
+            google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "http://127.0.0.1:8790$path"
+          done
+          file screenshots/*.png
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: njs-v33-release-visual-qa
+          path: screenshots/*.png
+          if-no-files-found: error
+          retention-days: 7
