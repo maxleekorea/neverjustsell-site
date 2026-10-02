@@ -72,9 +72,9 @@ function nav(communityOrigin, authOrigin) {
       <a href="/v33/about">맥작가</a>
       <details class="r33-more"><summary>더보기</summary><div><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a></div></details>
     </nav>
-    <div class="r33-head-actions"><a class="r33-search" href="/v33/knowledge">검색</a>
+    <div class="r33-head-actions"><a class="r33-search" href="/v33/knowledge">검색</a><a class="r33-myspace" href="${esc(authOrigin)}/my-space">내 공간</a>
       <details class="r33-mobile-menu"><summary>메뉴</summary><div>
-        <a href="/v33/content">콘텐츠</a><a href="/v33/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/about">맥작가</a><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a>
+        <a href="/v33/content">콘텐츠</a><a href="/v33/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/about">맥작가</a><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a><a href="${esc(authOrigin)}/my-space">내 공간</a>
       </div></details>
     </div>
   </div></header>`;
@@ -129,7 +129,12 @@ function publicStructuredData(siteOrigin, canonical, title, description, routeKe
       name: "그냥 팔지 말라 스마트스토어",
       inLanguage: "ko-KR",
       author: { "@id": personId },
-      isbn: "9791124121061"
+      isbn: "9791124121061",
+      workExample: {
+        "@type": "Book",
+        bookFormat: "https://schema.org/EBook",
+        isbn: "9791124121122"
+      }
     });
   }
   return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replaceAll("<", "\\u003c");
@@ -273,7 +278,7 @@ function aboutPage() {
 }
 
 function bookPage() {
-  return `<main><section class="r33-book-hero"><div class="r33-shell r33-book-grid"><div class="r33-book-cover"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지"></div><div><p class="r33-eyebrow">책</p><h1>그냥 팔지 말라<br>스마트스토어</h1><p>검색 순위와 광고만 쫓다 보면 놓치는 것이 있습니다. 고객이 왜 찾고, 왜 고르고, 왜 다시 오는지를 상품과 유통, 브랜드까지 함께 살펴봅니다.</p><div class="r33-ratings"><div><span>YES24</span><b>9.4 / 10</b></div><div><span>교보문고</span><b>9.9 / 10</b></div></div><a class="r33-btn r33-btn-dark" href="/book">책 자세히 보기</a></div></div></section>
+  return `<main><section class="r33-book-hero"><div class="r33-shell r33-book-grid"><div class="r33-book-cover"><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 스마트스토어 책 표지"></div><div><p class="r33-eyebrow">책</p><h1>그냥 팔지 말라<br>스마트스토어</h1><p>검색 순위와 광고만 쫓다 보면 놓치는 것이 있습니다. 고객이 왜 찾고, 왜 고르고, 왜 다시 오는지를 상품과 유통, 브랜드까지 함께 살펴봅니다.</p><p class="r33-book-meta">종이책 ISBN 9791124121061 · 전자책 ISBN 9791124121122</p><div class="r33-ratings"><div><span>YES24</span><b>9.4 / 10</b></div><div><span>교보문고</span><b>9.9 / 10</b></div></div><a class="r33-btn r33-btn-dark" href="/book">책 자세히 보기</a></div></div></section>
   <section class="r33-section r33-muted"><div class="r33-shell r33-book-points"><div><span>01</span><h2>검색보다 먼저 고객을 봅니다.</h2></div><div><span>02</span><h2>판매와 브랜드를 따로 떼어 보지 않습니다.</h2></div><div><span>03</span><h2>책에서 끝내지 않고 NJS에서 다시 이어갑니다.</h2></div></div></section></main>`;
 }
 
