@@ -5,6 +5,7 @@ const YOUTUBE_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + YO
 const HERO_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png";
 const LECTURE_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png";
 const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";
+const RELEASE_REVISION = "v33-20261002-01";
 
 const esc = (value) => String(value ?? "")
   .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
@@ -84,16 +85,90 @@ function footer(communityOrigin, authOrigin) {
     <nav><a href="/v33/content">콘텐츠</a><a href="/v33/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a><a href="/support">고객지원</a></nav>
   </div></footer>`;
 }
-function shell({title,description,body,communityOrigin,authOrigin}) {
+function productionizeLinks(html) {
+  return String(html)
+    .replaceAll('href="/v33/content', 'href="/content')
+    .replaceAll('href="/v33/knowledge', 'href="/knowledge')
+    .replaceAll('href="/v33/about', 'href="/about')
+    .replaceAll('href="/v33/book', 'href="/book')
+    .replaceAll('href="/v33/lecture', 'href="/lecture')
+    .replaceAll('href="/v33"', 'href="/"');
+}
+
+function publicStructuredData(siteOrigin, canonical, title, description, routeKey) {
+  const personId = siteOrigin + "/about#person";
+  const graph = [
+    {
+      "@type": "WebSite",
+      "@id": siteOrigin + "/#website",
+      url: siteOrigin + "/",
+      name: "NEVER JUST SELL",
+      inLanguage: "ko-KR"
+    },
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: "맥작가",
+      url: siteOrigin + "/about",
+      jobTitle: "작가·사업가"
+    },
+    {
+      "@type": "WebPage",
+      "@id": canonical + "#webpage",
+      url: canonical,
+      name: title,
+      description,
+      inLanguage: "ko-KR",
+      isPartOf: { "@id": siteOrigin + "/#website" },
+      about: { "@id": personId }
+    }
+  ];
+  if (routeKey === "/book") {
+    graph.push({
+      "@type": "Book",
+      name: "그냥 팔지 말라 스마트스토어",
+      inLanguage: "ko-KR",
+      author: { "@id": personId },
+      isbn: "9791124121061"
+    });
+  }
+  return JSON.stringify({ "@context": "https://schema.org", "@graph": graph }).replaceAll("<", "\\u003c");
+}
+
+function shell({title,description,body,communityOrigin,authOrigin,siteOrigin,canonicalPath,routeKey,preview=true,image=HERO_IMAGE}) {
+  const isPreview = preview === true;
+  const canonical = siteOrigin + (canonicalPath === "/" ? "/" : canonicalPath);
+  const chrome = nav(communityOrigin,authOrigin) + body + footer(communityOrigin,authOrigin);
+  const rendered = isPreview ? chrome : productionizeLinks(chrome);
+  const structured = isPreview ? "" : publicStructuredData(siteOrigin, canonical, title, description, routeKey);
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>${esc(title)}</title><meta name="description" content="${esc(description)}"><meta name="robots" content="noindex,nofollow,noarchive">
-<meta name="njs-preview-revision" content="v33-korean-editorial-01"><link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>${esc(title)}</title><meta name="description" content="${esc(description)}">
+${isPreview
+  ? `<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="njs-preview-revision" content="v33-korean-editorial-01">`
+  : `<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="njs-site-revision" content="${RELEASE_REVISION}">
+<link rel="canonical" href="${esc(canonical)}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(description)}">
+<meta property="og:url" content="${esc(canonical)}">
+<meta property="og:image" content="${esc(image)}">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:site_name" content="NEVER JUST SELL">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${esc(title)}">
+<meta name="twitter:description" content="${esc(description)}">
+<meta name="twitter:image" content="${esc(image)}">
+<script type="application/ld+json">${structured}</script>`}
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/v33.css"></head><body>
-<div class="r33-preview">재구성 프리뷰 · 공개 페이지가 아닙니다.</div>
-${nav(communityOrigin,authOrigin)}${body}${footer(communityOrigin,authOrigin)}
+${isPreview ? '<div class="r33-preview">재구성 프리뷰 · 공개 페이지가 아닙니다.</div>' : ""}
+<a class="r33-skip" href="#main-content">본문 바로가기</a>
+${rendered.replace("<main>", '<main id="main-content">')}
 </body></html>`;
 }
 
@@ -207,25 +282,60 @@ function lecturePage() {
   <section class="r33-section"><div class="r33-shell"><div class="r33-lecture-topics"><article><span>01</span><h2>마케팅·브랜드</h2><p>누구에게, 왜 선택받는지부터 봅니다.</p></article><article><span>02</span><h2>온라인 커머스·유통</h2><p>광고 기법보다 시장과 유통 구조를 먼저 짚습니다.</p></article><article><span>03</span><h2>AI와 사업</h2><p>도구 소개보다 조사하고 판단하고 운영하는 방식이 어떻게 달라지는지 봅니다.</p></article></div><div class="r33-contact-note"><strong>온라인 신청은 아직 준비 중입니다.</strong><p>문의 방법이 정리되면 이곳에서 안내하겠습니다.</p></div></div></section></main>`;
 }
 
-export async function renderV33Page({request,env,siteOrigin,authOrigin,communityOrigin}) {
+export async function renderV33Page({request,env,siteOrigin,authOrigin,communityOrigin,preview=true}) {
   const url=new URL(request.url);
+  const isPreview=preview===true;
+  const routePath=isPreview
+    ? (url.pathname.replace(/^\/v33/, "") || "/")
+    : url.pathname;
   const [{entries},videos]=await Promise.all([loadKnowledgeEntries(env),loadYoutubeFeed()]);
   const {briefs,knowledge}=splitKnowledge(entries);
-  let body,title,description;
-  if (url.pathname==="/v33" || url.pathname==="/v33/") {
-    body=homePage({briefs,knowledge,videos,communityOrigin,authOrigin}); title="NJS 에디토리얼 프리뷰"; description="브리핑·칼럼·지식·커뮤니티를 분리한 NJS 에디토리얼 프리뷰";
-  } else if (url.pathname==="/v33/content") {
-    body=contentPage({briefs,videos}); title="콘텐츠 에디토리얼 프리뷰 | NJS"; description="칼럼·브리핑·영상·책 해석·사례를 분리한 콘텐츠 허브 프리뷰";
-  } else if (url.pathname==="/v33/knowledge") {
-    body=knowledgePage(knowledge); title="지식 에디토리얼 프리뷰 | NJS"; description="최신 뉴스와 커뮤니티를 분리한 마케팅 지식 프리뷰";
-  } else if (url.pathname==="/v33/about") {
-    body=aboutPage(); title="맥작가 에디토리얼 프리뷰 | NJS"; description="맥작가 소개 페이지 재구성 프리뷰";
-  } else if (url.pathname==="/v33/book") {
-    body=bookPage(); title="책 에디토리얼 프리뷰 | NJS"; description="책 페이지 재구성 프리뷰";
-  } else if (url.pathname==="/v33/lecture") {
-    body=lecturePage(); title="강연·컨설팅 에디토리얼 프리뷰 | NJS"; description="강연·컨설팅 페이지 재구성 프리뷰";
+  let body,title,description,image=HERO_IMAGE;
+  if (routePath==="/" || routePath==="") {
+    body=homePage({briefs,knowledge,videos,communityOrigin,authOrigin});
+    title=isPreview ? "NJS 에디토리얼 프리뷰" : "NEVER JUST SELL | 맥작가의 마케팅·브랜딩 지식과 배움";
+    description="맥작가의 글과 지식, 강의와 커뮤니티를 연결해 마케팅과 사업을 배우고 직접 적용할 수 있는 NEVER JUST SELL.";
+  } else if (routePath==="/content") {
+    body=contentPage({briefs,videos});
+    title=isPreview ? "콘텐츠 에디토리얼 프리뷰 | NJS" : "콘텐츠 | NEVER JUST SELL";
+    description="맥작가의 칼럼, 브리핑, 영상, 책 해석과 사례를 한곳에서 봅니다.";
+  } else if (routePath==="/knowledge") {
+    body=knowledgePage(knowledge);
+    title=isPreview ? "지식 에디토리얼 프리뷰 | NJS" : "지식 | NEVER JUST SELL";
+    description="고객, 브랜드, 유통과 온라인 판매에서 자주 부딪히는 문제를 개념·사례·방법으로 정리합니다.";
+  } else if (routePath==="/about") {
+    body=aboutPage();
+    title=isPreview ? "맥작가 에디토리얼 프리뷰 | NJS" : "맥작가 | NEVER JUST SELL";
+    description="영업, 상품, 제조, 글로벌 B2B와 온라인 커머스를 직접 경험한 맥작가의 관점과 이력을 소개합니다.";
+  } else if (routePath==="/book") {
+    body=bookPage();
+    title=isPreview ? "책 에디토리얼 프리뷰 | NJS" : "그냥 팔지 말라 스마트스토어 | NEVER JUST SELL";
+    description="검색과 광고만이 아니라 고객, 상품, 유통과 브랜드를 함께 보는 『그냥 팔지 말라 스마트스토어』.";
+    image=BOOK_IMAGE;
+    if (!isPreview) {
+      body=body.replace(
+        '<a class="r33-btn r33-btn-dark" href="/book">책 자세히 보기</a>',
+        '<a class="r33-btn r33-btn-dark" href="/store">스토어 보기</a>'
+      );
+    }
+  } else if (routePath==="/lecture") {
+    body=lecturePage();
+    title=isPreview ? "강연·컨설팅 에디토리얼 프리뷰 | NJS" : "강연·컨설팅 | NEVER JUST SELL";
+    description="마케팅, 브랜드, 온라인 커머스와 AI를 조직의 실제 과제에 맞춰 구성하는 맥작가 강연·컨설팅.";
+    image=LECTURE_IMAGE;
   } else return new Response("Not found",{status:404});
-  return new Response(shell({title,description,body,communityOrigin,authOrigin}),{status:200,headers:{
-    "Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","X-Robots-Tag":"noindex, nofollow, noarchive","X-Content-Type-Options":"nosniff"
-  }});
+
+  const responseBody=shell({
+    title,description,body,communityOrigin,authOrigin,siteOrigin,
+    canonicalPath:routePath || "/",routeKey:routePath || "/",preview:isPreview,image
+  });
+  const headers={
+    "Content-Type":"text/html; charset=utf-8",
+    "Cache-Control":isPreview ? "no-store" : "public, max-age=120, s-maxage=600",
+    "X-Content-Type-Options":"nosniff",
+    "Referrer-Policy":"strict-origin-when-cross-origin",
+    "Permissions-Policy":"camera=(), microphone=(), geolocation=()"
+  };
+  if (isPreview) headers["X-Robots-Tag"]="noindex, nofollow, noarchive";
+  return new Response(responseBody,{status:200,headers});
 }

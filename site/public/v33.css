@@ -8,7 +8,7 @@
   --dark:#181715;
   --max:1220px;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box}\n.r33-skip{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}.r33-skip:focus{left:16px;top:16px;width:auto;height:auto;z-index:1000;padding:10px 14px;background:var(--ink);color:#fff;font-size:14px;font-weight:800}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;word-break:keep-all}
 a{color:inherit;text-decoration:none}
