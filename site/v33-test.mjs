@@ -47,7 +47,7 @@ try{
 
   await check("/v33/about",["마케팅만","따로 떼어 보지 않습니다","현장과 상품","시장과 제조"]);
   await check("/v33/book",["그냥 팔지 말라","YES24","교보문고"]);
-  await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","현재 공개 신청 동선은 준비 중"]);
+  await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","온라인 신청은 아직 준비 중"]);
 
   const prod=await runtime.fetch(new Request("https://www.neverjustsell.com/"),env,{});
   const prodBody=await prod.text();
