@@ -32,6 +32,7 @@
     "SITE_ORIGIN": "https://www.neverjustsell.com",
     "AUTH_ORIGIN": "https://classroom.neverjustsell.com",
     "COMMUNITY_ORIGIN": "https://community.neverjustsell.com",
-    "SHOP_ORIGIN": "https://neverjustsell.cafe24.com"
+    "SHOP_ORIGIN": "https://neverjustsell.cafe24.com",
+    "SITE_RELEASE": "v33"
   }
 }
