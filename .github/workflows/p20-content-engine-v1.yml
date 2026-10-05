@@ -1,41 +1,11 @@
 name: P20 Content Engine V1
-
 on:
   push:
-    branches:
-      - ops/p20-content-engine-v1
-    paths:
-      - "ops/p20-content-engine-v1/**"
-      - ".github/workflows/p20-content-engine-v1.yml"
+    branches: [ops/p20-content-engine-v1]
+    paths: ["ops/p20-content-engine-v1/**", ".github/workflows/p20-content-engine-v1.yml"]
   pull_request:
-    branches:
-      - main
-    paths:
-      - "ops/p20-content-engine-v1/**"
-      - ".github/workflows/p20-content-engine-v1.yml"
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: "dry_run, research_only, or full"
-        required: true
-        default: "dry_run"
-        type: choice
-        options:
-          - dry_run
-          - research_only
-          - full
-      content_id:
-        description: "P20 content id"
-        required: true
-        default: "CNT-000200"
-      topic:
-        description: "Research/production topic"
-        required: true
-        default: "네이버-토스 리워드 검색 및 POS 연동 갈등"
-      model:
-        description: "OpenAI API model for live modes"
-        required: false
-        default: ""
+    branches: [main]
+    paths: ["ops/p20-content-engine-v1/**", ".github/workflows/p20-content-engine-v1.yml"]
 
 permissions:
   contents: read
@@ -47,21 +17,12 @@ jobs:
     defaults:
       run:
         working-directory: ops/p20-content-engine-v1
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENAI_MODEL: ${{ inputs.model || vars.OPENAI_MODEL }}
-      NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
-      NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
+        with: {python-version: "3.12"}
       - name: Install
         run: python -m pip install -r requirements.txt
-
       - name: Static validation
         run: |
           python -m py_compile src/p20_v1/*.py
@@ -71,39 +32,34 @@ jobs:
               json.loads(p.read_text(encoding="utf-8"))
               print("schema-ok", p)
           PY
-
-      - name: Run engine
-        env:
-          PYTHONPATH: src
+      - name: Gate regression tests
+        env: {PYTHONPATH: src}
+        run: python -m unittest discover -s tests -v
+      - name: Dry-run packet
+        env: {PYTHONPATH: src}
         run: |
-          MODE="${{ inputs.mode }}"
-          if [ -z "$MODE" ]; then MODE="dry_run"; fi
-          TOPIC="${{ inputs.topic }}"
-          if [ -z "$TOPIC" ]; then TOPIC="CNT-000200 Work regression fixture"; fi
-          CONTENT_ID="${{ inputs.content_id }}"
-          if [ -z "$CONTENT_ID" ]; then CONTENT_ID="CNT-000200"; fi
-          python -m p20_v1.pipeline             --mode "$MODE"             --topic "$TOPIC"             --content-id "$CONTENT_ID"             --run-id "${{ github.run_id }}-${{ github.run_attempt }}"             --out run_output
-
-      - name: Verify dry-run contract
+          python -m p20_v1.pipeline --mode dry_run --topic "CI regression" --content-id CNT-REGRESSION --primary-type D --secondary-type F --out run_output
+      - name: Verify gate contract
         run: |
-          test -f run_output/execution_plan.json
-          test -f run_output/run_manifest.json
-          test -f run_output/source_pack.sha256
+          test -f run_output/work_packet/00_run_state.json
+          test -f run_output/work_packet/14_script.md
           python - <<'PY'
           import json
-          plan=json.load(open("run_output/execution_plan.json", encoding="utf-8"))
-          assert plan["source_policy"]["legacy_writer_runtime"] == "RUNTIME_DISABLED"
-          assert plan["source_policy"]["source_evidence_reuse"] == "ACTIVE"
-          assert plan["context_isolation"]["previous_response_id"] is None
-          assert plan["context_isolation"]["writer_web_access"] is False
-          assert plan["context_isolation"]["evaluator_web_access"] is False
-          print("isolation-contract-pass")
+          state=json.load(open("run_output/work_packet/00_run_state.json", encoding="utf-8"))
+          assert state["one_shot_full_draft_allowed"] is False
+          assert state["persistent_draft"] == "14_script.md"
+          assert state["gates"]["production_type"]["status"] == "PASS"
+          assert state["gates"]["state_overlap"]["status"] == "READY"
+          assert state["gates"]["audience_reality"]["status"] == "LOCKED"
+          print("gate-enforcement-contract-pass")
           PY
-
-      - name: Upload run packet
-        uses: actions/upload-artifact@v4
-        with:
-          name: p20-content-engine-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ops/p20-content-engine-v1/run_output/
-          if-no-files-found: error
-          retention-days: 30
+      - name: Verify one-shot full is blocked
+        env: {PYTHONPATH: src}
+        run: |
+          set +e
+          python -m p20_v1.pipeline --mode full --topic "fail closed regression" --content-id CNT-REGRESSION --out full_block_test >full_block.out 2>&1
+          RC=$?
+          set -e
+          test "$RC" -ne 0
+          grep -q "ONE_SHOT_FULL_DISABLED" full_block.out
+          echo "one-shot-full-block-pass"
