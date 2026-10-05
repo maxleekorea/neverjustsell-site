@@ -2,38 +2,23 @@
 
 Status: PILOT / isolated branch only
 
-Goal: reproduce the validated Work execution pattern without relying on Work quota.
+Goal: enforce the existing P20 production manual as an executable workflow instead of relying on an LLM to remember prose instructions.
 
-Flow:
-1. collect/retrieve sources
-2. build one Master Source Pack
-3. freeze + SHA-256
-4. run an isolated production worker
-5. run a separate blind evaluator
-6. persist reproducible run artifacts
+- Legacy writer runtimes V3/V4/V5/D-055 remain `RUNTIME_DISABLED`.
+- `HYBRID_V1` is `SUSPENDED_REFERENCE`; X2+X4 was an unexecuted hypothesis, not an approved method.
+- One-shot `research -> full draft -> self evaluation` is disabled.
+- One machine state file unlocks only the first incomplete gate.
+- Draft Levels A-D mutate the same `14_script.md`.
+- Author interview/source-complete evidence, KS01-KS09, and independent evaluation are hard gates.
+- A2 is never auto-generated.
 
-Runtime boundary:
-- Source/evidence assets remain reusable.
-- Legacy writer runtimes V3/V4/V5/D-055 are RUNTIME_DISABLED for production.
-- Legacy methods may be inspected only for method research/postmortem.
+Packet order:
+`production_type -> state_overlap -> audience_reality -> case_reaction -> evidence_author -> external_benchmark -> problem_synthesis -> author_gap_interview -> research_delta -> central_question_thesis -> source_freeze -> narrative_strategy -> segment_blueprint -> draft_level_a -> draft_level_b -> draft_level_c -> draft_level_d -> korean_quality -> independent_evaluation -> a2_approval`.
 
-Modes:
-- dry_run: no external API calls
-- research_only: source research + frozen pack
-- full: research -> frozen pack -> isolated production -> isolated evaluation
+Pipeline modes:
+- `dry_run`: initialize and validate a locked packet.
+- `research_only`: research candidate only; does not unlock drafting.
+- `packet_validate`: validate an existing packet.
+- `full`: fail closed with `ONE_SHOT_FULL_DISABLED`.
 
-Required live secret:
-- OPENAI_API_KEY
-Optional:
-- NAVER_CLIENT_ID
-- NAVER_CLIENT_SECRET
-
-Google Drive machine transport is intentionally separate until a GitHub-usable Google credential is verified.
-
-Promotion gate:
-- dry-run pass
-- API quota/billing confirmed
-- research_only pass
-- full candidate pass
-- user A2 review
-- dedicated ops repository or explicitly approved repository boundary
+Promotion to main/Production remains prohibited until pilot success and required user approval.
