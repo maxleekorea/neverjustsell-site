@@ -71,3 +71,6 @@ expected_head=41a3830a1389b2ca7cd767a10daae86d4ee2c2ff
 deploy_at=2026-10-02T21:34:22+09:00
 reason=launch-njs-v33-korean-editorial
 release_base=b8c30a409ff558973e0bb74135a935e39f1cbbdc
+deploy_at=2026-10-05T12:10:00+09:00
+reason=publish-njs-v33-service-pages
+expected_head=a2ed267ebd24102b78aa3705798415678b4e7fa7
