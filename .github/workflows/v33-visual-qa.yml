@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           mkdir -p screenshots
           common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
-          pages=(home:/v33 content:/v33/content knowledge:/v33/knowledge about:/v33/about book:/v33/book lecture:/v33/lecture)
+          pages=(home:/v33 content:/v33/content knowledge:/v33/knowledge class:/v33/class store:/v33/store support:/v33/support about:/v33/about book:/v33/book lecture:/v33/lecture)
           for item in "${pages[@]}"; do
             name="${item%%:*}"
             path="${item#*:}"

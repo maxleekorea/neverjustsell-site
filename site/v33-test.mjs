@@ -42,9 +42,12 @@ try{
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.3 must not expose internal English product jargon");
 
   body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
-  body=await check("/v33/knowledge",["필요할 때","지식 테스트 1","지식 테스트 2"]);
+  body=await check("/v33/knowledge",["필요할 때","찾고 싶은 지식","지식 테스트 1","지식 테스트 2","내 학습함"]);
   if(body.includes("브리핑 테스트")) throw new Error("Briefing must be excluded from V3.3 knowledge page");
 
+  await check("/v33/class",["읽은 것을","무료 강의 보기","유통사와 네이버 검색의 구조","키워드와 롱테일, 탐색 행동","내 강의실에서 이어보기","https://classroom.neverjustsell.com/courses/online-commerce-basics"]);
+  await check("/v33/store",["지금 이용할 수 있는","온라인 판매를 사업의 언어로 배우는 강의","전자책","준비 중","프로그램","모집 시 안내","구매한 콘텐츠 보기"]);
+  await check("/v33/support",["필요한 곳으로","내 강의실에서 이어보기","주문 및 결제 내역 확인","취소·환불 신청","https://neverjustsell.cafe24.com/myshop/order/list.html"]);
   await check("/v33/about",["마케팅만","따로 떼어 보지 않습니다","현장과 상품","시장과 제조"]);
   await check("/v33/book",["그냥 팔지 말라","YES24","교보문고"]);
   await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","온라인 신청은 아직 준비 중"]);
