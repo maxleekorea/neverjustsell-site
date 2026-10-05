@@ -73,19 +73,28 @@ try{
   expect(x.body,"온라인 신청은 아직 준비 중","lecture");
 
   x=await html("/knowledge");
-  expect(x.body,"NJS KNOWLEDGE HUB","knowledge preservation");
-  expect(x.body,'id="search"',"knowledge preservation");
-  forbid(x.body,"v33-20261002-01","knowledge preservation");
+  expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"knowledge");
+  expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/knowledge">',"knowledge");
+  expect(x.body,"찾고 싶은 지식","knowledge");
+  expect(x.body,"내 학습함","knowledge");
+  forbid(x.body,"NJS KNOWLEDGE HUB","knowledge legacy shell");
 
   x=await html("/knowledge/release-knowledge");
-  expect(x.body,"릴리즈 지식","knowledge detail");
+  expect(x.body,"릴리즈 지식","knowledge detail preservation");
+  forbid(x.body,"v33-20261002-01","knowledge detail remains canonical runtime");
 
   x=await html("/class");
-  expect(x.body,"무료 강의 수강 신청","legacy class preservation");
+  expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"class");
+  expect(x.body,"읽은 것을","class");
+  expect(x.body,"무료 강의 보기","class");
   x=await html("/store");
-  expect(x.body,"구매한 콘텐츠를 바로 이용하는 스토어","legacy store preservation");
+  expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"store");
+  expect(x.body,"지금 이용할 수 있는","store");
+  expect(x.body,"모집 시 안내","store");
   x=await html("/support");
-  expect(x.body,"이용 중 필요한 도움을 확인하세요","support preservation");
+  expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"support");
+  expect(x.body,"필요한 곳으로","support");
+  expect(x.body,"취소·환불 신청","support");
 
   x=await html("/v33");
   expect(x.body,'name="robots" content="noindex,nofollow,noarchive"',"preview");
