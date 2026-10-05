@@ -156,7 +156,7 @@ export default {
     if (
       request.method === "GET" &&
       v33ProductionEnabled(env) &&
-      ["/", "/content", "/about", "/book", "/lecture"].includes(url.pathname)
+      ["/", "/content", "/knowledge", "/class", "/store", "/support", "/about", "/book", "/lecture"].includes(url.pathname)
     ) {
       return renderV33Page({
         request,
