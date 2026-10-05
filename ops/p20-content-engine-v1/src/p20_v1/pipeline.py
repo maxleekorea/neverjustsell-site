@@ -1,0 +1,195 @@
+import argparse
+import datetime as dt
+import hashlib
+import json
+import os
+import pathlib
+import shutil
+
+from jsonschema import validate
+
+from .api import responses_create
+from .gate_state import ENGINE_VERSION, GateError, first_incomplete_gate, init_packet, validate_state
+from .naver import search as naver_search
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+def read_text(path):
+    return pathlib.Path(path).read_text(encoding="utf-8")
+
+def read_json(path):
+    return json.loads(read_text(path))
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(block)
+    return h.hexdigest()
+
+def write_json(path, obj):
+    path = pathlib.Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+def execution_plan(mode, topic, model, fixture):
+    return {
+        "engine": "P20_CONTENT_ENGINE_V1",
+        "engine_version": ENGINE_VERSION,
+        "mode": mode,
+        "topic": topic,
+        "model": model or None,
+        "gate_enforcement": {
+            "one_shot_full_draft_allowed": False,
+            "persistent_draft_required": True,
+            "single_active_gate": True,
+            "author_gate_required": True,
+            "korean_quality_ks01_ks09_required": True,
+            "independent_evaluator_required": True,
+        },
+        "context_isolation": {
+            "conversation": None,
+            "previous_response_id": None,
+            "store": False,
+            "writer_web_access": False,
+            "evaluator_web_access": False,
+        },
+        "source_policy": {
+            "legacy_writer_runtime": "RUNTIME_DISABLED",
+            "source_evidence_reuse": "ACTIVE",
+            "research_web_search": mode == "research_only",
+            "naver_optional": True,
+        },
+        "fixture": fixture or None,
+    }
+
+def dry_run(args, out):
+    fixture = pathlib.Path(args.fixture)
+    if not fixture.exists():
+        raise SystemExit(f"Fixture does not exist: {fixture}")
+    dst = out / "source_pack.md"
+    shutil.copyfile(fixture, dst)
+    digest = sha256_file(dst)
+    (out / "source_pack.sha256").write_text(digest + "  source_pack.md\n", encoding="utf-8")
+    packet_dir = out / "work_packet"
+    state = init_packet(
+        packet_dir,
+        content_id=args.content_id,
+        topic=args.topic,
+        primary_type=args.primary_type,
+        secondary_type=args.secondary_type or None,
+        type_evidence=["dry_run_fixture"],
+    )
+    validate_state(packet_dir)
+    manifest = {
+        "run_id": args.run_id,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "mode": "dry_run",
+        "topic": args.topic,
+        "source_pack_format": "markdown_fixture",
+        "source_pack_sha256": digest,
+        "openai_key_present": bool(os.environ.get("OPENAI_API_KEY")),
+        "naver_credentials_present": bool(os.environ.get("NAVER_CLIENT_ID") and os.environ.get("NAVER_CLIENT_SECRET")),
+        "first_incomplete_gate": first_incomplete_gate(state),
+        "result": "PASS",
+        "note": "No external network/API calls were made. Gate-enforced packet initialized.",
+    }
+    write_json(out / "run_manifest.json", manifest)
+    return manifest
+
+def live_research(args, out):
+    schema = read_json(ROOT / "schemas/source_pack.schema.json")
+    research_prompt = read_text(ROOT / "prompts/research.md")
+    naver = naver_search(args.naver_query or args.topic, targets=["news", "blog", "cafearticle"])
+    discovery = json.dumps(naver, ensure_ascii=False)
+    user_text = (
+        f"TOPIC:\n{args.topic}\n\n"
+        f"RESEARCH_CUTOFF:\n{args.research_cutoff}\n\n"
+        "OPTIONAL_NAVER_DISCOVERY_RESULTS (discovery leads, not automatically verified facts):\n"
+        + discovery
+    )
+    raw = responses_create(
+        model=args.model,
+        system_text=research_prompt,
+        user_text=user_text,
+        tools=[{"type": "web_search"}],
+        json_schema=schema,
+        schema_name="p20_source_pack",
+    )
+    pack = json.loads(raw)
+    validate(instance=pack, schema=schema)
+    source_path = out / "research_candidate_source_pack.json"
+    write_json(source_path, pack)
+    digest = sha256_file(source_path)
+    (out / "research_candidate_source_pack.sha256").write_text(
+        digest + "  research_candidate_source_pack.json\n", encoding="utf-8"
+    )
+    return pack, digest, naver
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--mode", choices=["dry_run", "research_only", "packet_validate", "full"], required=True)
+    p.add_argument("--topic", default="CNT-000200 regression fixture")
+    p.add_argument("--content-id", default="CNT-UNASSIGNED")
+    p.add_argument("--run-id", default=os.environ.get("GITHUB_RUN_ID", "local"))
+    p.add_argument("--model", default=os.environ.get("OPENAI_MODEL", ""))
+    p.add_argument("--research-cutoff", default=dt.datetime.now().astimezone().isoformat())
+    p.add_argument("--naver-query", default="")
+    p.add_argument("--fixture", default=str(ROOT / "fixtures/cnt-000200/source_pack.md"))
+    p.add_argument("--primary-type", default="D")
+    p.add_argument("--secondary-type", default="F")
+    p.add_argument("--packet-dir", default="")
+    p.add_argument("--out", default="run_output")
+    args = p.parse_args()
+
+    out = pathlib.Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    write_json(out / "execution_plan.json", execution_plan(args.mode, args.topic, args.model, args.fixture))
+
+    if args.mode == "dry_run":
+        manifest = dry_run(args, out)
+        print(json.dumps(manifest, ensure_ascii=False))
+        return
+
+    if args.mode == "packet_validate":
+        if not args.packet_dir:
+            raise SystemExit("--packet-dir is required for packet_validate")
+        try:
+            state = validate_state(args.packet_dir)
+        except GateError as exc:
+            raise SystemExit(f"GATE_VALIDATION_FAILED: {exc}") from exc
+        manifest = {
+            "run_id": args.run_id,
+            "content_id": state["content_id"],
+            "mode": "packet_validate",
+            "first_incomplete_gate": first_incomplete_gate(state),
+            "result": "PASS",
+        }
+        write_json(out / "run_manifest.json", manifest)
+        print(json.dumps(manifest, ensure_ascii=False))
+        return
+
+    if args.mode == "full":
+        raise SystemExit(
+            "ONE_SHOT_FULL_DISABLED: P20 v0.2 forbids research->full-draft->self-eval in one pass. "
+            "Use the gate-enforced work packet and persistent draft lifecycle."
+        )
+
+    pack, digest, naver = live_research(args, out)
+    manifest = {
+        "run_id": args.run_id,
+        "content_id": args.content_id,
+        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "mode": args.mode,
+        "topic": args.topic,
+        "model": args.model,
+        "research_candidate_sha256": digest,
+        "naver_enabled": naver.get("enabled", False),
+        "result": "RESEARCH_CANDIDATE_COMPLETE",
+        "note": "Research candidate only. It cannot unlock drafting until all prior gates pass and the final source pack is frozen.",
+    }
+    write_json(out / "run_manifest.json", manifest)
+    print(json.dumps(manifest, ensure_ascii=False))
+
+if __name__ == "__main__":
+    main()
