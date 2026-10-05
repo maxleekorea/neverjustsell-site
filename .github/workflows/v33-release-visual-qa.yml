@@ -43,18 +43,27 @@ jobs:
           cat /tmp/v33-release-preview.log
           exit 1
 
-      - name: Verify public metadata and preserved Knowledge
+      - name: Verify public metadata and V3.3 service pages
         shell: bash
         run: |
           set -euo pipefail
           home="$(curl -fsSL http://127.0.0.1:8790/)"
           content="$(curl -fsSL http://127.0.0.1:8790/content)"
           knowledge="$(curl -fsSL http://127.0.0.1:8790/knowledge)"
+          class_page="$(curl -fsSL http://127.0.0.1:8790/class)"
+          store="$(curl -fsSL http://127.0.0.1:8790/store)"
+          support="$(curl -fsSL http://127.0.0.1:8790/support)"
           [[ "$home" == *'name="robots" content="index,follow,max-image-preview:large"'* ]]
           [[ "$home" == *'<link rel="canonical" href="https://www.neverjustsell.com/">'* ]]
           [[ "$content" == *'<link rel="canonical" href="https://www.neverjustsell.com/content">'* ]]
-          [[ "$knowledge" == *"NJS KNOWLEDGE HUB"* ]]
-          [[ "$knowledge" == *'id="search"'* ]]
+          [[ "$knowledge" == *'<link rel="canonical" href="https://www.neverjustsell.com/knowledge">'* ]]
+          [[ "$knowledge" == *"찾고 싶은 지식"* ]]
+          [[ "$class_page" == *'<link rel="canonical" href="https://www.neverjustsell.com/class">'* ]]
+          [[ "$class_page" == *"읽은 것을"* ]]
+          [[ "$store" == *'<link rel="canonical" href="https://www.neverjustsell.com/store">'* ]]
+          [[ "$store" == *"지금 이용할 수 있는"* ]]
+          [[ "$support" == *'<link rel="canonical" href="https://www.neverjustsell.com/support">'* ]]
+          [[ "$support" == *"필요한 곳으로"* ]]
 
       - name: Capture exact release routes
         shell: bash
@@ -62,7 +71,7 @@ jobs:
           set -euo pipefail
           mkdir -p screenshots
           common=(--headless --disable-gpu --no-sandbox --hide-scrollbars --virtual-time-budget=4000)
-          pages=(home:/ content:/content knowledge:/knowledge about:/about book:/book lecture:/lecture)
+          pages=(home:/ content:/content knowledge:/knowledge class:/class store:/store support:/support about:/about book:/book lecture:/lecture)
           for item in "${pages[@]}"; do
             name="${item%%:*}"
             path="${item#*:}"
