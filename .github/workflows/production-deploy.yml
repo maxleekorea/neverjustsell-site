@@ -336,15 +336,27 @@ jobs:
       - name: Deploy site Worker
         working-directory: site
         run: npx wrangler deploy --config wrangler.production.jsonc
-      - name: Verify public Knowledge fallback or canonical source
+      - name: Verify public V3.3 service pages and preserved Knowledge detail
         run: |
           node - <<'NODE'
-          const index=await fetch("https://www.neverjustsell.com/knowledge?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
-          const body=await index.text();
-          console.log(JSON.stringify({status:index.status,bytes:body.length,knowledge_hub:body.includes("NJS KNOWLEDGE HUB")}));
-          if(!index.ok || !body.includes("NJS KNOWLEDGE HUB")) process.exit(1);
+          const checks = [
+            ["/knowledge", ["v33-20261002-01", "찾고 싶은 지식", "내 학습함"]],
+            ["/class", ["v33-20261002-01", "읽은 것을", "무료 강의 보기"]],
+            ["/store", ["v33-20261002-01", "지금 이용할 수 있는", "모집 시 안내"]],
+            ["/support", ["v33-20261002-01", "필요한 곳으로", "취소·환불 신청"]]
+          ];
+          for (const [path, expected] of checks) {
+            const r = await fetch("https://www.neverjustsell.com" + path + "?deploy_check=" + Date.now(), {headers:{"Cache-Control":"no-cache"}});
+            const body = await r.text();
+            const ok = r.ok && expected.every((text) => body.includes(text));
+            console.log(JSON.stringify({path,status:r.status,bytes:body.length,ok}));
+            if (!ok) process.exit(1);
+          }
           const saved=await fetch("https://www.neverjustsell.com/knowledge/saved?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
           if(!saved.ok) process.exit(1);
+          const detail=await fetch("https://www.neverjustsell.com/knowledge/social-proof?deploy_check="+Date.now(),{headers:{"Cache-Control":"no-cache"}});
+          const detailBody=await detail.text();
+          if(!detail.ok || !detailBody.includes("사회적 증거") || detailBody.includes("v33-20261002-01")) process.exit(1);
           NODE
 
   verify:
