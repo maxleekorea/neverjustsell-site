@@ -188,11 +188,11 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
 
   return `<main>
   <section class="r33-hero"><div class="r33-shell">
-    <div class="r33-context-line"><span>맥작가의 글 · 지식 · 배움 · 커뮤니티</span><span>NEVER JUST SELL</span></div>
+    <div class="r33-context-line"><span>팔기 전에, 왜 사는지를 봅니다.</span><span>NEVER JUST SELL</span></div>
     <div class="r33-hero-grid">
-      <div class="r33-hero-copy"><p class="r33-eyebrow">그냥 팔지 말라, 그다음의 이야기</p><h1>팔기 전에,<br>왜 사는지를 봅니다.</h1>
-        <p>광고 하나, 플랫폼 하나만 봐서는 답이 잘 안 나옵니다. 고객이 어떻게 발견하고, 고르고, 다시 찾는지. 상품·유통·브랜드를 함께 봅니다. 맥작가의 글과 강의, 현장에서 나온 질문과 경험도 이 흐름 안에 모읍니다.</p>
-        <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/v33/content">최근 글 보기</a><a class="r33-link" href="/v33/knowledge">필요한 지식 찾기 →</a></div>
+      <div class="r33-hero-copy"><p class="r33-eyebrow">고객의 구매 여정은 갈수록 다양해지고 있습니다.</p><h1>정해진 성공 공식은 없습니다.<br>내 사업의 기준을 세워야 합니다.</h1>
+        <p>검색, 광고, 플랫폼의 공식은 오래가지 않습니다. 고객이 왜 찾고, 고르고, 다시 오는지를 이해해야 시장이 바뀌어도 스스로 판단할 수 있습니다. NJS는 상품·유통·검색·브랜드·AI를 따로 보지 않고 사업 전체의 흐름 안에서 다룹니다.</p>
+        <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/v33/content">지금 읽을 것 보기</a><a class="r33-link" href="/class">배우기 시작하기 →</a></div>
       </div>
       <aside class="r33-cycle" aria-label="NJS 배움과 실행의 순환">
         <div class="r33-cycle-head"><span>배운 것을 혼자 묵혀두지 않도록</span><b>5단계</b></div>
