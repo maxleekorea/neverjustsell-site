@@ -191,7 +191,7 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
   return `<main class="r35-home">
   <section class="r35-hero"><div class="r33-shell r35-hero-grid">
     <div class="r35-hero-copy">
-      <p class="r35-kicker">고객의 구매 여정은 갈수록 다양해지고 있습니다.</p>
+      <p class="r35-brand-thesis">팔기 전에, 왜 사는지를 봅니다.</p><p class="r35-kicker">고객의 구매 여정은 갈수록 다양해지고 있습니다.</p>
       <h1>정해진 성공 공식은 없습니다.<br>내 사업의 기준을 세워야 합니다.</h1>
       <p class="r35-lead">검색과 광고, 플랫폼은 계속 바뀝니다. 고객이 왜 찾고, 고르고, 다시 오는지를 이해해야 변화 속에서도 스스로 판단할 수 있습니다.</p>
       <p class="r35-identity">《그냥 팔지 말라》 저자 · 사업가 · 브랜딩 중심 마케팅</p>
