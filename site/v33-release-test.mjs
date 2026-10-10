@@ -42,12 +42,14 @@ try{
   expect(x.body,'name="robots" content="index,follow,max-image-preview:large"',"root");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/">',"root");
   expect(x.body,"고객이 선택하는 이유를 알면,","root");
-  expect(x.body,'data-home-design="customer-value-v1"',"root customer-value home");
+  expect(x.body,'data-home-design="journey-v2"',"root journey-design home");
   expect(x.body,'href="/content"',"root");
   expect(x.body,'href="/knowledge"',"root");
   expect(x.body,'href="https://classroom.neverjustsell.com/my-space">내 공간</a>',"root member continuity");
   forbid(x.body,'href="/v33/"',"root preview links");
   forbid(x.body,'href="/v33">',"root preview home link");
+  forbid(x.body,'href="/v33/store"',"root store route");
+  forbid(x.body,'href="/v33/support"',"root support route");
   forbid(x.body,"재구성 프리뷰","root");
   if(x.response.headers.get("Cache-Control")!=="public, max-age=120, s-maxage=600") throw new Error("root public cache contract");
   if(String(x.response.headers.get("X-Robots-Tag")||"").includes("noindex")) throw new Error("root must not emit noindex header");
