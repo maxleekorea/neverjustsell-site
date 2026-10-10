@@ -38,7 +38,8 @@ async function check(path, expected){
 }
 
 try{
-  let body=await check("/v33",["v33-korean-editorial-01","고객의 구매 여정은 갈수록 다양해지고 있습니다.","정해진 성공 공식은 없습니다.","내 사업의 기준을 세워야 합니다.","강의 보기","커뮤니티 둘러보기","지금, 맥작가가 이야기하는 것","브리핑 테스트","온라인 판매를 사업의 언어로 배우는 강의","혼자 해보다 막히는 곳에서","그냥 팔지 말라","현장에서 팔고, 만들고, 운영해봤습니다."]);
+  let body=await check("/v33",["v33-korean-editorial-01","data-home-design=\"customer-value-v1\"","고객이 선택하는 이유를 알면,","지금, 무엇이 막히시나요?","광고 성과는 좋은데 이익이 남지 않아요.","내 고민과 비슷한 사례 보기","무료 강의 살펴보기","브리핑 테스트","온라인 유통의 기본","비슷한 고민을 읽고,","그냥 팔지 말라"]);
+  if(!body.includes('href="/knowledge/case-roas-high-profit-low"') || !body.includes("community.neverjustsell.com/p/29/customer-experience-vs-price-competition")) throw new Error("Published problem and community links must remain direct");
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")||body.includes("NJS 배움과 실행의 순환")) throw new Error("Personal-brand Home must not expose platform/product architecture in the Hero");
 
   body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
