@@ -445,3 +445,5 @@ p,h1,h2,h3,figure{margin:0}
   .r35-experience{grid-template-columns:1fr}.r35-experience>div,.r35-experience>div+div{min-height:0;padding:18px 0;border-left:0;border-bottom:1px solid var(--line)}
   .r35-closing{padding:48px 0}.r35-closing-grid{display:block}.r35-closing h2{font-size:25px}.r35-closing .r35-primary{margin-top:22px}
 }
+
+.r35-brand-thesis{margin-bottom:9px;font-size:12px;font-weight:750;color:var(--muted)}
