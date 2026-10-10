@@ -4,7 +4,7 @@ const YOUTUBE_CHANNEL_ID = "UCjKn4fGi2SuYRQmgWdi9XhA";
 const YOUTUBE_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + YOUTUBE_CHANNEL_ID;
 const HERO_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png";
 const LECTURE_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png";
-const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";
+const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";\nconst COURSE_MAIN_IMAGE = "https://cdn.liveklass.com/course/01a08446ae4f75678a16661236fa9dc6.png.medium";
 const RELEASE_REVISION = "v33-20261002-01";
 
 const esc = (value) => String(value ?? "")
@@ -66,23 +66,23 @@ function nav(communityOrigin, authOrigin) {
     <a class="r33-brand" href="/v33">NEVER JUST SELL</a>
     <nav class="r33-nav">
       <a href="/v33/content">콘텐츠</a>
-      <a href="/v33/knowledge">지식</a>
-      <a href="${esc(authOrigin)}/courses">배우기</a>
+      <a href="${esc(authOrigin)}/courses">강의</a>
       <a href="${esc(communityOrigin)}/">커뮤니티</a>
+      <a href="/v33/book">책</a>
       <a href="/v33/about">맥작가</a>
-      <details class="r33-more"><summary>더보기</summary><div><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a></div></details>
+      <details class="r33-more"><summary>더보기</summary><div><a href="/v33/knowledge">지식·자료</a><a href="/v33/lecture">강연·컨설팅</a></div></details>
     </nav>
     <div class="r33-head-actions"><a class="r33-search" href="/v33/knowledge">검색</a><a class="r33-myspace" href="${esc(authOrigin)}/my-space">내 공간</a>
       <details class="r33-mobile-menu"><summary>메뉴</summary><div>
-        <a href="/v33/content">콘텐츠</a><a href="/v33/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/about">맥작가</a><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a><a href="${esc(authOrigin)}/my-space">내 공간</a>
+        <a href="/v33/content">콘텐츠</a><a href="${esc(authOrigin)}/courses">강의</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/book">책</a><a href="/v33/about">맥작가</a><a href="/v33/knowledge">지식·자료</a><a href="/v33/lecture">강연·컨설팅</a><a href="${esc(authOrigin)}/my-space">내 공간</a>
       </div></details>
     </div>
   </div></header>`;
 }
 function footer(communityOrigin, authOrigin) {
   return `<footer class="r33-footer"><div class="r33-shell r33-footer-grid">
-    <div><b>NEVER JUST SELL</b><p>맥작가의 글과 지식, 강의와 커뮤니티를 한곳에서 이어봅니다.</p></div>
-    <nav><a href="/v33/content">콘텐츠</a><a href="/v33/knowledge">지식</a><a href="${esc(authOrigin)}/courses">배우기</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/book">책</a><a href="/v33/lecture">강연·컨설팅</a><a href="/support">고객지원</a></nav>
+    <div><b>NEVER JUST SELL</b><p>맥작가의 콘텐츠에서 시작해 강의로 배우고, 커뮤니티에서 이어갑니다.</p></div>
+    <nav><a href="/v33/content">콘텐츠</a><a href="${esc(authOrigin)}/courses">강의</a><a href="${esc(communityOrigin)}/">커뮤니티</a><a href="/v33/book">책</a><a href="/v33/about">맥작가</a><a href="/v33/knowledge">지식·자료</a><a href="/support">고객지원</a></nav>
   </div></footer>`;
 }
 function productionizeLinks(html) {
@@ -178,69 +178,60 @@ ${rendered.replace("<main>", '<main id="main-content">')}
 }
 
 function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
-  const brief=currentBrief(briefs), video=currentVideo(videos), k=knowledge.slice(0,3);
+  const brief=currentBrief(briefs), video=currentVideo(videos);
+  const course=authOrigin+"/courses/online-commerce-basics";
   const briefBlock=brief
-    ? `<a class="r33-news-main" href="/knowledge/${encodeURIComponent(brief.slug)}"><span>최신 브리핑 · ${esc(brief.updated)}</span><h3>${esc(brief.title)}</h3><p>${esc(brief.summary)}</p><em>브리핑 읽기 →</em></a>`
-    : `<div class="r33-news-main r33-placeholder"><span>최신 브리핑</span><h3>새 브리핑을 준비하고 있습니다.</h3><p>빠르게 바뀌는 소식은 확인된 내용만 짧고 분명하게 정리합니다.</p></div>`;
+    ? `<a class="r35-text-card" href="/knowledge/${encodeURIComponent(brief.slug)}"><span>최신 브리핑 · ${esc(brief.updated)}</span><h3>${esc(brief.title)}</h3><p>${esc(brief.summary)}</p><em>브리핑 읽기 →</em></a>`
+    : `<div class="r35-text-card r33-placeholder"><span>최신 브리핑</span><h3>새 브리핑을 준비하고 있습니다.</h3><p>빠르게 바뀌는 소식은 확인된 내용만 짧게 정리합니다.</p></div>`;
   const videoBlock=video
-    ? `<a class="r33-video-card" href="${esc(video.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(video.thumbnail)}" alt="" loading="lazy"><span>최근 영상 · ${esc(dateKo(video.published))}</span><strong>${esc(video.title)}</strong></a>`
-    : `<div class="r33-video-card r33-placeholder"><span>최근 영상</span><strong>최근 공개 영상을 불러옵니다.</strong></div>`;
+    ? `<a class="r35-media-card" href="${esc(video.url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(video.thumbnail)}" alt="" loading="lazy"><div><span>최근 영상 · ${esc(dateKo(video.published))}</span><strong>${esc(video.title)}</strong><em>영상 보기 →</em></div></a>`
+    : `<div class="r35-media-card r33-placeholder"><div><span>최근 영상</span><strong>최근 공개 영상을 불러옵니다.</strong></div></div>`;
 
-  return `<main>
-  <section class="r33-hero"><div class="r33-shell">
-    <div class="r33-context-line"><span>맥작가의 글 · 지식 · 배움 · 커뮤니티</span><span>NEVER JUST SELL</span></div>
-    <div class="r33-hero-grid">
-      <div class="r33-hero-copy"><p class="r33-eyebrow">그냥 팔지 말라, 그다음의 이야기</p><h1>팔기 전에,<br>왜 사는지를 봅니다.</h1>
-        <p>광고 하나, 플랫폼 하나만 봐서는 답이 잘 안 나옵니다. 고객이 어떻게 발견하고, 고르고, 다시 찾는지. 상품·유통·브랜드를 함께 봅니다. 맥작가의 글과 강의, 현장에서 나온 질문과 경험도 이 흐름 안에 모읍니다.</p>
-        <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/v33/content">최근 글 보기</a><a class="r33-link" href="/v33/knowledge">필요한 지식 찾기 →</a></div>
-      </div>
-      <aside class="r33-cycle" aria-label="NJS 배움과 실행의 순환">
-        <div class="r33-cycle-head"><span>배운 것을 혼자 묵혀두지 않도록</span><b>5단계</b></div>
-        <ol>
-          <li><b>01</b><div><strong>배운다</strong><p>필요한 개념과 관점을 먼저 익힙니다.</p></div></li>
-          <li><b>02</b><div><strong>해본다</strong><p>내 사업에 맞게 작게라도 직접 써봅니다.</p></div></li>
-          <li><b>03</b><div><strong>묻고 나눈다</strong><p>막힌 지점과 해본 결과를 서로 나눕니다.</p></div></li>
-          <li><b>04</b><div><strong>경험을 남긴다</strong><p>다시 볼 만한 경험은 정리해서 쌓아둡니다.</p></div></li>
-          <li><b>05</b><div><strong>다시 배운다</strong><p>쌓인 지식과 경험을 다음 판단에 다시 씁니다.</p></div></li>
-        </ol>
-        <a href="${esc(communityOrigin)}/">커뮤니티 둘러보기 →</a>
-      </aside>
+  return `<main class="r35-home">
+  <section class="r35-hero"><div class="r33-shell r35-hero-grid">
+    <div class="r35-hero-copy">
+      <p class="r35-kicker">고객의 구매 여정은 갈수록 다양해지고 있습니다.</p>
+      <h1>정해진 성공 공식은 없습니다.<br>내 사업의 기준을 세워야 합니다.</h1>
+      <p class="r35-lead">검색과 광고, 플랫폼은 계속 바뀝니다. 고객이 왜 찾고, 고르고, 다시 오는지를 이해해야 변화 속에서도 스스로 판단할 수 있습니다.</p>
+      <p class="r35-identity">《그냥 팔지 말라》 저자 · 사업가 · 브랜딩 중심 마케팅</p>
+      <div class="r35-actions"><a class="r35-primary" href="${esc(course)}">강의 보기</a><a class="r35-secondary" href="${esc(communityOrigin)}/">커뮤니티 둘러보기 →</a></div>
     </div>
+    <figure class="r35-hero-photo"><img src="${esc(HERO_IMAGE)}" alt="맥작가" loading="eager"></figure>
   </div></section>
 
-  <section class="r33-section r33-now"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지금 읽을 것</p><h2>요즘, 무엇이<br>달라지고 있나.</h2></div><p>빨리 바뀌는 소식은 브리핑으로 짧게 정리합니다. 오래 두고 볼 생각은 칼럼과 지식으로 남깁니다.</p></div>
-    <div class="r33-now-grid">
-      ${briefBlock}
-      <div class="r33-column-preview"><span>맥작가 칼럼</span><h3>첫 글을 준비하고 있습니다.</h3><p>한 가지 문제를 오래 붙잡고, 맥작가의 경험과 근거를 함께 풀어내는 글입니다. 첫 글이 올라오면 이 자리에서 바로 볼 수 있습니다.</p><a href="/v33/content#column">칼럼 영역 보기 →</a></div>
+  <section class="r35-section r35-media"><div class="r33-shell">
+    <div class="r35-section-title"><div><p>콘텐츠</p><h2>지금, 맥작가가 이야기하는 것</h2></div><a href="/v33/content">콘텐츠 전체 보기 →</a></div>
+    <div class="r35-media-grid">
       ${videoBlock}
+      ${briefBlock}
+      <div class="r35-text-card r35-column-card"><span>맥작가 칼럼</span><h3>한 가지 문제를 오래 붙잡고 생각합니다.</h3><p>현장에서 겪은 경험과 확인한 근거를 바탕으로 맥작가의 관점을 정리합니다.</p><a href="/v33/content#column">칼럼 보기 →</a></div>
     </div>
   </div></section>
 
-  <section class="r33-section r33-knowledge"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지식</p><h2>필요할 때<br>다시 꺼내볼 것.</h2></div><p>뉴스처럼 흘려보내지 않고, 고객·브랜드·유통·온라인 판매에서 자주 부딪히는 문제를 주제별로 정리합니다.</p></div>
-    <div class="r33-knowledge-grid">${k.map((x,i)=>`<a href="/knowledge/${encodeURIComponent(x.slug)}"><span>${String(i+1).padStart(2,"0")} · ${esc(x.updated)}</span><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p><em>읽기 →</em></a>`).join("")}</div>
-    <a class="r33-link r33-more-link" href="/v33/knowledge">지식 전체 보기 →</a>
+  <section class="r35-section r35-learn"><div class="r33-shell">
+    <div class="r35-section-title"><div><p>강의</p><h2>배우고, 내 사업에 직접 써봅니다.</h2></div><a href="${esc(authOrigin)}/courses">강의 전체 보기 →</a></div>
+    <a class="r35-course" href="${esc(course)}">
+      <figure><img src="${esc(COURSE_MAIN_IMAGE)}" alt="온라인 판매 강의 대표 이미지" loading="lazy"></figure>
+      <div><span>현재 시작할 수 있는 강의</span><h3>온라인 판매를 사업의 언어로 배우는 강의</h3><p>상품등록 기술만 외우는 대신 유통의 본질, 검색과 키워드, 마케팅과 브랜드를 한 흐름으로 봅니다.</p><em>강의 자세히 보기 →</em></div>
+    </a>
   </div></section>
 
-  <section class="r33-section r33-do"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">배우기</p><h2>아는 데서<br>끝나지 않게.</h2></div><p>읽고 끝내지 않고, 순서대로 배우고 직접 해보는 쪽으로 이어갑니다.</p></div>
-    <div class="r33-do-grid">
-      <a href="${esc(authOrigin)}/courses"><span>01</span><h3>강의</h3><p>한 주제를 순서대로 배우고, 내 사업에 직접 적용해봅니다.</p><em>강의 보기 →</em></a>
-      <a href="/v33/book"><span>02</span><h3>책·전자책</h3><p>한 가지 문제를 오래 붙잡고 생각하고 싶을 때 읽습니다.</p><em>책 보기 →</em></a>
-      <a href="/v33/lecture"><span>03</span><h3>강연·컨설팅</h3><p>조직이 실제로 막혀 있는 문제에 맞춰 내용을 다시 구성합니다.</p><em>안내 보기 →</em></a>
-    </div>
+  <section class="r35-section r35-community"><div class="r33-shell r35-community-grid">
+    <div><p class="r35-label">커뮤니티</p><h2>혼자 해보다 막히는 곳에서<br>사람에게 묻습니다.</h2><p>강의에서 배운 것을 직접 해보고, 막힌 지점과 결과를 나눕니다. 다른 사람의 경험도 내 판단을 넓히는 자료가 됩니다.</p><a class="r35-primary" href="${esc(communityOrigin)}/">커뮤니티 들어가기</a></div>
+    <div class="r35-community-points"><div><strong>질문</strong><p>지금 막힌 문제를 묻습니다.</p></div><div><strong>실행</strong><p>내 사업에 해본 결과를 남깁니다.</p></div><div><strong>경험</strong><p>다른 사람의 시행착오에서 배웁니다.</p></div></div>
   </div></section>
 
-  <section class="r33-author"><div class="r33-shell r33-author-grid">
-    <figure><img src="${esc(HERO_IMAGE)}" alt="맥작가" loading="lazy"></figure>
-    <div><p class="r33-eyebrow">맥작가</p><h2>현장에서 팔아보고,<br>만들어보고, 운영해봤습니다.</h2><p>영업과 상품기획, 제조와 해외 거래, 온라인 판매까지 직접 해봤습니다. 그래서 마케팅을 광고나 검색 한 가지로 설명하지 않습니다. 고객과 상품, 유통과 브랜드가 어떻게 이어지는지를 함께 봅니다.</p><a class="r33-link" href="/v33/about">맥작가 이야기 보기 →</a></div>
+  <section class="r35-section r35-book"><div class="r33-shell r35-book-grid">
+    <figure><img src="${esc(BOOK_IMAGE)}" alt="그냥 팔지 말라 책 표지" loading="lazy"></figure>
+    <div><p class="r35-label">책</p><h2>짧은 팁보다 오래 남길 생각은 책에 씁니다.</h2><p>《그냥 팔지 말라》는 검색 순위와 광고 기법을 넘어 고객이 왜 사고, 판매자가 무엇을 기준으로 판단해야 하는지를 다룹니다.</p><a class="r35-secondary" href="/v33/book">책 이야기 보기 →</a></div>
   </div></section>
 
-  <section class="r33-community"><div class="r33-shell r33-community-grid">
-    <div><p class="r33-eyebrow r33-light">커뮤니티</p><h2>혼자 해보다 막히는 지점은,<br>사람에게 묻습니다.</h2><p>해본 사람의 질문과 실패, 결과가 오갑니다. 그중 다시 볼 만한 경험은 검토를 거쳐 지식으로 정리합니다.</p><a class="r33-btn r33-btn-light" href="${esc(communityOrigin)}/">커뮤니티 들어가기</a></div>
-    <div class="r33-community-note"><b>정리된 지식</b><p>NJS가 검토하고 오래 남길 내용</p><b>현장의 질문</b><p>사용자가 직접 해보다 생긴 문제와 경험</p><b>다시 쌓이는 경험</b><p>다른 사람에게도 도움이 될 내용은 다시 정리합니다.</p></div>
+  <section class="r35-section r35-author"><div class="r33-shell">
+    <div class="r35-section-title"><div><p>맥작가</p><h2>현장에서 팔고, 만들고, 운영해봤습니다.</h2></div><a href="/v33/about">맥작가 소개 →</a></div>
+    <div class="r35-experience"><div><strong>영업·상품기획</strong><p>고객과 매장, 상품과 재고가 맞물리는 현장에서 시작했습니다.</p></div><div><strong>제조·해외 거래</strong><p>제품을 만들고 공급하는 과정에서 브랜드와 유통의 현실을 배웠습니다.</p></div><div><strong>온라인 판매·콘텐츠</strong><p>플랫폼에서 직접 판매하고, 책과 영상으로 경험을 다시 정리해왔습니다.</p></div></div>
   </div></section>
+
+  <section class="r35-closing"><div class="r33-shell r35-closing-grid"><div><p>강연·프로그램</p><h2>조직과 현장의 문제에 맞춰 다시 이야기합니다.</h2></div><a class="r35-primary" href="/v33/lecture">강연·컨설팅 보기</a></div></section>
   </main>`;
 }
 
