@@ -353,16 +353,19 @@ async function renderCourseCatalog(request, env) {
       : (course.access_type === "paid"
           ? (salesState === "presale" ? "사전판매 보기" : "강의 보기")
           : "무료 수강 신청");
+    const summaryText = String(course.summary || "").trim();
+    const sentences = summaryText.split(/(?<=[.!?])\s+/u).filter(Boolean);
+    const summaryPreview = sentences.slice(0, 2).join(" ") || summaryText;
     return '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
       '<div class="eyebrow">' + escapeHtml(label) + '</div>' +
       '<h2>' + escapeHtml(course.title) + '</h2>' +
-      '<p>' + escapeHtml(course.summary || "") + '</p>' +
+      '<p>' + escapeHtml(summaryPreview) + '</p>' +
       '<div class="action" style="margin-top:16px">' + escapeHtml(cta) + '</div></a>';
   }).join("");
 
   const content = courses.length
-    ? '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">수강할 강의를 선택하세요. 무료 강의도 수강 신청 후 내 강의실에 추가됩니다.</p></section><div class="grid">' + cards + '</div>'
-    : '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">현재 신청 가능한 강의가 없습니다.</p></section>';
+    ? '<section class="card"><div class="eyebrow">온라인 강의</div><h1 class="title">온라인 유통과 마케팅 강의를 찾아보세요.</h1><p class="desc">지금 수강할 수 있는 무료 강의부터 살펴보세요. 이미 신청한 강의는 내 강의실에서 이어볼 수 있습니다.</p></section><div class="grid">' + cards + '</div>'
+    : '<section class="card"><div class="eyebrow">온라인 강의</div><h1 class="title">온라인 유통과 마케팅 강의를 찾아보세요.</h1><p class="desc">현재 신청 가능한 강의가 없습니다. 이미 신청한 강의는 내 강의에서 확인해 주세요.</p></section>';
 
   return html(classroomShell("강의 찾기", content));
 }
