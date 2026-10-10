@@ -110,6 +110,10 @@ for name,url in TARGETS:
         try:
             driver=webdriver.Chrome(options=opts)
             driver.set_page_load_timeout(35)
+            driver.execute_cdp_cmd("Emulation.setDeviceMetricsOverride", {
+                "width": w, "height": h, "deviceScaleFactor": 1,
+                "mobile": vp_name == "mobile"
+            })
             driver.get(url)
             time.sleep(4)
             # Dismiss common cookie overlays when obvious.
