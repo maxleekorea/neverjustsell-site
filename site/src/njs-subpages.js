@@ -61,13 +61,14 @@ export function knowledgePageV38(knowledge=[],{esc}){
     <span><small>${esc(x.type==="case"?"문제별 사례":x.type==="term"?"용어 설명":"참고 자료")}</small><strong>${esc(x.title)}</strong><span>${esc(x.summary)}</span></span><b aria-hidden="true">↗</b>
   </a>`;
   const sections=groups.filter(g=>g.items.length).map(g=>`<section class="r38-knowledge-group" id="${g.id}" data-r38-group><h2>${g.label}</h2><p>${g.subtitle}</p><div class="r38-knowledge-results">${g.items.map(card).join("")}</div></section>`).join("");
+  const quickLinks=groups.filter(g=>g.items.length).map(g=>`<a href="#${g.id}">${g.id==="r38-cases"?"문제별 사례":g.id==="r38-terms"?"마케팅·사업 용어":"기타 참고 자료"}</a>`).join("");
   return page(`${head({eyebrow:"지식·자료",title:"마케팅과 사업에 필요한<br>사례·용어를 찾아보세요.",description:"광고 효율, 가격, 고객, 브랜드, 검색 등 궁금한 주제를 찾아보세요. 실제로 겪는 문제와 자주 쓰는 용어를 구분해 정리했습니다."})}
     <section class="r38-section r38-knowledge"><div class="r33-shell">
       <div class="r38-searchbar"><label for="r38-search">무엇이 궁금하신가요?</label>
         <div><input type="search" id="r38-search" placeholder="예: 광고비, 재구매, 포지셔닝" autocomplete="off" aria-controls="r38-search-results"><span id="r38-count" role="status" aria-live="polite">${items.length}개 자료</span></div>
       </div>
       <div class="r38-knowledge-shortcuts">
-        <a href="#r38-cases">문제별 사례</a><a href="#r38-terms">마케팅·사업 용어</a>
+        ${quickLinks}
         ${link("/knowledge/saved","내가 저장한 자료")}
       </div>
       <div id="r38-search-results">${sections || '<p class="r38-no-content">자료 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>'}
