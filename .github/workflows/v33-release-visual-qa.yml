@@ -57,13 +57,13 @@ jobs:
           [[ "$home" == *'<link rel="canonical" href="https://www.neverjustsell.com/">'* ]]
           [[ "$content" == *'<link rel="canonical" href="https://www.neverjustsell.com/content">'* ]]
           [[ "$knowledge" == *'<link rel="canonical" href="https://www.neverjustsell.com/knowledge">'* ]]
-          [[ "$knowledge" == *"찾고 싶은 지식"* ]]
+          [[ "$knowledge" == *'id="r38-search"'* ]]
           [[ "$class_page" == *'<link rel="canonical" href="https://www.neverjustsell.com/class">'* ]]
-          [[ "$class_page" == *"읽은 것을"* ]]
+          [[ "$class_page" == *"무료 강의 내용 보기"* ]]
           [[ "$store" == *'<link rel="canonical" href="https://www.neverjustsell.com/store">'* ]]
-          [[ "$store" == *"지금 이용할 수 있는"* ]]
+          [[ "$store" == *"종이책·전자책"* ]]
           [[ "$support" == *'<link rel="canonical" href="https://www.neverjustsell.com/support">'* ]]
-          [[ "$support" == *"필요한 곳으로"* ]]
+          [[ "$support" == *"취소·환불 대상 주문 확인하기"* ]]
 
       - name: Capture exact release routes
         shell: bash
