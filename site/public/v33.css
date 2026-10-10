@@ -614,3 +614,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-actions{align-items:flex-start}
  .r37-case>.r37-tag{flex-basis:59px}
 }
+
+/* Keep global navigation menu aligned: legacy editorial more-link spacing does not apply to the header. */
+.r33-header .r33-more{display:inline-flex;align-items:center;margin-top:0}
+.r33-header .r33-more>summary{display:inline-flex;align-items:center;min-height:40px;line-height:1.4}
