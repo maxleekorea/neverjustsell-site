@@ -5,6 +5,11 @@ const YOUTUBE_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + YO
 const HERO_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png";
 const LECTURE_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png";
 const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";
+const LEGACY_AUTHOR_BANNER = "https://cdn.liveklass.com/common/1788343547420.png";
+const COURSE_MAIN_IMAGE = "https://cdn.liveklass.com/course/01a08446ae4f75678a16661236fa9dc6.png.medium";
+const COURSE_MATERIAL_IMAGE = "https://cdn.liveklass.com/course/01a084dfe9de7099910bc8385cbe4ec0.png.medium";
+const COURSE_CHANNEL_IMAGE = "https://cdn.liveklass.com/course/01a084282aa57656aa5d81a9e871f299.png.medium";
+const LEGACY_EBOOK_IMAGE = "https://cdn.liveklass.com/course/01a060d982a97906b022b6a8f5397d52.jpeg.medium";
 const RELEASE_REVISION = "v33-20261002-01";
 
 const esc = (value) => String(value ?? "")
@@ -276,12 +281,15 @@ function knowledgePage(knowledge) {
 function classPage(authOrigin) {
   const course=authOrigin+"/courses/online-commerce-basics";
   const mySpace=authOrigin+"/my-space";
-  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>지금 필요한 주제부터 차례대로 보고, 내 일에 직접 적용해 봅니다.</p><div class="r33-service-hero-links"><a href="${esc(course)}">무료 강의 보기 →</a><a href="${esc(mySpace)}">내 강의실에서 이어보기 →</a></div></div></section>
-  <section class="r33-service-body"><div class="r33-shell"><div class="r33-editorial-list r33-learning-list">
-    <article><p>유통과 시장</p><h2>유통사와 네이버 검색의 구조</h2></article>
-    <article><p>검색과 탐색</p><h2>키워드와 롱테일, 탐색 행동</h2></article>
-    <article><p>마케팅·브랜드·AI</p><h2>인포먼스, 브랜드, 고객 경험과 AI</h2></article>
-  </div></div></section></main>`;
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">배우기</p><h1>읽은 것을<br>직접 써볼 수 있게.</h1><p>지금 필요한 주제부터 차례대로 보고, 내 일에 직접 적용해 봅니다.</p><div class="r33-service-hero-links"><a href="${esc(mySpace)}">내 강의실에서 이어보기 →</a></div></div></section>
+  <section class="r33-service-body"><div class="r33-shell">
+    <a class="r33-learning-feature" href="${esc(course)}"><figure><img src="${esc(COURSE_MAIN_IMAGE)}" alt="온라인 커머스 강의 대표 이미지" loading="lazy"></figure><div><span>현재 시작할 수 있는 강의</span><h2>온라인 판매를 사업의 언어로 배우는 강의</h2><p>유통의 본질부터 검색, 키워드, 마케팅, 브랜드와 AI까지 한 흐름으로 봅니다.</p><em>무료 강의 보기 →</em></div></a>
+    <div class="r33-editorial-list r33-learning-list">
+      <article><p>유통과 시장</p><h2>유통사와 네이버 검색의 구조</h2></article>
+      <article><p>검색과 탐색</p><h2>키워드와 롱테일, 탐색 행동</h2></article>
+      <article><p>마케팅·브랜드·AI</p><h2>인포먼스, 브랜드, 고객 경험과 AI</h2></article>
+    </div>
+  </div></section></main>`;
 }
 
 function storePage(authOrigin) {
@@ -289,7 +297,7 @@ function storePage(authOrigin) {
   const mySpace=authOrigin+"/my-space";
   return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">스토어</p><h1>지금 이용할 수 있는<br>콘텐츠.</h1></div></section>
   <section class="r33-service-body"><div class="r33-shell">
-    <a class="r33-store-feature" href="${esc(course)}"><span>온라인 강의</span><h2>온라인 판매를 사업의 언어로 배우는 강의</h2><p>유통의 본질부터 검색, 키워드, 마케팅, 브랜드와 AI까지 연결해서 봅니다.</p><em>강의 자세히 보기 →</em></a>
+    <a class="r33-store-feature" href="${esc(course)}"><figure><img src="${esc(COURSE_MAIN_IMAGE)}" alt="온라인 커머스 강의 대표 이미지" loading="lazy"></figure><div><span>온라인 강의</span><h2>온라인 판매를 사업의 언어로 배우는 강의</h2><p>유통의 본질부터 검색, 키워드, 마케팅, 브랜드와 AI까지 연결해서 봅니다.</p><em>강의 자세히 보기 →</em></div></a>
     <div class="r33-upcoming"><p class="r33-eyebrow">다음에 열릴 것</p>
       <div><span>전자책</span><strong>준비 중</strong><p>판매와 구매 후 열람 흐름을 준비하고 있습니다.</p></div>
       <div><span>프로그램</span><strong>모집 시 안내</strong><p>완독·챌린지·코호트형 프로그램은 실제 모집이 열릴 때 안내합니다.</p></div>
