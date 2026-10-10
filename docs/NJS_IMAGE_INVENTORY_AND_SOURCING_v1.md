@@ -14,11 +14,12 @@ Use **real images** when the image functions as evidence:
 - actual community activity
 - case-study source material
 
-Use **AI-generated or composed editorial visuals** only when the image is conceptual/decorative:
-- customer journey / business-system concepts
-- knowledge/learning section atmosphere
-- abstract dividers and non-factual editorial illustration
-- empty visual balance where no real-world claim is implied
+Use **simple generated/placeholder images** only when a layout needs an image before a real asset exists.
+The image is secondary to the UI ratio and should use a conventional web style:
+- clean studio / neutral lifestyle / restrained editorial photography
+- simple abstract or diagram background only when photography would imply a false real-world scene
+- no bespoke art direction unless the image itself later becomes an important brand asset
+- spend minimal production effort; the purpose is to validate composition, ratio, and responsive behavior
 
 Never use AI-generated people, events, classrooms, customers, reviews, business results, or product photos as if they were real NJS evidence.
 
@@ -52,7 +53,7 @@ Book interpretation and case studies should use the actual book/source brand ima
 
 ### Knowledge
 No mandatory image. Search/index reading efficiency has priority.
-Optional AI editorial illustration may be tested as a restrained divider, not as a card wall.
+Do not add illustration just to fill whitespace.
 
 ### Learning
 Image gap found.
@@ -93,11 +94,21 @@ Nice to have:
 - event venue/details
 - multiple neutral-background headshots
 
-## Temporary-generation rule
-When a conceptual visual is needed before a real asset exists, generate it in the NJS visual system:
-- Warm Paper #F8F7F4
-- Deep Ink #181715
-- Terracotta #9A3E1C
-- editorial / printmaking / diagrammatic, not glossy 3D SaaS
-- no fake people, fake product, fake review, fake business result
-- no embedded text unless the copy is separately approved
+## Temporary image / layout rule
+Images are subordinate to layout.
+
+Default ratios:
+- course/content thumbnail: 16:9
+- editorial/lecture wide photo: 3:2 or 16:10
+- author portrait: 4:5
+- book/product cover: preserve native cover ratio
+- mobile feature image: 100% content width, usually 16:9
+
+Desktop feature image should usually occupy about 35–45% of the content row, not dominate the copy.
+Mobile should stack image above copy and avoid consuming most of the first viewport.
+
+If no real image exists:
+- use a conventional neutral image/placeholder only to test the layout;
+- prefer ordinary clean photography or a simple neutral graphic;
+- do not create elaborate custom illustration for a low-value placeholder;
+- replace it later if a real image materially improves credibility.
