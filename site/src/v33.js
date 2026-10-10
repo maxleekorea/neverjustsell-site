@@ -214,7 +214,7 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
   </div></section>
 
   <section class="r33-section r33-now"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지금 읽을 것</p><h2>요즘, 무엇이<br>달라지고 있나.</h2></div><p>빨리 바뀌는 소식은 브리핑으로 짧게 정리합니다. 오래 두고 볼 생각은 칼럼과 지식으로 남깁니다.</p></div>
+    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지금 읽을 것</p><h2>요즘, 무엇이 달라지고 있나.</h2></div><p>빨리 바뀌는 소식은 브리핑으로 짧게 정리합니다. 오래 두고 볼 생각은 칼럼과 지식으로 남깁니다.</p></div>
     <div class="r33-now-grid">
       ${briefBlock}
       <div class="r33-column-preview"><span>맥작가 칼럼</span><h3>첫 글을 준비하고 있습니다.</h3><p>한 가지 문제를 오래 붙잡고, 맥작가의 경험과 근거를 함께 풀어내는 글입니다. 첫 글이 올라오면 이 자리에서 바로 볼 수 있습니다.</p><a href="/v33/content#column">칼럼 영역 보기 →</a></div>
@@ -223,13 +223,13 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
   </div></section>
 
   <section class="r33-section r33-knowledge"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지식</p><h2>필요할 때<br>다시 꺼내볼 것.</h2></div><p>뉴스처럼 흘려보내지 않고, 고객·브랜드·유통·온라인 판매에서 자주 부딪히는 문제를 주제별로 정리합니다.</p></div>
+    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">지식</p><h2>필요할 때 다시 꺼내볼 것.</h2></div><p>뉴스처럼 흘려보내지 않고, 고객·브랜드·유통·온라인 판매에서 자주 부딪히는 문제를 주제별로 정리합니다.</p></div>
     <div class="r33-knowledge-grid">${k.map((x,i)=>`<a href="/knowledge/${encodeURIComponent(x.slug)}"><span>${String(i+1).padStart(2,"0")} · ${esc(x.updated)}</span><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p><em>읽기 →</em></a>`).join("")}</div>
     <a class="r33-link r33-more-link" href="/v33/knowledge">지식 전체 보기 →</a>
   </div></section>
 
   <section class="r33-section r33-do"><div class="r33-shell">
-    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">배우기</p><h2>아는 데서<br>끝나지 않게.</h2></div><p>읽고 끝내지 않고, 순서대로 배우고 직접 해보는 쪽으로 이어갑니다.</p></div>
+    <div class="r33-section-head r33-rule-head"><div><p class="r33-eyebrow">배우기</p><h2>아는 데서 끝나지 않게.</h2></div><p>읽고 끝내지 않고, 순서대로 배우고 직접 해보는 쪽으로 이어갑니다.</p></div>
     <div class="r33-do-grid">
       <a href="${esc(authOrigin)}/courses"><span>01</span><h3>강의</h3><p>한 주제를 순서대로 배우고, 내 사업에 직접 적용해봅니다.</p><em>강의 보기 →</em></a>
       <a href="/v33/book"><span>02</span><h3>책·전자책</h3><p>한 가지 문제를 오래 붙잡고 생각하고 싶을 때 읽습니다.</p><em>책 보기 →</em></a>
@@ -239,11 +239,11 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
 
   <section class="r33-author"><div class="r33-shell r33-author-grid">
     <figure><img src="${esc(HERO_IMAGE)}" alt="맥작가" loading="lazy"></figure>
-    <div><p class="r33-eyebrow">맥작가</p><h2>현장에서 팔아보고,<br>만들어보고, 운영해봤습니다.</h2><p>영업과 상품기획, 제조와 해외 거래, 온라인 판매까지 직접 해봤습니다. 그래서 마케팅을 광고나 검색 한 가지로 설명하지 않습니다. 고객과 상품, 유통과 브랜드가 어떻게 이어지는지를 함께 봅니다.</p><a class="r33-link" href="/v33/about">맥작가 이야기 보기 →</a></div>
+    <div><p class="r33-eyebrow">맥작가</p><h2>현장에서 팔아보고, 만들어보고, 운영해봤습니다.</h2><p>영업과 상품기획, 제조와 해외 거래, 온라인 판매까지 직접 해봤습니다. 그래서 마케팅을 광고나 검색 한 가지로 설명하지 않습니다. 고객과 상품, 유통과 브랜드가 어떻게 이어지는지를 함께 봅니다.</p><a class="r33-link" href="/v33/about">맥작가 이야기 보기 →</a></div>
   </div></section>
 
   <section class="r33-community"><div class="r33-shell r33-community-grid">
-    <div><p class="r33-eyebrow r33-light">커뮤니티</p><h2>혼자 해보다 막히는 지점은,<br>사람에게 묻습니다.</h2><p>해본 사람의 질문과 실패, 결과가 오갑니다. 그중 다시 볼 만한 경험은 검토를 거쳐 지식으로 정리합니다.</p><a class="r33-btn r33-btn-light" href="${esc(communityOrigin)}/">커뮤니티 들어가기</a></div>
+    <div><p class="r33-eyebrow r33-light">커뮤니티</p><h2>혼자 해보다 막히는 지점은, 사람에게 묻습니다.</h2><p>해본 사람의 질문과 실패, 결과가 오갑니다. 그중 다시 볼 만한 경험은 검토를 거쳐 지식으로 정리합니다.</p><a class="r33-btn r33-btn-light" href="${esc(communityOrigin)}/">커뮤니티 들어가기</a></div>
     <div class="r33-community-note"><b>정리된 지식</b><p>NJS가 검토하고 오래 남길 내용</p><b>현장의 질문</b><p>사용자가 직접 해보다 생긴 문제와 경험</p><b>다시 쌓이는 경험</b><p>다른 사람에게도 도움이 될 내용은 다시 정리합니다.</p></div>
   </div></section>
   </main>`;
@@ -268,7 +268,7 @@ function contentPage({briefs,videos}) {
 
 function knowledgePage(knowledge) {
   const cards=knowledge.slice(0,50).map((x)=>`<a data-r33-knowledge-card data-search="${esc([x.title,x.summary,x.type,x.category,...(Array.isArray(x.keywords)?x.keywords:[])].join(" ").toLowerCase())}" href="/knowledge/${encodeURIComponent(x.slug)}"><small>${esc(x.updated)} · ${esc(x.type||"지식")}</small><strong>${esc(x.title)}</strong><p>${esc(x.summary)}</p></a>`).join("");
-  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때<br>다시 꺼내볼 것.</h1><p>판매와 운영 과정에서 자주 막히는 문제를 개념과 사례로 정리해 둡니다.</p></div></section>
+  return `<main><section class="r33-page-hero r33-service-hero"><div class="r33-shell"><p class="r33-eyebrow">지식</p><h1>필요할 때 다시 꺼내볼 것.</h1><p>판매와 운영 과정에서 자주 막히는 문제를 개념과 사례로 정리해 둡니다.</p></div></section>
   <section class="r33-service-body r33-knowledge-hub"><div class="r33-shell">
     <div class="r33-index-search"><label for="r33-knowledge-search">찾고 싶은 지식</label><div><input id="r33-knowledge-search" type="search" placeholder="키워드나 문제를 입력하세요" autocomplete="off"><span id="r33-knowledge-count">${knowledge.length}개</span></div></div>
     <div class="r33-knowledge-list" id="r33-knowledge-results">${cards}</div>
