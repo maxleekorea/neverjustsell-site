@@ -196,17 +196,17 @@ function homePage({briefs,knowledge,videos,communityOrigin,authOrigin}) {
     <div class="r33-context-line"><span>팔기 전에, 왜 사는지를 봅니다.</span><span>NEVER JUST SELL</span></div>
     <div class="r33-hero-grid">
       <div class="r33-hero-copy"><p class="r33-eyebrow">고객의 구매 여정은 갈수록 다양해지고 있습니다.</p><h1>정해진 성공 공식은 없습니다.<br>내 사업의 기준을 세워야 합니다.</h1>
-        <p>검색, 광고, 플랫폼의 공식은 오래가지 않습니다. 고객이 왜 찾고, 고르고, 다시 오는지를 이해해야 시장이 바뀌어도 스스로 판단할 수 있습니다. NJS는 상품·유통·검색·브랜드·AI를 따로 보지 않고 사업 전체의 흐름 안에서 다룹니다.</p>
+        <p>검색과 광고, 플랫폼은 계속 바뀝니다. 고객이 왜 찾고, 고르고, 다시 오는지를 이해해야 변화 속에서도 스스로 판단할 수 있습니다. NJS는 상품·유통·검색·브랜드·AI를 함께 봅니다.</p>
         <div class="r33-actions"><a class="r33-btn r33-btn-dark" href="/v33/content">지금 읽을 것 보기</a><a class="r33-link" href="/class">배우기 시작하기 →</a></div>
       </div>
       <aside class="r33-cycle" aria-label="NJS 배움과 실행의 순환">
         <div class="r33-cycle-head"><span>배운 것을 혼자 묵혀두지 않도록</span><b>5단계</b></div>
         <ol>
-          <li><b>01</b><div><strong>배운다</strong><p>필요한 개념과 관점을 먼저 익힙니다.</p></div></li>
-          <li><b>02</b><div><strong>해본다</strong><p>내 사업에 맞게 작게라도 직접 써봅니다.</p></div></li>
-          <li><b>03</b><div><strong>묻고 나눈다</strong><p>막힌 지점과 해본 결과를 서로 나눕니다.</p></div></li>
-          <li><b>04</b><div><strong>경험을 남긴다</strong><p>다시 볼 만한 경험은 정리해서 쌓아둡니다.</p></div></li>
-          <li><b>05</b><div><strong>다시 배운다</strong><p>쌓인 지식과 경험을 다음 판단에 다시 씁니다.</p></div></li>
+          <li><b>01</b><div><strong>배운다</strong><p>개념과 관점을 익힙니다.</p></div></li>
+          <li><b>02</b><div><strong>해본다</strong><p>내 사업에 직접 적용합니다.</p></div></li>
+          <li><b>03</b><div><strong>묻고 나눈다</strong><p>결과와 질문을 나눕니다.</p></div></li>
+          <li><b>04</b><div><strong>경험을 남긴다</strong><p>다시 볼 경험을 남깁니다.</p></div></li>
+          <li><b>05</b><div><strong>다시 배운다</strong><p>다음 판단에 다시 씁니다.</p></div></li>
         </ol>
         <a href="${esc(communityOrigin)}/">커뮤니티 둘러보기 →</a>
       </aside>
