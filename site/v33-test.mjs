@@ -47,7 +47,7 @@ try{
   if(body.includes('없는 이용 후기')||body.includes('지금 모집 중인 프로그램')) throw new Error("Unverified customer proof/offer leaked");
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")||body.includes("NJS 배움과 실행의 순환")) throw new Error("Personal-brand Home must not expose platform/product architecture in the Hero");
 
-  body=await check("/v33/content",["시장과 고객의 변화를","최근 영상 테스트","브리핑 테스트","광고·가격·고객 문제","첫 칼럼"]);
+  body=await check("/v33/content",["시장과 고객의 변화를","최근 영상 테스트","브리핑 테스트","광고·가격·고객 문제","맥작가 칼럼·책 해석"]);
   if(body.includes('id="column"')||body.includes('id="books"')) throw new Error("Empty columns/book explanations must not dominate Content");
   if(!body.includes('href="/knowledge/case-roas-high-profit-low"')) throw new Error("Content problem link missing");
   body=await check("/v33/knowledge",["마케팅과 사업에 필요한","무엇이 궁금하신가요?","지식 테스트 1","지식 테스트 2","내가 저장한 자료",'id="r38-search"']);
