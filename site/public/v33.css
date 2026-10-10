@@ -697,7 +697,7 @@ p,h1,h2,h3,figure{margin:0}
 .r38-inline-actions{display:flex;align-items:center;flex-wrap:wrap;gap:14px 23px;margin-top:23px}
 .r38-fineprint{font-size:12.5px;line-height:1.65;color:#6d655e;margin-top:14px}
 .r38-course-image{display:block;background:#f0efed}
-.r38-course-image img{aspect-ratio:16/10;width:100%;object-fit:cover}
+.r38-course-image img{aspect-ratio:auto;width:100%;height:auto;object-fit:contain}
 .r38-store-published{display:grid;grid-template-columns:1.25fr .75fr;gap:35px}
 .r38-book-mini{display:grid;grid-template-columns:120px 1fr;gap:23px;align-items:center;border:1px solid #e4ded7;padding:24px}
 .r38-book-mini>img{width:100%;max-height:210px;object-fit:contain}
