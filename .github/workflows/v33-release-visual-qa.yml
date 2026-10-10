@@ -11,6 +11,7 @@ on:
       - "site/public/v33.css"
       - "site/v33-release-preview-server.mjs"
       - "site/v33-release-test.mjs"
+      - "site/scripts/njs-typography-audit.mjs"
       - "site/wrangler.jsonc"
       - ".github/workflows/v33-release-visual-qa.yml"
 
@@ -87,10 +88,16 @@ jobs:
           done
           file screenshots/*.png
 
+      - name: Measure title lines and clipping (1440, 1280, 390, 360, 320)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node site/scripts/njs-typography-audit.mjs
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
           name: njs-v33-release-visual-qa
-          path: screenshots/*.png
+          path: screenshots/*
           if-no-files-found: error
           retention-days: 7
