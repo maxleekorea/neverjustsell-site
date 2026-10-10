@@ -38,8 +38,13 @@ async function check(path, expected){
 }
 
 try{
-  let body=await check("/v33",["v33-korean-editorial-01","data-home-design=\"customer-value-v1\"","고객이 선택하는 이유를 알면,","지금, 무엇이 막히시나요?","광고 성과는 좋은데 이익이 남지 않아요.","내 고민과 비슷한 사례 보기","무료 강의 살펴보기","브리핑 테스트","온라인 유통의 기본","비슷한 고민을 읽고,","그냥 팔지 말라"]);
+  let body=await check("/v33",["v33-korean-editorial-01",'data-home-design="journey-v2"','id="main-content"',"지금 겪고 있는 문제부터 살펴보세요.","광고 성과는 좋은데 이익이 남지 않는다면","지금 읽을 사례 보기","무료 강의 살펴보기","브리핑 테스트","온라인 유통의 기본","비슷한 경험을 읽고","그냥 팔지 말라"]);
   if(!body.includes('href="/knowledge/case-roas-high-profit-low"') || !body.includes("community.neverjustsell.com/p/29/customer-experience-vs-price-competition")) throw new Error("Published problem and community links must remain direct");
+  for(const href of ['/v33/knowledge','/v33/content','/v33/book','/v33/about','/v33/lecture','/v33/store','/v33/support']) {
+    if(!body.includes('href="'+href+'"')) throw new Error("Missing mapped preview nav/utility: "+href);
+  }
+  if(!body.includes('aria-label="주 메뉴"')||!body.includes('href="https://classroom.neverjustsell.com/my-space"')) throw new Error("Actual site navigation or My Space utility is missing");
+  if(body.includes('없는 이용 후기')||body.includes('지금 모집 중인 프로그램')) throw new Error("Unverified customer proof/offer leaked");
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")||body.includes("NJS 배움과 실행의 순환")) throw new Error("Personal-brand Home must not expose platform/product architecture in the Hero");
 
   body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
