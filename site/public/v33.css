@@ -460,6 +460,7 @@ p,h1,h2,h3,figure{margin:0}
 .r37-home a:focus-visible,.r33-header a:focus-visible,.r33-header summary:focus-visible{outline:3px solid #88785F;outline-offset:3px}
 .r33-header{background:rgba(250,249,247,.97);border-bottom-color:#E7E3DD}
 .r33-brand{font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;font-weight:850;font-size:17px;letter-spacing:-.047em;color:#312923}
+.r33-brand img{display:block;width:29px;height:29px;flex-shrink:0;object-fit:contain;margin-right:8px}
 .r33-nav{gap:19px}
 .r33-nav a[aria-current="page"],.r33-mobile-menu a[aria-current="page"]{color:#3C3028;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:7px}
 .r33-myspace{border-color:#4D443D;border-radius:4px}
