@@ -551,3 +551,17 @@ body{background:#fff}
   .r33-learning-feature h2,.r33-store-feature h2{font-size:23px}
   .r33-support-index strong{font-size:21px}
 }
+
+/* V3.4 Korean benchmark micro-adjustment */
+.r33-context-line span:first-child{color:var(--muted);font-weight:650}
+@media(max-width:640px){
+  .r33-cycle ol{display:flex;gap:0;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px}
+  .r33-cycle li,.r33-cycle li:first-child{
+    min-width:128px;display:block;padding:10px 14px;scroll-snap-align:start;border-right:1px solid var(--line);border-bottom:0
+  }
+  .r33-cycle li:first-child{padding-left:0}
+  .r33-cycle li:last-child{border-right:0}
+  .r33-cycle li>b{display:block;margin-bottom:6px}
+  .r33-cycle strong{display:block;font-size:13.5px}
+  .r33-cycle p{display:none}
+}
