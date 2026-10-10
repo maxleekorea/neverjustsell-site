@@ -41,7 +41,8 @@ try{
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"root");
   expect(x.body,'name="robots" content="index,follow,max-image-preview:large"',"root");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/">',"root");
-  expect(x.body,"팔기 전에,","root");
+  expect(x.body,"고객이 선택하는 이유를 알면,","root");
+  expect(x.body,'data-home-design="customer-value-v1"',"root customer-value home");
   expect(x.body,'href="/content"',"root");
   expect(x.body,'href="/knowledge"',"root");
   expect(x.body,'href="https://classroom.neverjustsell.com/my-space">내 공간</a>',"root member continuity");
