@@ -41,42 +41,49 @@ try{
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"root");
   expect(x.body,'name="robots" content="index,follow,max-image-preview:large"',"root");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/">',"root");
-  expect(x.body,"팔기 전에,","root");
+  expect(x.body,"고객이 선택하는 이유를 알면,","root");
+  expect(x.body,'data-home-design="journey-v2"',"root journey-design home");
   expect(x.body,'href="/content"',"root");
   expect(x.body,'href="/knowledge"',"root");
   expect(x.body,'href="https://classroom.neverjustsell.com/my-space">내 공간</a>',"root member continuity");
   forbid(x.body,'href="/v33/"',"root preview links");
   forbid(x.body,'href="/v33">',"root preview home link");
+  forbid(x.body,'href="/v33/store"',"root store route");
+  forbid(x.body,'href="/v33/support"',"root support route");
   forbid(x.body,"재구성 프리뷰","root");
   if(x.response.headers.get("Cache-Control")!=="public, max-age=120, s-maxage=600") throw new Error("root public cache contract");
   if(String(x.response.headers.get("X-Robots-Tag")||"").includes("noindex")) throw new Error("root must not emit noindex header");
 
   x=await html("/content");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/content">',"content");
-  expect(x.body,"짧게 볼 것과","content");
+  expect(x.body,"시장과 고객의 변화를","content");
+  expect(x.body,'href="/knowledge/case-roas-high-profit-low"',"content real case link");
   forbid(x.body,"에디토리얼 프리뷰","content");
 
   x=await html("/about");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/about">',"about");
-  expect(x.body,"마케팅만","about");
+  expect(x.body,"마케팅을 고객과 상품","about");
 
   x=await html("/book");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/book">',"book");
   expect(x.body,'"@type":"Book"',"book");
   expect(x.body,"9791124121061","book print isbn");
   expect(x.body,"9791124121122","book ebook isbn");
-  expect(x.body,'href="/store">스토어 보기</a>',"book");
+  expect(x.body,'href="https://www.yes24.com/product/goods/171660478"',"book print external retailer");
+  expect(x.body,'href="https://www.yes24.com/product/goods/195224748"',"book ebook external retailer");
   forbid(x.body,'href="/book">책 자세히 보기</a>',"book");
+  forbid(x.body,'href="/store">스토어 보기</a>',"book misleading Cafe24 routing");
 
   x=await html("/lecture");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/lecture">',"lecture");
-  expect(x.body,"온라인 신청은 아직 준비 중","lecture");
+  expect(x.body,"현재 온라인 신청은 준비 중","lecture");
 
   x=await html("/knowledge");
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"knowledge");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/knowledge">',"knowledge");
-  expect(x.body,"찾고 싶은 지식","knowledge");
-  expect(x.body,"내 학습함","knowledge");
+  expect(x.body,"무엇이 궁금하신가요?","knowledge");
+  expect(x.body,'id="r38-search"',"knowledge active search");
+  expect(x.body,"내가 저장한 자료","knowledge");
   forbid(x.body,"NJS KNOWLEDGE HUB","knowledge legacy shell");
 
   x=await html("/knowledge/release-knowledge");
@@ -85,16 +92,26 @@ try{
 
   x=await html("/class");
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"class");
-  expect(x.body,"읽은 것을","class");
-  expect(x.body,"무료 강의 보기","class");
+  expect(x.body,"온라인 커머스,","class");
+  expect(x.body,"무료 강의 내용 보기","class");
+  expect(x.body,"판매 준비 중","class pending offer");
   x=await html("/store");
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"store");
-  expect(x.body,"지금 이용할 수 있는","store");
-  expect(x.body,"모집 시 안내","store");
+  expect(x.body,"책과 강의,","store");
+  expect(x.body,"종이책·전자책","store already-published ebook");
+  expect(x.body,"앞으로 제공할 콘텐츠","store");
   x=await html("/support");
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"support");
-  expect(x.body,"필요한 곳으로","support");
-  expect(x.body,"취소·환불 신청","support");
+  expect(x.body,"수강·주문·환불","support");
+  expect(x.body,"취소·환불 대상 주문 확인하기","support honest destination");
+  forbid(x.body,"취소·환불 신청","support false CTA");
+
+  for(const route of ["/content","/knowledge","/class","/store","/support","/about","/book","/lecture"]){
+    const p=await html(route);
+    expect(p.body,'id="main-content"',route+" main landmark");
+    expect(p.body,'class="r38-page"',route+" purpose-specific layout");
+    forbid(p.body,'href="/v33/',route+" preview-only links");
+  }
 
   x=await html("/v33");
   expect(x.body,'name="robots" content="noindex,nofollow,noarchive"',"preview");

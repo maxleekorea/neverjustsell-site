@@ -4,11 +4,14 @@ import runtime from "./src/runtime.js";
 
 const PORT = 8790;
 const CSS = await readFile(new URL("./public/v33.css", import.meta.url), "utf8");
+const BRAND_MARK=await readFile(new URL("./public/njs-brand-mark.svg",import.meta.url),"utf8");
 const mockEntries = [
-  { slug:"brief-platform-change", title:"플랫폼이 바뀔 때 판매자가 먼저 확인할 것", type:"brief", category:"brief", summary:"기능 변화보다 고객의 발견과 선택 과정이 어떻게 달라지는지 먼저 봅니다.", body:"preview", keywords:["플랫폼","변화"], updated:"2026-10-01", version:1 },
-  { slug:"customer-value", title:"고객가치는 가격보다 먼저 결정됩니다", type:"article", category:"marketing", summary:"고객이 무엇을 비교하고 왜 선택하는지부터 정리합니다.", body:"preview", keywords:["고객","가치"], updated:"2026-09-29", version:1 },
-  { slug:"distribution-structure", title:"유통 구조를 모르면 광고 효율도 오래가지 않습니다", type:"guide", category:"commerce", summary:"채널과 광고보다 먼저 수익과 고객 접점의 구조를 봅니다.", body:"preview", keywords:["유통","광고"], updated:"2026-09-27", version:1 },
-  { slug:"brand-search", title:"브랜드 검색은 결과가 아니라 과정입니다", type:"article", category:"marketing", summary:"사람들이 왜 이름을 기억하고 다시 찾는지 행동의 흐름으로 봅니다.", body:"preview", keywords:["브랜드","검색"], updated:"2026-09-25", version:1 }
+  { slug:"brief-brand-search-asset", title:"브랜드 검색이 쌓이는 구조", type:"brief", category:"brief", summary:"일반 키워드로 발견된 고객이 다음에는 이름을 직접 찾도록 만드는 장기 자산.", body:"visual-preview", keywords:["브랜드","검색"], updated:"2026-09-27", version:1 },
+  { slug:"case-roas-high-profit-low", title:"ROAS는 좋은데 이익이 안 남는 경우", type:"case", category:"case", summary:"광고 대시보드의 매출과 실제 주문 손익을 분리한다.", body:"visual-preview", keywords:["광고","ROAS","이익"], updated:"2026-09-27", version:1 },
+  { slug:"case-discount-no-conversion", title:"가격을 내렸는데도 안 팔리는 경우", type:"case", category:"case", summary:"가격이 아니라 이해·신뢰가 병목인지 확인한다.", body:"visual-preview", keywords:["가격","고객","구매"], updated:"2026-09-27", version:1 },
+  { slug:"case-platform-rule-change", title:"플랫폼 규정 변경으로 성과가 흔들린 경우", type:"case", category:"case", summary:"한 가지 노출 기술에 의존한 구조를 여러 접점으로 분산한다.", body:"visual-preview", keywords:["플랫폼","노출"], updated:"2026-09-27", version:1 },
+  { slug:"positioning", title:"포지셔닝", type:"term", category:"term", summary:"고객의 머릿속에서 어떤 기준으로 기억되고 비교될지를 정하는 전략.", body:"visual-preview", keywords:["브랜드","고객"], updated:"2026-09-27", version:1 },
+  { slug:"search-intent", title:"검색 의도", type:"term", category:"term", summary:"사용자가 검색어를 입력할 때 실제로 해결하려는 목적과 상황.", body:"visual-preview", keywords:["검색","고객"], updated:"2026-09-27", version:1 }
 ];
 
 const env = {
@@ -37,6 +40,7 @@ globalThis.fetch=async (input,init)=>{
 
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url||"/",`http://127.0.0.1:${PORT}`);
+  if(url.pathname==="/njs-brand-mark.svg"){res.writeHead(200,{"Content-Type":"image/svg+xml; charset=utf-8"});res.end(BRAND_MARK);return;}
   if(url.pathname==="/v33.css"){
     res.writeHead(200,{"Content-Type":"text/css; charset=utf-8"});
     res.end(CSS);return;
