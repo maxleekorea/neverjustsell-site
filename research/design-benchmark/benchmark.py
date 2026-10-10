@@ -4,7 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
 
-TARGETS = [
+# Research-only benchmark targets; no production routes are changed.\nTARGETS = [
     ("njs", "https://www.neverjustsell.com/"),
     ("thefutur", "https://thefutur.com/"),
     ("reforge", "https://www.reforge.com/"),
