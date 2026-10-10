@@ -38,7 +38,7 @@ async function check(path, expected){
 }
 
 try{
-  let body=await check("/v33",["v33-korean-editorial-01","팔기 전에","왜 사는지를 봅니다","배운다","요즘, 무엇이","필요할 때","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
+  let body=await check("/v33",["v33-korean-editorial-01","고객의 구매 여정은 갈수록 다양해지고 있습니다.","정해진 성공 공식은 없습니다.","내 사업의 기준을 세워야 합니다.","팔기 전에, 왜 사는지를 봅니다.","지금 읽을 것 보기","배우기 시작하기","배운다","요즘, 무엇이","필요할 때","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
   if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.3 must not expose internal English product jargon");
 
   body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
