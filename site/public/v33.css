@@ -472,7 +472,7 @@ p,h1,h2,h3,figure{margin:0}
 .r37-hero-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(315px,.82fr);gap:64px;align-items:center}
 .r37-hero-body{min-width:0}
 .r37-eyebrow{font-size:12px;letter-spacing:.015em;font-weight:850;color:#6E5F50}
-.r37-hero h1{font-size:clamp(40px,3.65vw,53px);line-height:1.22;font-weight:860;margin-top:15px;max-width:680px}
+.r37-hero h1{font-size:clamp(2.15rem,2.8vw,2.65rem);line-height:1.22;font-weight:860;margin-top:15px;max-width:680px}
 .r37-intro{font-size:16.5px;line-height:1.78;color:#544D47;margin-top:21px;max-width:630px}
 .r37-actions{display:flex;align-items:center;gap:16px 24px;flex-wrap:wrap;margin-top:27px}
 .r37-button{display:inline-flex;justify-content:center;align-items:center;gap:18px;min-height:48px;padding:0 19px;background:#322A25;color:#FFF!important;border-radius:4px;font-size:14px;font-weight:850;letter-spacing:-.017em}
@@ -488,14 +488,14 @@ p,h1,h2,h3,figure{margin:0}
 .r37-hero-photo figcaption span{font-size:12px;color:#EBE8E4}
 .r37-section{padding:65px 0}
 .r37-section-heading{display:flex;justify-content:space-between;gap:35px;align-items:flex-end;margin-bottom:27px}
-.r37-section-heading h2{font-size:clamp(28px,2.55vw,36px);line-height:1.28;font-weight:840;margin-top:8px}
+.r37-section-heading h2{font-size:clamp(1.65rem,2.1vw,1.95rem);line-height:1.29;font-weight:840;margin-top:8px}
 .r37-section-heading>a{flex-shrink:0;margin-bottom:2px}
 .r37-case-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:38px;border-top:2px solid #50443A}
 .r37-case{display:flex;align-items:center;gap:14px;min-height:122px;padding:21px 0;border-bottom:1px solid #E1DCD6}
 .r37-tag{display:inline-block;font-size:11.5px;font-weight:850;color:#7B6858}
 .r37-case>.r37-tag{flex:0 0 98px;align-self:flex-start;margin-top:5px}
 .r37-case-text{min-width:0;display:block;flex:1}
-.r37-case strong{display:block;font-size:17px;line-height:1.45;letter-spacing:-.025em}
+.r37-case strong{display:block;font-size:16px;line-height:1.48;letter-spacing:-.025em}
 .r37-case small{display:block;font-size:13px;line-height:1.55;color:#726C66;margin-top:6px}
 .r37-arrow{font-size:17px;color:#655748}
 .r37-case:hover strong{text-decoration:underline;text-underline-offset:4px}
@@ -506,14 +506,14 @@ p,h1,h2,h3,figure{margin:0}
 .r37-video figure img,.r37-video-empty{width:100%;aspect-ratio:16/9;object-fit:cover}
 .r37-video-empty{display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#6B6258}
 .r37-media-info{padding-top:17px;display:flex;flex-direction:column;gap:11px}
-.r37-video strong{font-size:21px;line-height:1.38}
+.r37-video strong{font-size:19px;line-height:1.42}
 .r37-video .r37-link{margin-top:5px}
 .r37-brief{padding:29px 32px;border:1px solid #E4DFD9;background:#FFF;display:flex;flex-direction:column;gap:14px;min-height:270px}
-.r37-brief strong{font-size:26px;line-height:1.4;letter-spacing:-.035em}
+.r37-brief strong{font-size:22px;line-height:1.42;letter-spacing:-.035em}
 .r37-brief p{font-size:14.5px;color:#6B655F;line-height:1.75}
 .r37-brief .r37-link{margin-top:auto;padding-top:12px}
 .r37-learning-grid{display:grid;grid-template-columns:1.03fr .97fr;gap:56px;align-items:center}
-.r37-learning h2,.r37-community h2,.r37-author h2{font-size:clamp(30px,2.9vw,39px);line-height:1.31;font-weight:830;margin-top:9px}
+.r37-learning h2,.r37-community h2,.r37-author h2{font-size:clamp(1.7rem,2.3vw,2.1rem);line-height:1.32;font-weight:830;margin-top:9px}
 .r37-description{font-size:15px;color:#675F58;line-height:1.75;max-width:600px;margin-top:17px}
 .r37-course-title{font-size:18px;font-weight:820;margin-top:24px;padding-top:19px;border-top:1px solid #CFC8BF}
 .r37-course-title span{font-size:12px;font-weight:800;color:#584C3E;margin-left:8px}
@@ -567,7 +567,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-hero-photo>img{width:62px;height:62px;aspect-ratio:1;object-fit:cover;border-radius:50%;flex-shrink:0}
  .r37-hero-photo figcaption{position:static;display:flex;flex-direction:column;gap:3px;padding:0;background:none;color:#322A25}
  .r37-hero-photo figcaption span{font-size:11.5px;color:#746B63}
- .r37-hero h1{font-size:clamp(29px,7.9vw,35px);line-height:1.23;margin-top:11px}
+ .r37-hero h1{font-size:clamp(1.5rem,6.8vw,1.75rem);line-height:1.26;margin-top:11px}
  .r37-intro{margin-top:13px;font-size:14px;line-height:1.67}
  .r37-eyebrow{font-size:11.5px}
  .r37-actions{margin-top:17px;gap:14px}
@@ -576,7 +576,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-return{font-size:11.5px;margin-top:16px;line-height:1.5}
  .r37-section{padding:47px 0}
  .r37-section-heading{display:block;margin-bottom:21px}
- .r37-section-heading h2{font-size:26px;line-height:1.3}
+ .r37-section-heading h2{font-size:23px;line-height:1.32}
  .r37-section-heading>a{display:inline-block;margin-top:13px;font-size:12.5px}
  .r37-case-grid{display:block}
  .r37-case{min-height:0;padding:16px 0;align-items:start;gap:9px}
@@ -589,7 +589,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-brief{padding:23px;min-height:195px}
  .r37-brief strong{font-size:21px}
  .r37-brief p{font-size:13px}
- .r37-learning h2,.r37-community h2,.r37-author h2{font-size:27px}
+ .r37-learning h2,.r37-community h2,.r37-author h2{font-size:23px}
  .r37-description{font-size:14px;line-height:1.68}
  .r37-course-title{font-size:16px}
  .r37-course-points{font-size:13px}
@@ -599,7 +599,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-author-grid{display:flex;align-items:center;gap:20px}
  .r37-author figure{flex:0 0 95px;min-height:0;padding:12px}
  .r37-author figure img{max-height:170px}
- .r37-author h2{font-size:22px}
+ .r37-author h2{font-size:20px}
  .r37-author .r37-description{font-size:12.5px}
  .r37-author-links{margin-top:16px;gap:14px}
  .r37-author-links a{font-size:12px}
@@ -609,7 +609,7 @@ p,h1,h2,h3,figure{margin:0}
  .r37-business a{display:inline-block;margin-top:14px;font-size:12.5px}
 }
 @media(max-width:360px){
- .r37-hero h1{font-size:28px}
+ .r37-hero h1{font-size:24px}
  .r37-intro{font-size:13.5px}
  .r37-actions{align-items:flex-start}
  .r37-case>.r37-tag{flex-basis:59px}
@@ -626,9 +626,9 @@ p,h1,h2,h3,figure{margin:0}
 .r38-page{--r38-ink:#29231e;--r38-mute:#68615a;--r38-line:#e2ddd7;--r38-soft:#f6f4f1;--r38-action:#322a25;color:var(--r38-ink);background:#fff;font-family:"Pretendard Variable",Pretendard,system-ui,"Noto Sans KR",sans-serif}
 .r38-page [hidden]{display:none!important}
 .r38-page h1,.r38-page h2,.r38-page h3{font-family:inherit;letter-spacing:-.038em;word-break:keep-all}
-.r38-page h1{font-size:clamp(34px,3.6vw,46px);line-height:1.25;font-weight:850;max-width:940px}
-.r38-page h2{font-size:clamp(23px,2.4vw,30px);line-height:1.35;font-weight:830}
-.r38-page h3{font-size:18px;line-height:1.45;font-weight:800}
+.r38-page h1{font-size:clamp(2rem,2.7vw,2.375rem);line-height:1.28;font-weight:850;max-width:940px}
+.r38-page h2{font-size:clamp(1.375rem,1.9vw,1.625rem);line-height:1.36;font-weight:830}
+.r38-page h3{font-size:17px;line-height:1.47;font-weight:800}
 .r38-page a:focus-visible,.r38-page input:focus-visible{outline:3px solid #927a60;outline-offset:3px}
 .r38-page p{word-break:keep-all}
 .r38-eyebrow{font-size:12px;font-weight:830;color:#6e5d4e;margin-bottom:12px}
@@ -649,7 +649,7 @@ p,h1,h2,h3,figure{margin:0}
 .r38-jump-nav a:hover{border-color:#746253}
 .r38-media-two{display:grid;grid-template-columns:1.15fr .85fr;gap:32px}
 .r38-media-two section{min-width:0}
-.r38-media-two h2{font-size:25px;margin-bottom:9px}
+.r38-media-two h2{font-size:22px;margin-bottom:9px}
 .r38-aside-description{font-size:14px;line-height:1.72;color:#706963;margin-bottom:22px}
 .r38-feature-media{display:block}
 .r38-feature-media img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#e9e6e1}
@@ -658,7 +658,7 @@ p,h1,h2,h3,figure{margin:0}
 .r38-feature-media strong{font-size:20px;line-height:1.4;letter-spacing:-.025em}
 .r38-feature-media>div>span,.r38-feature-brief>span{font-size:12.5px;font-weight:800;color:#514235}
 .r38-feature-brief{background:#fff;border:1px solid #e3ded8;min-height:280px;padding:27px 28px;display:flex;flex-direction:column;gap:14px}
-.r38-feature-brief strong{font-size:23px;line-height:1.42;letter-spacing:-.03em}
+.r38-feature-brief strong{font-size:21px;line-height:1.45;letter-spacing:-.03em}
 .r38-feature-brief p{font-size:14px;line-height:1.72;color:#69615a}
 .r38-feature-brief>span{margin-top:auto}
 .r38-row-links{border-top:2px solid #58483c}
@@ -679,7 +679,7 @@ p,h1,h2,h3,figure{margin:0}
 .r38-knowledge-shortcuts{display:flex;align-items:center;flex-wrap:wrap;gap:11px 21px;font-size:13px;margin:20px 0 30px}
 .r38-knowledge-shortcuts>a{text-decoration:underline;text-underline-offset:4px;font-weight:800}
 .r38-knowledge-group{margin-top:39px;scroll-margin-top:95px}
-.r38-knowledge-group h2{font-size:23px;margin-bottom:5px}
+.r38-knowledge-group h2{font-size:21px;margin-bottom:5px}
 .r38-knowledge-group>p{font-size:13px;color:#756d65;margin-bottom:16px;line-height:1.6}
 .r38-knowledge-results{display:grid;grid-template-columns:1fr 1fr;column-gap:34px;border-top:2px solid #4d4036}
 .r38-knowledge-entry{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:17px 0;border-bottom:1px solid #e2ddd7;min-height:100px}
@@ -713,7 +713,7 @@ p,h1,h2,h3,figure{margin:0}
 .r38-minor-grid .r38-text-link{display:inline-block;margin-top:13px}
 .r38-support-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 34px;border-top:2px solid #55473c}
 .r38-support-grid>a{display:block;border-bottom:1px solid #ded8d0;padding:23px 0}
-.r38-support-grid h2{font-size:21px;margin-top:4px}
+.r38-support-grid h2{font-size:19px;margin-top:4px}
 .r38-support-grid p{font-size:14px;line-height:1.7;color:#6d655e;margin:11px 0 16px;max-width:470px}
 .r38-support-grid strong{font-size:13px;color:#44392f}
 .r38-legal-note{font-size:12px;line-height:1.7;color:#7b7066;margin-top:26px}
@@ -738,8 +738,8 @@ p,h1,h2,h3,figure{margin:0}
   .r38-book-mini{gap:15px;padding:18px}
 }
 @media(max-width:640px){
-  .r38-page h1{font-size:clamp(29px,7.8vw,34px);line-height:1.28}
-  .r38-page h2{font-size:23px}
+  .r38-page h1{font-size:clamp(1.45rem,6.5vw,1.6875rem);line-height:1.3}
+  .r38-page h2{font-size:20px}
   .r38-hero{padding:31px 0 29px}
   .r38-eyebrow{font-size:11.5px;margin-bottom:9px}
   .r38-lead{font-size:14px;line-height:1.67;margin-top:13px}
@@ -753,7 +753,7 @@ p,h1,h2,h3,figure{margin:0}
   .r38-jump-nav a{font-size:12px;min-height:37px;padding:0 10px}
   .r38-media-two,.r38-course-feature,.r38-store-published,.r38-minor-grid,.r38-support-grid,.r38-knowledge-results,.r38-about-grid,.r38-book-grid{grid-template-columns:1fr;gap:0}
   .r38-media-two>section+section{margin-top:30px;padding-top:25px;border-top:1px solid #e4ded6}
-  .r38-media-two h2{font-size:21px}
+  .r38-media-two h2{font-size:20px}
   .r38-aside-description{font-size:13px;margin-bottom:14px}
   .r38-feature-media strong{font-size:18px}
   .r38-feature-brief{min-height:195px;padding:20px}
@@ -768,7 +768,7 @@ p,h1,h2,h3,figure{margin:0}
   .r38-searchbar>div span{font-size:11px}
   .r38-knowledge-shortcuts{gap:12px;margin:16px 0 23px}
   .r38-knowledge-group{margin-top:29px}
-  .r38-knowledge-group h2{font-size:21px}
+  .r38-knowledge-group h2{font-size:19px}
   .r38-knowledge-entry{min-height:84px;padding:14px 0}
   .r38-knowledge-entry strong{font-size:14px}
   .r38-course-feature>div+*{margin-top:27px}
@@ -782,7 +782,7 @@ p,h1,h2,h3,figure{margin:0}
   .r38-store-course .r38-button{margin-top:17px}
   .r38-minor-grid>div+div{margin-top:25px;padding-top:22px;border-top:1px solid #e3ded7}
   .r38-support-grid>a{padding:19px 0}
-  .r38-support-grid h2{font-size:19px}
+  .r38-support-grid h2{font-size:18px}
   .r38-support-grid p{font-size:13px}
   .r38-about-hero,.r38-book-hero{padding:25px 0 32px}
   .r38-about-grid{display:flex;flex-direction:column-reverse;align-items:stretch;gap:18px}
@@ -795,14 +795,20 @@ p,h1,h2,h3,figure{margin:0}
   .r38-book-grid{display:flex;gap:17px;align-items:flex-start}
   .r38-book-grid figure{flex:0 0 97px;padding:11px}
   .r38-book-grid figure img{max-height:175px}
-  .r38-book-grid h1{font-size:26px}
+  .r38-book-grid h1{font-size:23px}
   .r38-book-grid .r38-lead{font-size:13px}
   .r38-book-grid .r38-hero-actions{gap:11px}
   .r38-book-meta{font-size:11px}
 }
 @media(max-width:360px){
-  .r38-page h1{font-size:28px}
+  .r38-page h1{font-size:1.45rem}
   .r38-book-grid{gap:12px}
   .r38-book-grid figure{flex-basis:77px}
   .r38-searchbar>div{gap:8px}
 }
+
+/* P30 responsive Korean type scale (2026-10-10 candidate) — source:
+ * LINE LDSG Typography; GOV.UK Type Scale; WCAG 1.4.4 & 1.4.10.
+ * Natural reflow for text zoom is mandatory: do not line-clamp, nowrap, or crop headings.
+ * Verify rendered line count, width and scroll at 1440,1280,390,360,320 and 200% zoom.
+ */
