@@ -66,7 +66,7 @@ function currentVideo(items) {
 function nav(communityOrigin, authOrigin, routeKey="/") {
   const current=(key)=>routeKey===key ? ' aria-current="page"' : '';
   return `<header class="r33-header"><div class="r33-shell r33-header-inner">
-    <a class="r33-brand" href="/v33" aria-label="NEVER JUST SELL 홈">NEVER JUST SELL</a>
+    <a class="r33-brand" href="/v33" aria-label="NEVER JUST SELL 홈"><img src="/njs-brand-mark.svg" alt="" width="29" height="29">NEVER JUST SELL</a>
     <nav class="r33-nav" aria-label="주 메뉴">
       <a href="/v33/content"${current("/content")}>콘텐츠</a>
       <a href="${esc(authOrigin)}/courses">강의</a>
