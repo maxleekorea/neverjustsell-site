@@ -382,3 +382,172 @@ p,h1,h2,h3,figure{margin:0}
   .r33-learning-feature h2,.r33-store-feature h2{font-size:25px;line-height:1.25}
   .r33-learning-feature p,.r33-store-feature p{font-size:14.5px}
 }
+
+/* V3.4 Korean benchmark pass
+   Benchmarks: CLASS101, PUBLY, Naver Premium Contents, EO Planet.
+   Goal: familiar Korean content/learning service proportions while preserving NJS identity. */
+:root{
+  --bg:#ffffff;
+  --soft:#f7f7f5;
+  --line:#e7e5e1;
+  --muted:#66635f;
+  --accent:#8f3b24;
+  --max:1180px;
+}
+body{background:#fff}
+.r33-shell{width:min(calc(100% - 64px),var(--max))}
+.r33-header{background:rgba(255,255,255,.96);border-bottom:1px solid #eceae6}
+.r33-header-inner{height:64px}
+.r33-brand{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;font-size:18px;font-weight:850;letter-spacing:-.025em}
+.r33-nav a,.r33-search,.r33-more summary{font-size:14px;font-weight:700}
+.r33-eyebrow{font-size:12px;letter-spacing:.01em}
+.r33-btn{border-radius:8px}
+.r33-btn-dark{background:#1d1c1a}
+.r33-link{font-weight:750}
+
+.r33-hero{padding:36px 0 54px}
+.r33-context-line{min-height:30px;padding:0;border:0;font-size:12px}
+.r33-context-line span:last-child{display:none}
+.r33-hero-grid{grid-template-columns:1fr;gap:34px;padding-top:24px}
+.r33-hero-copy{max-width:850px}
+.r33-hero-copy h1{font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;font-size:clamp(44px,3.8vw,52px);font-weight:850;line-height:1.18;letter-spacing:-.045em}
+.r33-hero-copy>p:last-of-type{max-width:730px;margin-top:18px;font-size:16px;line-height:1.65}
+.r33-actions{margin-top:24px;gap:18px}
+
+.r33-cycle{padding:18px 0 0;background:transparent;border:0;border-top:1px solid var(--line)}
+.r33-cycle-head{padding:0 0 14px;border:0;font-size:12px}
+.r33-cycle ol{display:grid;grid-template-columns:repeat(5,1fr);margin:0}
+.r33-cycle li{display:block;min-height:82px;padding:0 18px;border:0;border-right:1px solid var(--line)}
+.r33-cycle li:first-child{padding-left:0}
+.r33-cycle li:last-child{border-right:0}
+.r33-cycle li>b{width:auto;height:auto;margin-bottom:8px;display:block;background:transparent;color:var(--accent);font-size:11px}
+.r33-cycle strong{font-size:14px}
+.r33-cycle p{margin-top:5px;font-size:12.5px;line-height:1.5}
+.r33-cycle>a{margin-top:14px;font-size:13px}
+
+.r33-section{padding:70px 0}
+.r33-section-head{margin-bottom:28px;gap:48px}
+.r33-section-head h2,.r33-author h2,.r33-community h2,.r33-two-col h2{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;
+  font-size:clamp(30px,2.8vw,38px);font-weight:820;line-height:1.24;letter-spacing:-.035em
+}
+.r33-section-head h2 br,.r33-author h2 br,.r33-community h2 br,.r33-two-col h2 br{display:none}
+.r33-section-head>p,.r33-two-col>div>p{font-size:15px;line-height:1.65;max-width:460px}
+.r33-rule-head{padding-bottom:0;border-bottom:0}
+
+.r33-now{background:#fff;border:0}
+.r33-now-grid{grid-template-columns:1.1fr 1fr 1fr;gap:20px}
+.r33-news-main,.r33-column-preview,.r33-video-card{
+  min-height:292px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff
+}
+.r33-news-main,.r33-column-preview{padding:24px}
+.r33-column-preview{background:var(--soft)}
+.r33-news-main h3,.r33-column-preview h3{
+  margin-top:22px;font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;
+  font-size:24px;font-weight:800;line-height:1.35;letter-spacing:-.03em
+}
+.r33-video-card img{aspect-ratio:16/9}
+.r33-video-card strong{font-size:17px;line-height:1.45}
+
+.r33-knowledge-grid{gap:22px;border-top:1px solid #242321}
+.r33-knowledge-grid>a,.r33-knowledge-grid>a+a{
+  min-height:205px;padding:22px 0;border-left:0;border-bottom:1px solid var(--line)
+}
+.r33-knowledge-grid strong{margin-top:14px;font-size:20px;line-height:1.42}
+.r33-knowledge-grid p{font-size:14px;line-height:1.62}
+
+.r33-do{background:var(--soft)}
+.r33-do-grid{gap:22px;border-top:1px solid #242321}
+.r33-do-grid>a,.r33-do-grid>a:last-child{
+  min-height:195px;padding:22px 0;border-right:0;border-bottom:1px solid var(--line)
+}
+.r33-do-grid h3{margin-top:18px;font-size:22px}
+.r33-do-grid p{font-size:14px;line-height:1.62}
+
+.r33-author{padding:72px 0;background:#fff}
+.r33-author-grid{grid-template-columns:.9fr 1.1fr;gap:58px}
+.r33-author figure,.r33-author figure img{min-height:0;height:auto;aspect-ratio:4/5}
+.r33-author figure{border-radius:12px;overflow:hidden;background:#eee}
+.r33-author-grid>div>p:not(.r33-eyebrow){font-size:15.5px;line-height:1.7}
+
+.r33-community{padding:72px 0;background:#f3f4f1;color:var(--ink)}
+.r33-community-grid{grid-template-columns:1.1fr .9fr;gap:64px;align-items:start}
+.r33-community .r33-light{color:var(--accent)}
+.r33-community-grid>div:first-child>p:not(.r33-eyebrow){color:var(--muted);font-size:15px;line-height:1.68}
+.r33-community-note{border-top:1px solid #cbc8c2}
+.r33-community-note p{border-bottom:1px solid #d8d5cf;color:var(--muted)}
+.r33-btn-light{background:#1d1c1a;color:#fff}
+
+.r33-page-hero{padding:62px 0 44px}
+.r33-page-hero h1,.r33-about-hero h1,.r33-book-hero h1,.r33-lecture-hero h1{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;
+  font-size:clamp(38px,3.5vw,50px);font-weight:850;line-height:1.18;letter-spacing:-.04em
+}
+.r33-page-hero p:last-child,.r33-about-hero p:last-child,.r33-book-hero p,.r33-lecture-hero p{font-size:15.5px;line-height:1.68}
+.r33-wide-story h3,.r33-editorial-list h2,.r33-store-feature h2,.r33-learning-feature h2,.r33-support-index strong{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Noto Sans KR",sans-serif;
+  letter-spacing:-.03em
+}
+.r33-empty-editorial{background:var(--soft);border:1px solid var(--line);border-radius:10px}
+.r33-content-tabs{background:#fff}
+
+.r33-learning-feature,.r33-store-feature{gap:32px}
+.r33-learning-feature figure,.r33-store-feature figure{border-radius:10px}
+.r33-learning-feature h2,.r33-store-feature h2{font-size:28px}
+.r33-support-index strong{font-size:24px}
+
+.r33-footer{padding:40px 0;background:#fff}
+
+@media(max-width:900px){
+  .r33-cycle ol{grid-template-columns:repeat(5,minmax(145px,1fr));overflow-x:auto;padding-bottom:6px}
+  .r33-cycle li{min-height:74px}
+}
+@media(max-width:640px){
+  .r33-shell{width:calc(100% - 36px)}
+  .r33-header-inner{height:58px}
+  .r33-brand{font-size:16px}
+  .r33-hero{padding:26px 0 40px}
+  .r33-context-line{font-size:11.5px}
+  .r33-hero-grid{gap:26px;padding-top:16px}
+  .r33-hero-copy h1{font-size:34px;line-height:1.2;letter-spacing:-.04em}
+  .r33-hero-copy>p:last-of-type{margin-top:14px;font-size:15px;line-height:1.62}
+  .r33-actions{margin-top:20px;gap:14px}
+  .r33-btn{min-height:44px;padding:0 17px}
+  .r33-cycle{padding-top:14px}
+  .r33-cycle-head{padding-bottom:11px}
+  .r33-cycle ol{grid-template-columns:1fr;overflow:visible}
+  .r33-cycle li,.r33-cycle li:first-child{
+    min-height:0;padding:12px 0;display:grid;grid-template-columns:32px 90px 1fr;align-items:center;border-right:0;border-bottom:1px solid var(--line)
+  }
+  .r33-cycle li>b{margin:0}
+  .r33-cycle p{margin:0;font-size:12.5px}
+  .r33-cycle>a{margin-top:12px}
+
+  .r33-section{padding:52px 0}
+  .r33-section-head{margin-bottom:22px}
+  .r33-section-head h2,.r33-author h2,.r33-community h2,.r33-two-col h2{font-size:27px;line-height:1.28}
+  .r33-section-head>p,.r33-two-col>div>p{margin-top:10px;font-size:14.5px;line-height:1.62}
+
+  .r33-now-grid{grid-template-columns:1fr;gap:14px}
+  .r33-news-main,.r33-column-preview,.r33-video-card{min-height:0;border-radius:10px}
+  .r33-news-main,.r33-column-preview{padding:20px}
+  .r33-news-main h3,.r33-column-preview h3{margin-top:16px;font-size:21px}
+  .r33-video-card strong{font-size:16px}
+
+  .r33-knowledge-grid,.r33-do-grid{gap:0}
+  .r33-knowledge-grid>a,.r33-knowledge-grid>a+a,.r33-do-grid>a,.r33-do-grid>a:last-child{min-height:0;padding:18px 0}
+  .r33-knowledge-grid strong{font-size:18px}
+  .r33-do-grid h3{margin-top:10px;font-size:20px}
+
+  .r33-author{padding:52px 0}
+  .r33-author-grid{gap:28px}
+  .r33-author figure,.r33-author figure img{height:auto;min-height:0;aspect-ratio:4/5}
+  .r33-community{padding:52px 0}
+  .r33-community-grid{gap:28px}
+
+  .r33-page-hero{padding:42px 0 30px}
+  .r33-page-hero h1,.r33-about-hero h1,.r33-book-hero h1,.r33-lecture-hero h1{font-size:34px;line-height:1.2}
+  .r33-page-hero p:last-child,.r33-about-hero p:last-child,.r33-book-hero p,.r33-lecture-hero p{margin-top:14px;font-size:14.5px;line-height:1.62}
+  .r33-learning-feature h2,.r33-store-feature h2{font-size:23px}
+  .r33-support-index strong{font-size:21px}
+}
