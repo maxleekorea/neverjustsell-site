@@ -35,7 +35,7 @@ jobs:
           node v33-release-preview-server.mjs > /tmp/v33-release-preview.log 2>&1 &
           for i in $(seq 1 20); do
             page="$(curl -fsSL http://127.0.0.1:8790/ || true)"
-            if [[ "$page" == *"v33-20261002-01"* && "$page" == *"고객이 선택하는 이유를 알면"* && "$page" != *"재구성 프리뷰"* ]]; then
+            if [[ "$page" == *"v33-20261002-01"* && "$page" == *'data-home-design="journey-v2"'* && "$page" != *"재구성 프리뷰"* ]]; then
               exit 0
             fi
             sleep 1
