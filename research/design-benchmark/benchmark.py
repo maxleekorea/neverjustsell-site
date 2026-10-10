@@ -6,12 +6,11 @@ from selenium.common.exceptions import WebDriverException
 
 # Research-only benchmark targets; no production routes are changed.
 TARGETS = [
-    ("njs", "https://www.neverjustsell.com/"),
-    ("thefutur", "https://thefutur.com/"),
-    ("reforge", "https://www.reforge.com/"),
-    ("strategyzer", "https://www.strategyzer.com/"),
     ("longblack", "https://longblack.co/about"),
     ("publy", "https://publy.co/"),
+    ("class101", "https://class101.net/ko/pages/hub-page"),
+    ("eopla", "https://eopla.net/"),
+    ("naver_premium", "https://contents.premium.naver.com/"),
 ]
 VIEWPORTS = [("desktop", 1440, 900), ("mobile", 390, 844)]
 OUT = Path("benchmark-output")
