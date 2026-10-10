@@ -76,7 +76,7 @@ try{
 
   x=await html("/lecture");
   expect(x.body,'<link rel="canonical" href="https://www.neverjustsell.com/lecture">',"lecture");
-  expect(x.body,"온라인 신청은 아직 준비 중","lecture");
+  expect(x.body,"현재 온라인 신청은 준비 중","lecture");
 
   x=await html("/knowledge");
   expect(x.body,'name="njs-site-revision" content="v33-20261002-01"',"knowledge");
