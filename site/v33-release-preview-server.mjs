@@ -4,6 +4,7 @@ import runtime from "./src/runtime.js";
 
 const PORT = 8790;
 const CSS = await readFile(new URL("./public/v33.css", import.meta.url), "utf8");
+const BRAND_MARK=await readFile(new URL("./public/njs-brand-mark.svg",import.meta.url),"utf8");
 const mockEntries = [
   { slug:"brief-platform-change", title:"플랫폼이 바뀔 때 판매자가 먼저 확인할 것", type:"brief", category:"brief", summary:"기능 변화보다 고객의 발견과 선택 과정이 어떻게 달라지는지 먼저 봅니다.", body:"preview", keywords:["플랫폼","변화"], updated:"2026-10-01", version:1 },
   { slug:"customer-value", title:"고객가치는 가격보다 먼저 결정됩니다", type:"article", category:"marketing", summary:"고객이 무엇을 비교하고 왜 선택하는지부터 정리합니다.", body:"preview", keywords:["고객","가치"], updated:"2026-09-29", version:1 },
@@ -37,6 +38,7 @@ globalThis.fetch=async (input,init)=>{
 
 const server=http.createServer(async(req,res)=>{
   const url=new URL(req.url||"/",`http://127.0.0.1:${PORT}`);
+  if(url.pathname==="/njs-brand-mark.svg"){res.writeHead(200,{"Content-Type":"image/svg+xml; charset=utf-8"});res.end(BRAND_MARK);return;}
   if(url.pathname==="/v33.css"){
     res.writeHead(200,{"Content-Type":"text/css; charset=utf-8"});
     res.end(CSS);return;
