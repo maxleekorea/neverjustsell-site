@@ -4,7 +4,8 @@ const YOUTUBE_CHANNEL_ID = "UCjKn4fGi2SuYRQmgWdi9XhA";
 const YOUTUBE_FEED = "https://www.youtube.com/feeds/videos.xml?channel_id=" + YOUTUBE_CHANNEL_ID;
 const HERO_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/68868a93-5045-4e7b-936d-a9a37c82b85b.png";
 const LECTURE_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/19678aa3-1daa-4ede-bca4-2bf24092c9b3.png";
-const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";\nconst COURSE_MAIN_IMAGE = "https://cdn.liveklass.com/course/01a08446ae4f75678a16661236fa9dc6.png.medium";
+const BOOK_IMAGE = "https://ecimg.cafe24img.com/pg3384b83272540024/neverjustsell/remove_background.png";
+const COURSE_MAIN_IMAGE = "https://cdn.liveklass.com/course/01a08446ae4f75678a16661236fa9dc6.png.medium";
 const RELEASE_REVISION = "v33-20261002-01";
 
 const esc = (value) => String(value ?? "")
