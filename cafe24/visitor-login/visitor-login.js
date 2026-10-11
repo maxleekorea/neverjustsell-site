@@ -40,6 +40,17 @@
     }
   }
 
+  // This is ONLY for the un-applied Cafe24 skin4 test URL; ordinary
+  // /member/login.html and all other skin previews remain unchanged.
+  function isNjsQaPreview(href) {
+    try {
+      const url = new URL(String(href));
+      return url.origin === CAFE24_ORIGIN &&
+        url.pathname === "/skin-skin4/member/login.html" &&
+        url.searchParams.get("njs_login_qa") === "1";
+    } catch (_) { return false; }
+  }
+
   function appendText(parent, tag, className, text, doc) {
     const node = doc.createElement(tag);
     node.className = className;
@@ -49,7 +60,7 @@
   }
 
   function install(doc, href) {
-    if (!doc || !isNjsLearningLogin(href)) return false;
+    if (!doc || !(isNjsLearningLogin(href) || isNjsQaPreview(href))) return false;
     if (doc.getElementById("njs-visitor-login-guide")) return true;
     // The stock Cafe24 member_login module owns all credentials and actions.
     const login = doc.querySelector(".xans-member-login") ||
@@ -78,7 +89,7 @@
     return true;
   }
 
-  const api = { isNjsLearningLogin, install };
+  const api = { isNjsLearningLogin, isNjsQaPreview, install };
   root.NJSVisitorLoginUX = api;
   if (root.document && root.location) {
     if (root.document.readyState === "loading") {
