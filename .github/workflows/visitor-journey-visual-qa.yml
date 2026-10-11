@@ -1,0 +1,61 @@
+name: Visitor-first live journey visual QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "worker/src/router.js"
+      - "worker/src/config.js"
+      - "community/functions/[[path]].js"
+      - "community/src/index.js"
+      - "tests/visitor-login-continuity-contract.mjs"
+      - ".github/workflows/visitor-journey-visual-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  guest-journey-screens:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Confirm headless browser
+        run: |
+          set -euo pipefail
+          command -v google-chrome
+          google-chrome --version
+      - name: Capture real public visitor views — no sign-in, no writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p visitor-screens
+          pages=(
+            "njs-home|https://www.neverjustsell.com/"
+            "content|https://www.neverjustsell.com/content"
+            "knowledge|https://www.neverjustsell.com/knowledge"
+            "courses|https://classroom.neverjustsell.com/courses"
+            "community|https://community.neverjustsell.com/"
+            "my-space-login|https://classroom.neverjustsell.com/my-space"
+            "ask-login|https://community.neverjustsell.com/write?intent=question"
+          )
+          for width in 390 1440; do
+            for entry in "${pages[@]}"; do
+              name="${entry%%|*}"
+              url="${entry#*|}"
+              printf 'Rendering %s at %s CSS px\n' "$name" "$width"
+              profile="$(mktemp -d)"
+              timeout 30s google-chrome --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --hide-scrollbars --no-first-run --no-default-browser-check --window-size="${width},1000" --virtual-time-budget=3500 --user-data-dir="$profile" --screenshot="visitor-screens/${name}-${width}.png" "$url" >/dev/null 2>&1 || true
+              rm -rf "$profile"
+              if [ ! -s "visitor-screens/${name}-${width}.png" ]; then
+                echo "MISSING screenshot for $name at $width" | tee -a visitor-screens/incomplete.txt
+              fi
+            done
+          done
+          printf 'Origin: current LIVE guest production, NOT candidate PR UI.\nAuth success and after-login return require a test account.\n' > visitor-screens/README.txt
+          ls -lh visitor-screens
+      - name: Upload guest journey snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: njs-live-guest-journey-390-1440
+          path: visitor-screens/
+          retention-days: 14
