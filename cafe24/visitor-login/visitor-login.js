@@ -16,9 +16,23 @@
       const raw = url.searchParams.get("returnUrl");
       if (!raw) return false;
       const destination = new URL(raw, url.origin);
+      const callback = destination.searchParams.get("redirect_uri") || "";
+      // Cafe24 nests the authorize query inside returnUrl. Depending on its
+      // encoding layer, the callback may be encoded once or twice more.
+      let decoded = callback;
+      for (let n = 0; n < 2; n++) {
+        if (!decoded.includes("%")) break;
+        try { decoded = decodeURIComponent(decoded); } catch (_) { return false; }
+      }
+      let callbackUrl;
+      try { callbackUrl = new URL(decoded); } catch (_) { return false; }
+      const scope = destination.searchParams.get("scope") || "";
       return destination.origin === CAFE24_ORIGIN &&
         destination.pathname === "/api/v2/oauth/authorize" &&
         destination.searchParams.get("response_type") === "code" &&
+        scope.split(/\\s+/).includes("mall.read_customer_identifier") &&
+        callbackUrl.origin === "https://classroom.neverjustsell.com" &&
+        callbackUrl.pathname === "/oauth/cafe24/callback" &&
         Boolean(destination.searchParams.get("state")) &&
         Boolean(destination.searchParams.get("client_id"));
     } catch (_) {
