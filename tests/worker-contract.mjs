@@ -118,26 +118,95 @@ assert(r.status === 401 && body.error === "invalid_or_expired_state", "OAuth cal
 r = await get("https://classroom.neverjustsell.com/classroom?course=free-lesson-1");
 assert(r.status === 302, "anonymous free course must require authentication");
 assert(
-  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
-  "anonymous free course must redirect to Cafe24 authentication"
+  new URL(r.headers.get("location")).searchParams.get("return_to") === "https://classroom.neverjustsell.com/classroom?course=free-lesson-1",
+  "anonymous free course login must return to the selected lesson"
 );
 
 r = await get("https://classroom.neverjustsell.com/library");
 assert(r.status === 302, "anonymous learner library must require authentication");
+assert(
+  new URL(r.headers.get("location")).searchParams.get("return_to") === "https://classroom.neverjustsell.com/library",
+  "member must return to My Courses, not generic classroom"
+);
 
 r = await get("https://classroom.neverjustsell.com/my-space");
 assert(r.status === 302, "anonymous My Space must require authentication");
 assert(
-  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
-  "My Space must share the canonical member authentication boundary"
+  new URL(r.headers.get("location")).searchParams.get("return_to") === "https://classroom.neverjustsell.com/my-space",
+  "My Space login must return directly to My Space"
 );
 
 r = await get("https://classroom.neverjustsell.com/classroom");
 assert(r.status === 302, "anonymous classroom must immediately start authentication");
 assert(
-  r.headers.get("location") === "https://classroom.neverjustsell.com/oauth/cafe24/customer/start",
-  "anonymous classroom must not add a redundant verification screen"
+  new URL(r.headers.get("location")).searchParams.get("return_to") === "https://classroom.neverjustsell.com/classroom",
+  "anonymous classroom login must resume the selected learning home without a redundant screen"
 );
+
+
+// Visitor continuity: safe destinations are carried across OAuth state.
+for (const [entry,target] of [
+  ["/my-space","https://classroom.neverjustsell.com/my-space"],
+  ["/library","https://classroom.neverjustsell.com/library"],
+  ["/classroom?course=free-lesson-1","https://classroom.neverjustsell.com/classroom?course=free-lesson-1"]
+]) {
+  const landing = await get("https://classroom.neverjustsell.com" + entry);
+  assert(landing.status===302,"anonymous destination must require login: "+entry);
+  const login = new URL(landing.headers.get("location"));
+  assert(login.pathname==="/oauth/cafe24/customer/start","must use existing Cafe24 OAuth bridge");
+  assert(login.searchParams.get("return_to")===target,"must remember visitor destination: "+entry);
+  const authorize=await get(login.toString());
+  assert(authorize.status===302,"allowed visitor return must be accepted in OAuth state");
+  const authorizeUrl=new URL(authorize.headers.get("location"));
+  assert(authorizeUrl.origin==="https://neverjustsell.cafe24.com","must keep canonical identity provider");
+  const state=authorizeUrl.searchParams.get("state");
+  const stored=await env.CAFE24_AUTH.get("cafe24:customer-oauth-state:"+state);
+  assert(JSON.parse(stored).return_to===target,"state must retain selected destination until callback");
+}
+const badReturn="https://evil.example/my-space";
+r = await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to="+encodeURIComponent(badReturn));
+assert(r.status===400,"cross-domain return must still be rejected");
+r = await get("https://classroom.neverjustsell.com/courses/enroll",{
+  method:"POST",
+  headers:{"Content-Type":"application/x-www-form-urlencoded"},
+  body:"course_slug=online-commerce-basics"
+});
+assert(r.status===302,"guest free enrollment must ask for login");
+assert(
+  new URL(r.headers.get("location")).searchParams.get("return_to")==="https://classroom.neverjustsell.com/courses/online-commerce-basics",
+  "non-replayable enrollment POST must return to the course detail after login"
+);
+
+// End-to-end AUTH STATE UNIT SIMULATION: mock only Cafe24 token + identifier,
+// then verify the genuine worker callback restores the selected visitor screen.
+// This deliberately does NOT claim a real Cafe24 password/login session was tested.
+{
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=async (url) => {
+    const target=String(url);
+    if (target==="https://neverjustsell.cafe24.com/api/v2/oauth/token") {
+      return new Response(JSON.stringify({access_token:"mock-visitor-token",user_id:"visitor-test",shop_no:1,scopes:["mall.read_customer_identifier"]}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    if (target==="https://neverjustsell.cafe24.com/api/v2/customers/identifier") {
+      return new Response(JSON.stringify({identifier:{user_identifier:"visitor-identity",shop_no:1}}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    throw new Error("Unexpected network call during simulated login");
+  };
+  try {
+    for (const destination of ["/my-space","/library","/classroom?course=free-lesson-1"]) {
+      const returnTo="https://classroom.neverjustsell.com"+destination;
+      const start=await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to="+encodeURIComponent(returnTo));
+      assert(start.status===302,"simulated OAuth start failed");
+      const state=new URL(start.headers.get("location")).searchParams.get("state");
+      const callback=await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?state="+encodeURIComponent(state)+"&code=mock-code");
+      assert(callback.status===302,"simulated OAuth callback must redirect");
+      assert(callback.headers.get("location")===returnTo,"callback must return to exact visitor destination "+destination);
+      assert(String(callback.headers.get("set-cookie")||"").includes("njs_session="),"callback must issue classroom session");
+    }
+  } finally {
+    globalThis.fetch=originalFetch;
+  }
+}
 
 r = await get("https://classroom.neverjustsell.com/session/status", {
   headers: { Origin: "https://www.neverjustsell.com" }
