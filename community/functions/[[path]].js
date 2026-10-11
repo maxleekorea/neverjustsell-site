@@ -228,7 +228,7 @@ async function renderHome(request, env) {
   const page = Math.max(1, Number(new URL(request.url).searchParams.get("page") || 1) || 1);
   const { rows, total } = await postRows(env, { page });
   const categoryCards = `<div class="category-grid">${cats.map((c) => `<a class="category-card" href="/c/${encodeURIComponent(c.slug)}"><strong>${esc(c.name)}</strong><span>${esc(c.description)}</span></a>`).join("")}</div>`;
-  const body = `<main class="shell"><section class="hero"><div class="eyebrow">EXPERIENCE · QUESTION · DISCUSSION</div><h1>경험이 쌓이면<br>검색할 수 있는 지식이 됩니다.</h1><p>온라인 판매, 유통, 브랜드와 마케팅에 관한 실제 질문과 경험을 기록합니다. 광고성 글보다 직접 실행한 과정과 구체적인 사례를 우선합니다.</p></section>${categoryCards}<div class="section-head"><h2>최근 글</h2>${session ? `<a class="btn btn-line" href="/write">글쓰기</a>` : `<a href="/login">로그인 후 글쓰기</a>`}</div>${postListHtml(rows)}${paginationHtml(page,total,"/")}</main>`;
+  const body = `<main class="shell"><section class="hero"><div class="eyebrow">EXPERIENCE · QUESTION · DISCUSSION</div><h1>사업하다 막힌 문제,<br>다른 사람은 어떻게 풀었을까요?</h1><p>온라인 판매·브랜드·마케팅에 관한 질문과 사례를 읽어보세요. 직접 경험한 내용을 나누거나 궁금한 점을 질문할 수 있습니다.</p></section>${categoryCards}<div class="section-head"><h2>최근 글</h2>${session ? `<a class="btn btn-line" href="/write">글쓰기</a>` : `<a href="/login">로그인 후 글쓰기</a>`}</div>${postListHtml(rows)}${paginationHtml(page,total,"/")}</main>`;
   const itemList = rows.slice(0, 10).map((row, index) => ({ "@type": "ListItem", position: index + 1, url: absolute(env, postPath(row)), name: row.title }));
   return response(layout(env, {
     title: "커뮤니티",

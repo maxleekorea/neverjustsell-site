@@ -310,7 +310,7 @@ assert(admin.includes("ensureCafe24CourseDigitalProfile"), "course admin must en
 assert(admin.includes("digitalCafe24ProductPatch"), "course admin must use canonical digital Cafe24 patch");
 assert(admin.includes("강의 상품의 배송 없음 설정을 확인하지 못했습니다."), "course sales must fail closed when no-shipping verification fails");
 assert(router.includes('url.pathname === "/my-space"'), "digital My Space route missing");
-assert(router.includes("구매하거나 신청한 디지털 콘텐츠와 프로그램을 이곳에서 바로 이용합니다."), "My Space digital post-purchase UX missing");
+assert(router.includes("구매했거나 신청한 강의를 이어 보고, 참여 프로그램과 저장한 자료도 확인하세요."), "My Space digital post-purchase UX missing");
 assert(!router.includes("주문 배송상태를 찾을 필요 없이"), "customer My Space must not mention shipping-state workflow");
 
 assert(communitySchema.includes("0002_program_spaces.sql"), "runtime community migration tracking missing");
