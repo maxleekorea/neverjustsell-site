@@ -784,18 +784,18 @@ async function renderMySpace(request, env) {
 
   const ebookEmpty =
     '<section class="card"><div class="eyebrow">EBOOK</div><h2 style="margin:0 0 10px">내 전자책</h2>' +
-    '<p class="desc">구매한 전자책은 이곳에서 바로 열람하게 됩니다. 현재 연결된 전자책은 없습니다.</p></section>';
+    '<p class="desc">이 계정에 연결된 전자책이 없습니다. 이용 가능한 전자책이 연결되면 이곳에서 확인할 수 있습니다.</p></section>';
 
   const sections = [
-    dashboardSection("내 강의", "구매하거나 신청한 강의를 바로 이어서 학습합니다.", courseCards, "/library", "전체 내 강의"),
-    dashboardSection("참여 프로그램", "결제 또는 초대로 참여 권한이 있는 프로그램입니다.", programCards, COMMUNITY_ORIGIN + "/", "커뮤니티"),
+    dashboardSection("내 강의", "신청한 강의를 다시 보거나, 보던 곳부터 이어서 학습하세요.", courseCards, "/library", "전체 내 강의"),
+    dashboardSection("참여 프로그램", "참여 중인 프로그램이 있다면 이곳에서 확인하세요.", programCards, COMMUNITY_ORIGIN + "/", "커뮤니티"),
     ebookEmpty
   ].join("");
 
   return html(classroomShell(
     "내 공간",
-    '<section class="card"><div class="eyebrow">MY SPACE</div><h1 class="title">내 공간</h1>' +
-    '<p class="desc">구매하거나 신청한 디지털 콘텐츠와 프로그램을 이곳에서 바로 이용합니다.</p></section>' +
+    '<section class="card"><div class="eyebrow">회원 메뉴</div><h1 class="title">내 공간</h1>' +
+    '<p class="desc">신청한 강의와 참여 프로그램을 확인하고, 저장한 자료를 다시 찾아보세요.</p></section>' +
     sections
   ));
 }
