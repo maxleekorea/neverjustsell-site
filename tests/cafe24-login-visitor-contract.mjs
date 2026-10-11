@@ -3,7 +3,7 @@ import {readFileSync} from "node:fs";
 import {runInNewContext} from "node:vm";
 const src=readFileSync(new URL("../cafe24/visitor-login/visitor-login.js",import.meta.url),"utf8");
 const sandbox={URL,URLSearchParams};runInNewContext(src,sandbox);
-const {isNjsLearningLogin,install}=sandbox.NJSVisitorLoginUX;
+const {isNjsLearningLogin,isNjsQaPreview,install}=sandbox.NJSVisitorLoginUX;
 const BASE="https://neverjustsell.cafe24.com/member/login.html";
 const CALLBACK="https://classroom.neverjustsell.com/oauth/cafe24/callback";
 const oauth="/api/v2/oauth/authorize?"+new URLSearchParams({
@@ -12,6 +12,17 @@ const oauth="/api/v2/oauth/authorize?"+new URLSearchParams({
 }).toString();
 const valid=BASE+"?returnUrl="+encodeURIComponent(oauth);
 assert.equal(isNjsLearningLogin(valid),true);
+const QA="https://neverjustsell.cafe24.com/skin-skin4/member/login.html?njs_login_qa=1";
+assert.equal(isNjsQaPreview(QA),true,"un-applied skin4 visual QA path allowed");
+for(const bad of [
+  "https://neverjustsell.cafe24.com/skin-skin4/member/login.html",
+  "https://neverjustsell.cafe24.com/member/login.html?njs_login_qa=1",
+  "https://neverjustsell.cafe24.com/skin-skin2/member/login.html?njs_login_qa=1",
+  "https://evil.example/skin-skin4/member/login.html?njs_login_qa=1"
+]) {
+  assert.equal(isNjsQaPreview(bad),false,"QA flag cannot enable UI in production/other skins");
+}
+
 // Cafe24 live login URL sometimes double-encodes the nested callback address.
 const doubleEncoded="/api/v2/oauth/authorize?"+new URLSearchParams({
   client_id:"test-client",state:"test-state",response_type:"code",
@@ -46,5 +57,10 @@ assert.equal(install(doc,valid),true);
 assert.equal(inserted.length,1,"guide must be idempotent");
 const css=readFileSync(new URL("../cafe24/visitor-login/visitor-login.css",import.meta.url),"utf8");
 assert.match(css,/html\.njs-visitor-login \[data-njs-commerce-only\]/);
+for(const selector of [".couponBanner",".gnb",".cart"]) {
+  assert.ok(css.includes("html.njs-visitor-login "+selector),"commerce-only suppression must require learning login context");
+}
+assert.ok(!css.includes("html.njs-visitor-login .xans-member-login{display:none"),"Never hide login modules");
+
 assert.ok(!src.includes("form.submit(") && !src.includes("fetch(") && !src.includes("localStorage"));
 console.log("PASS NJS OAuth-only visitor login skin helper; standard commerce login remains unchanged");
