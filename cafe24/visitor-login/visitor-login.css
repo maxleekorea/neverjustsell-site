@@ -1,0 +1,57 @@
+/* Scoped only to Cafe24 member login reached through NJS customer OAuth. */
+html.njs-visitor-login .njs-visitor-login-guide {
+  box-sizing: border-box;
+  max-width: 460px;
+  margin: 0 auto 24px;
+  padding: 23px 25px;
+  border: 1px solid #ddd5ca;
+  border-left: 3px solid #574333;
+  background: #f7f5f2;
+  color: #29231d;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  text-align: left;
+}
+html.njs-visitor-login .njs-visitor-login-overline {
+  display: block;
+  margin: 0 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #65513e;
+  letter-spacing: .07em;
+}
+html.njs-visitor-login .njs-visitor-login-title {
+  margin: 0 0 11px;
+  font-size: clamp(20px, 2.2vw, 24px);
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+html.njs-visitor-login .njs-visitor-login-copy {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.75;
+  color: #5a5149;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+html.njs-visitor-login .njs-visitor-login-back {
+  display: inline-block;
+  min-height: 40px;
+  padding: 9px 0;
+  color: #493522;
+  font-size: 13px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
+/* Commerce layout elements must be explicitly tagged in Smart Design after
+ * inspection. Do not hide member_login, fieldsets, SNS login or auth messages. */
+html.njs-visitor-login [data-njs-commerce-only] { display: none !important; }
+@media (max-width: 600px) {
+  html.njs-visitor-login .njs-visitor-login-guide {
+    width: auto;
+    margin: 12px 16px 20px;
+    padding: 17px 17px 16px;
+  }
+  html.njs-visitor-login .njs-visitor-login-title { font-size: 20px; }
+  html.njs-visitor-login .njs-visitor-login-copy { font-size: 13px; }
+}
