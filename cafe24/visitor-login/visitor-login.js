@@ -1,0 +1,103 @@
+/*
+ * NJS visitor login context, Cafe24 Smart Design optional skin enhancement.
+ * Does not submit, intercept, replace, or edit Cafe24 login forms or OAuth URLs.
+ * Works only for the OAuth login path launched by NJS courses/community.
+ */
+(function (root) {
+  "use strict";
+
+  const CAFE24_ORIGIN = "https://neverjustsell.cafe24.com";
+  const MEMBER_LOGIN_PATH = "/member/login.html";
+
+  function isNjsLearningLogin(href) {
+    try {
+      const url = new URL(String(href));
+      if (url.origin !== CAFE24_ORIGIN || url.pathname !== MEMBER_LOGIN_PATH) return false;
+      const raw = url.searchParams.get("returnUrl");
+      if (!raw) return false;
+      const destination = new URL(raw, url.origin);
+      const callback = destination.searchParams.get("redirect_uri") || "";
+      // Cafe24 nests the authorize query inside returnUrl. Depending on its
+      // encoding layer, the callback may be encoded once or twice more.
+      let decoded = callback;
+      for (let n = 0; n < 2; n++) {
+        if (!decoded.includes("%")) break;
+        try { decoded = decodeURIComponent(decoded); } catch (_) { return false; }
+      }
+      let callbackUrl;
+      try { callbackUrl = new URL(decoded); } catch (_) { return false; }
+      const scope = destination.searchParams.get("scope") || "";
+      return destination.origin === CAFE24_ORIGIN &&
+        destination.pathname === "/api/v2/oauth/authorize" &&
+        destination.searchParams.get("response_type") === "code" &&
+        scope.trim().split(" ").includes("mall.read_customer_identifier") &&
+        callbackUrl.origin === "https://classroom.neverjustsell.com" &&
+        callbackUrl.pathname === "/oauth/cafe24/callback" &&
+        Boolean(destination.searchParams.get("state")) &&
+        Boolean(destination.searchParams.get("client_id"));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // This is ONLY for the un-applied Cafe24 skin4 test URL; ordinary
+  // /member/login.html and all other skin previews remain unchanged.
+  function isNjsQaPreview(href) {
+    try {
+      const url = new URL(String(href));
+      return url.origin === CAFE24_ORIGIN &&
+        url.pathname === "/skin-skin4/member/login.html" &&
+        url.searchParams.get("njs_login_qa") === "1";
+    } catch (_) { return false; }
+  }
+
+  function appendText(parent, tag, className, text, doc) {
+    const node = doc.createElement(tag);
+    node.className = className;
+    node.textContent = text;
+    parent.appendChild(node);
+    return node;
+  }
+
+  function install(doc, href) {
+    if (!doc || !(isNjsLearningLogin(href) || isNjsQaPreview(href))) return false;
+    if (doc.getElementById("njs-visitor-login-guide")) return true;
+    // The stock Cafe24 member_login module owns all credentials and actions.
+    const login = doc.querySelector(".xans-member-login") ||
+      doc.querySelector(".xans-member-loginPackage") ||
+      (doc.querySelector('input[type="password"]') &&
+       doc.querySelector('input[type="password"]').closest("form"));
+    if (!login || !login.parentElement) return false;
+
+    doc.documentElement.classList.add("njs-visitor-login");
+    const panel = doc.createElement("section");
+    panel.id = "njs-visitor-login-guide";
+    panel.className = "njs-visitor-login-guide";
+    panel.setAttribute("aria-label", "NJS 회원 로그인 안내");
+    appendText(panel, "span", "njs-visitor-login-overline", "NEVER JUST SELL", doc);
+    appendText(panel, "h2", "njs-visitor-login-title", "로그인하고 이어서 이용하세요", doc);
+    appendText(panel, "p", "njs-visitor-login-copy", "강의를 이어 듣거나 커뮤니티에 질문을 남기려면 회원 로그인이 필요합니다. 기존 NJS 회원 계정으로 로그인해 주세요.", doc);
+    const link = doc.createElement("a");
+    link.href = "https://www.neverjustsell.com/";
+    link.className = "njs-visitor-login-back";
+    link.textContent = "NJS 홈으로 돌아가기";
+    panel.appendChild(link);
+    login.parentElement.insertBefore(panel, login);
+
+    // Hide only explicitly tagged sales promotions in an OAuth login context.
+    if (typeof doc.title === "string") doc.title = "NJS 회원 로그인 | NEVER JUST SELL";
+    return true;
+  }
+
+  const api = { isNjsLearningLogin, isNjsQaPreview, install };
+  root.NJSVisitorLoginUX = api;
+  if (root.document && root.location) {
+    if (root.document.readyState === "loading") {
+      root.document.addEventListener("DOMContentLoaded", function () {
+        install(root.document, root.location.href);
+      }, { once: true });
+    } else {
+      install(root.document, root.location.href);
+    }
+  }
+})(typeof window !== "undefined" ? window : globalThis);

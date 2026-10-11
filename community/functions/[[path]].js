@@ -161,13 +161,29 @@ async function getSession(request, env) {
 
 async function requireSession(request, env) {
   const session = await getSession(request, env);
-  if (!session) return { session: null, response: redirect(`/login?return_to=${encodeURIComponent(new URL(request.url).pathname)}`, 302) };
+  if (!session) {
+    // A guest selecting "질문하기" must get back to that exact writing mode.
+    // Never attempt to replay a POST after completing OAuth.
+    const url = new URL(request.url);
+    const returnPath = request.method === "GET"
+      ? url.pathname + url.search
+      : url.pathname;
+    return {
+      session: null,
+      response: redirect(`/login?return_to=${encodeURIComponent(validReturnPath(returnPath))}`, 302)
+    };
+  }
   return { session, response: null };
 }
 
 function validReturnPath(value) {
   const path = String(value || "/");
-  return path.startsWith("/") && !path.startsWith("//") ? path : "/";
+  // Reject protocol-relative / backslash redirects and control characters.
+  return path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.includes("\\") &&
+    !/[\u0000-\u001F\u007F]/.test(path)
+    ? path : "/";
 }
 
 function csrfOk(form, session) {
