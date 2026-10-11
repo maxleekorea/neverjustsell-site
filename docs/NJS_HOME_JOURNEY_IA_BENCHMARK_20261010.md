@@ -116,3 +116,20 @@
 - 컬러와 역할: 원본 로고 색상 복제 대신 [IBM Carbon](https://carbondesignsystem.com/guidelines/color/overview/), [Atlassian design tokens](https://atlassian.design/foundations/design-tokens/), [Adobe 색상 이론](https://color.adobe.com/create/color-wheel) 근거를 색채 역할 구분의 *참고*로 유지. 색상 코드나 실제 성과는 NJS 자체 검증 대상.
 
 **상태:** RESEARCH/PROJECT-LOCAL QA CANDIDATE, not globally approved Skill. 보고는 CI와 실제 화면 readback 이후. 다음 Gate는 A2 시각 승인/프로덕션 이전 검증이다.
+
+
+## 2026-10-11 설치된 Web UX Evidence Audit 실사용 검수 — 증분
+
+**범위/승인 상태:** `skills://web-ux-evidence-audit`는 설치 목록 조회 및 지침 호출로 활성화 확인. D-099/P30 맥작가 개인 브랜드 채널, PR #100 **DRAFT / NOT MERGED** 및 PR #101 별도 초안. 운영 서비스 코드는 건드리지 않았다.
+
+**재사용된 원본:** 본 문서의 NN/g 정보 향기·홈페이지, GOV.UK 전체 고객 과업·타이포그래피, 토스 UX 라이팅, LINE 한글 타이포그래피, 국내 CLASS101 개별 창작자 홈/MKYU/롱블랙 비교, Google Drive [P30 UX Audit Protocol](https://docs.google.com/document/d/15ZkxQqGykC7Rf9LxprOqThfUlngzQQ5d-ZuzPdKCeOM/edit)와 [P30 Charter](https://docs.google.com/document/d/1dThOFRU9WONP__5in_lJ_mxnKs2g2HlVNVXLaPTqkuM/edit) 참조. NN/g/GOV.UK/토스 원문 재확인, LINE 동적 원문은 자동 텍스트 추출 결과가 비어 **원문 본문 독립 검증은 보류**. 새로운 전문가 권고를 임의 생성하지 않는다.
+
+**브라우저 증거:** [GitHub Actions release visual QA #38060546192](https://github.com/maxleekorea/neverjustsell-site/actions/runs/38060546192), artifact `njs-v33-release-visual-qa` (`typography-audit.json`; source commit `93e08ba4797c68824567e8a1c0a715003f9a39e4`). 이후 PR HEAD `4976050cb2808eea7736f77a31190e55323a2a37`는 벤치마크 문서 증분이며 4종 CI 성공. 9페이지 × 5폭(1440/1280/390/360/320)=45개 레이아웃의 누락·H1·잘림·가로 넘침 검사 PASS. 설치 Skill 단위시험 3/3 및 의도적 오류 주입 6건 기대대로 판정. 단 390/360/320 스토어 H1은 **3행**, 320 맥작가 소개 H1은 **3행**이고, 200% 검사는 **root CSS font-size probe이지 실제 브라우저 줌이 아님**. 이 검수는 **비공개 PR 예시 데이터**를 사용했으며 실운영/실제 유저 로그인 QA를 대체하지 않는다.
+
+**시각적 관찰(코드/스크린샷):** 모바일 390/320에서 첫 화면의 홈·지식·강의·고객지원은 목적지가 비교적 분명하고 제목 잘림은 없음. 단 맥작가 소개·강연 페이지는 **인물/강연 사진이 메시지보다 먼저 나와** 좁은 화면에서 내용 이해가 늦어질 가능성(PARTIAL), 스토어 H1은 3줄(PARTIAL); 단독 디자인 결함 확정이 아니라 다음 시각 검수 후보. 실제 소형 기기 터치와 확대 검증 미실시.
+
+**운영 사용 경로 관찰(2026-10-11 공개 페이지):** 공개 지식 상세 (ROAS·가격·재구매·플랫폼변경), 강의 `classroom.neverjustsell.com/courses` 및 무료 강의 상세 `/courses/online-commerce-basics`, 커뮤니티 공개 글 `/p/29`, `/p/27`, 실행 기록 `/c/reading-action` 조회됨. 그러나 `classroom.../my-space`·`community.../write?intent=question`은 로그인 이전 Cafe24 쇼핑몰 로그인 화면으로 이동하며 **회원가입 3,000원 쿠폰 및 결제 진행 관련 일반 쇼핑몰 문구**가 표시됨. 로그인/권한은 정상 설계일 수 있으나 사용자 관점의 브랜드 일관성과 로그인 후 원래 목적지 복귀를 실제 로그인 계정으로 검증해야 함(HIGH PRIORITY). `community.../course-questions`는 외부 읽기에서 시간 초과해 상태 미확인.
+
+**운영/초안 차이:** 프로덕션에서는 아직 '필요할 때 다시 꺼내볼 것', '읽은 것을 직접 써볼 수 있게', '취소·환불 신청' 등 구표현과 칼럼 미발행 중심 배치가 노출. PR #100은 이를 개편한 초안이나 배포하지 않았고, PR #101의 강의/커뮤니티 첫 화면 문구 수정도 배포되지 않음. 따라서 개선안 통과를 운영 개선 완료로 보고 금지.
+
+**근거 Gate:** `SOURCE FACT → P30 적용 가설 → 실제 화면/기능 → CI → A2 승인`. 현재 상태 `AUTOMATED_LAYOUT_PASS / LIVE_JOURNEY_PARTIAL / SKILL_REUSE_PASS / RELEASE_NOT_APPROVED`. 다음에는 ① 실제 로그인-복귀·브랜드 일관성 ② 실제 공급되는 유튜브/브리핑 및 로그인된 강의 상태 ③ 320/390 모바일 첫 화면의 이미지·줄 수·클릭/터치 ④ 실제 브라우저 확대 및 키보드 ⑤ A2 승인 순서로 검증할 것. 기존 메인 디자인과 제품 경계를 재정의하지 않는다.
