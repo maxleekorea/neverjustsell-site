@@ -63,6 +63,45 @@ jobs:
         run: node tests/program-ux-guard-contract.mjs
       - name: Verify production release gate contract
         run: node tests/production-release-contract.mjs
+      # Public guest screens are captured against LIVE production for comparison.
+      # No member or admin cookies, no checkout writes and no automation of login.
+      - name: Capture current Cafe24 login entry on PC and mobile
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p visitor-login-qa
+          printf 'READ-ONLY PRODUCTION guest snapshot. No user login or OAuth callback performed.\n' > visitor-login-qa/ABOUT.txt
+          if ! command -v google-chrome >/dev/null; then
+            echo 'Chrome is unavailable on this runner' >> visitor-login-qa/ABOUT.txt
+            exit 0
+          fi
+          pages=(
+            "login|https://neverjustsell.cafe24.com/member/login.html"
+            "myspace|https://classroom.neverjustsell.com/my-space"
+            "question|https://community.neverjustsell.com/write?intent=question"
+          )
+          for width in 390 1440; do
+            for item in "${pages[@]}"; do
+              label="${item%%|*}"
+              target="${item#*|}"
+              profile="$(mktemp -d)"
+              if timeout 35s google-chrome --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --no-first-run --hide-scrollbars --window-size="${width},1200" --virtual-time-budget=3500 --user-data-dir="$profile" --screenshot="visitor-login-qa/${label}-${width}.png" "$target" >/dev/null 2>&1; then
+                echo "Captured $label $width" >> visitor-login-qa/ABOUT.txt
+              else
+                echo "Capture unavailable: $label $width" >> visitor-login-qa/ABOUT.txt
+              fi
+              rm -rf "$profile"
+            done
+          done
+      - name: Save anonymous login screenshots
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cafe24-guest-login-mobile-desktop
+          path: visitor-login-qa/
+          retention-days: 14
+          if-no-files-found: ignore
       - name: Verify Worker production bundle
         working-directory: worker
         run: |
