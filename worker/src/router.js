@@ -4,7 +4,7 @@ import {
   findPaidCourseByProductNo,
   getVisiblePaidCourses
 } from "./courses.js";
-import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN } from "./config.js";
+import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN, validCustomerReturn } from "./config.js";
 import {
   listCatalogD1Courses,
   getCatalogD1Course,
@@ -94,8 +94,18 @@ function classroomShell(title, content) {
 </html>`;
 }
 
-function redirectToCustomerAuth() {
-  return Response.redirect(`${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start`, 302);
+function redirectToCustomerAuth(request, afterLoginPath = null) {
+  // Visitor continuity: send users back to their original safe GET destination.
+  // An expired POST is never replayed after login (enrollment/progress must be retried).
+  const url = new URL(request.url);
+  const path = afterLoginPath || (
+    request.method === "GET" ? url.pathname + url.search : "/library"
+  );
+  const target = validCustomerReturn(CLASSROOM_ORIGIN + path)
+    || (CLASSROOM_ORIGIN + "/courses");
+  const auth = new URL("/oauth/cafe24/customer/start", CLASSROOM_ORIGIN);
+  auth.searchParams.set("return_to", target);
+  return Response.redirect(auth.toString(), 302);
 }
 
 function renderClassroomError(title = "내 강의실") {
@@ -480,7 +490,14 @@ async function renderCourseLanding(request, env, slug) {
 async function handleFreeEnrollment(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) {
-    return redirectToCustomerAuth();
+    // We cannot replay a submitted form across OAuth. Return to the precise
+    // course details instead of dropping the learner at the generic dashboard.
+    const guestForm = await request.clone().formData().catch(() => null);
+    const slug = String(guestForm?.get("course_slug") || "").trim().slice(0, 160);
+    const destination = /^[a-z0-9][a-z0-9-]{0,159}$/i.test(slug)
+      ? "/courses/" + encodeURIComponent(slug)
+      : "/courses";
+    return redirectToCustomerAuth(request, destination);
   }
 
   const form = await request.formData().catch(() => null);
@@ -565,7 +582,7 @@ function renderD1CoursePlayer(course, progress, slug, url) {
 
 async function renderPublishedD1Course(request, env, url, course) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   if (course.access_type === "public") {
     const enrolled = await isCourseEnrolled(env, session.record.member_id, course.id);
@@ -686,7 +703,7 @@ function learningPlayerTrackingScript() {
 
 async function handleProgressPost(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
   const form = await request.formData().catch(() => null);
   const slug = String(form?.get("course_slug") || "").trim();
   const lessonId = String(form?.get("lesson_id") || "").trim();
@@ -755,7 +772,7 @@ async function buildLearnerCourseRows(request, env, memberId) {
 
 async function renderMySpace(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const memberId = session.record.member_id;
   const [courseRows, programProjection] = await Promise.all([
@@ -799,7 +816,7 @@ async function renderMySpace(request, env) {
 
 async function renderLearnerLibrary(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const rows = await buildLearnerCourseRows(request, env, session.record.member_id);
   const cards = rows.map(({ course, playerCourse, progress }) =>
@@ -829,7 +846,7 @@ async function renderLearnerLibrary(request, env) {
 
 async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const memberId = session.record.member_id;
   const rows = await buildLearnerCourseRows(request, env, memberId);
@@ -899,13 +916,13 @@ async function renderClassroom(request, env, url) {
 
   if (course.accessType === "public") {
     const session = await getCustomerSession(request, env);
-    if (!session?.record?.member_id) return redirectToCustomerAuth();
+    if (!session?.record?.member_id) return redirectToCustomerAuth(request);
     return renderCoursePlayer(course, "FREE CLASS", slug, url);
   }
 
   const result = await getCourseAccessDecision(request, env, course.productNo);
   if (result.status >= 500) return renderClassroomError(course.title);
-  if (!result.body.authenticated) return redirectToCustomerAuth();
+  if (!result.body.authenticated) return redirectToCustomerAuth(request);
   if (!result.body.access) {
     return html(classroomShell(course.title, `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a><a class="action secondary" href="${SITE_ORIGIN}/">강의 둘러보기</a></section>`), { status: 403 });
   }
