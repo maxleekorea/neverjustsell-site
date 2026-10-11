@@ -30,7 +30,7 @@
       return destination.origin === CAFE24_ORIGIN &&
         destination.pathname === "/api/v2/oauth/authorize" &&
         destination.searchParams.get("response_type") === "code" &&
-        scope.split(/\\s+/).includes("mall.read_customer_identifier") &&
+        scope.trim().split(" ").includes("mall.read_customer_identifier") &&
         callbackUrl.origin === "https://classroom.neverjustsell.com" &&
         callbackUrl.pathname === "/oauth/cafe24/callback" &&
         Boolean(destination.searchParams.get("state")) &&
