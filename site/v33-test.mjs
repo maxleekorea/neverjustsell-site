@@ -38,19 +38,35 @@ async function check(path, expected){
 }
 
 try{
-  let body=await check("/v33",["v33-korean-editorial-01","팔기 전에","왜 사는지를 봅니다","배운다","요즘, 무엇이","필요할 때","브리핑 테스트","지식 테스트 1","맥작가 칼럼"]);
-  if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")) throw new Error("V3.3 must not expose internal English product jargon");
+  let body=await check("/v33",["v33-korean-editorial-01",'data-home-design="journey-v2"','id="main-content"',"지금 겪고 있는 문제부터 살펴보세요.","광고 성과는 좋은데 이익이 남지 않는다면","지금 읽을 사례 보기","무료 강의 살펴보기","브리핑 테스트","온라인 유통의 기본","비슷한 경험을 읽고","그냥 팔지 말라"]);
+  if(!body.includes('href="/knowledge/case-roas-high-profit-low"') || !body.includes("community.neverjustsell.com/p/29/customer-experience-vs-price-competition")) throw new Error("Published problem and community links must remain direct");
+  for(const href of ['/v33/knowledge','/v33/content','/v33/book','/v33/about','/v33/lecture','/v33/store','/v33/support']) {
+    if(!body.includes('href="'+href+'"')) throw new Error("Missing mapped preview nav/utility: "+href);
+  }
+  if(!body.includes('aria-label="주 메뉴"')||!body.includes('href="https://classroom.neverjustsell.com/my-space"')) throw new Error("Actual site navigation or My Space utility is missing");
+  if(body.includes('없는 이용 후기')||body.includes('지금 모집 중인 프로그램')) throw new Error("Unverified customer proof/offer leaked");
+  if(body.includes("STRUCTURED LEARNING")||body.includes("COMMUNITY OF PRACTICE")||body.includes("NJS 배움과 실행의 순환")) throw new Error("Personal-brand Home must not expose platform/product architecture in the Hero");
 
-  body=await check("/v33/content",["맥작가 칼럼","요즘 달라진 것, 먼저 짚습니다.","브리핑 테스트","책 해석","사례"]);
-  body=await check("/v33/knowledge",["필요할 때","찾고 싶은 지식","지식 테스트 1","지식 테스트 2","내 학습함"]);
-  if(body.includes("브리핑 테스트")) throw new Error("Briefing must be excluded from V3.3 knowledge page");
-
-  await check("/v33/class",["읽은 것을","무료 강의 보기","유통사와 네이버 검색의 구조","키워드와 롱테일, 탐색 행동","내 강의실에서 이어보기","https://classroom.neverjustsell.com/courses/online-commerce-basics"]);
-  await check("/v33/store",["지금 이용할 수 있는","온라인 판매를 사업의 언어로 배우는 강의","전자책","준비 중","프로그램","모집 시 안내","구매한 콘텐츠 보기"]);
-  await check("/v33/support",["필요한 곳으로","내 강의실에서 이어보기","주문 및 결제 내역 확인","취소·환불 신청","https://neverjustsell.cafe24.com/myshop/order/list.html"]);
-  await check("/v33/about",["마케팅만","따로 떼어 보지 않습니다","현장과 상품","시장과 제조"]);
-  await check("/v33/book",["그냥 팔지 말라","YES24","교보문고"]);
-  await check("/v33/lecture",["강연·컨설팅","정해진 강의안을","온라인 신청은 아직 준비 중"]);
+  body=await check("/v33/content",["시장과 고객의 변화를","최근 영상 테스트","브리핑 테스트","광고·가격·고객 문제","맥작가 칼럼·책 해석"]);
+  if(body.includes('id="column"')||body.includes('id="books"')) throw new Error("Empty columns/book explanations must not dominate Content");
+  if(!body.includes('href="/knowledge/case-roas-high-profit-low"')) throw new Error("Content problem link missing");
+  body=await check("/v33/knowledge",["마케팅과 사업에 필요한","무엇이 궁금하신가요?","지식 테스트 1","지식 테스트 2","내가 저장한 자료",'id="r38-search"']);
+  if(body.includes("브리핑 테스트")) throw new Error("Briefing must be excluded from Knowledge");
+  if(body.includes("필요할 때<br>다시 꺼내볼 것.")) throw new Error("Old Knowledge poetic label remains");
+  body=await check("/v33/class",["온라인 커머스,","온라인 유통의 기본","무료 강의 내용 보기","판매 준비 중","네이버 쇼핑 키워드 전략","내 강의 이어보기","https://classroom.neverjustsell.com/courses/online-commerce-basics"]);
+  if(body.includes("읽은 것을<br>직접 써볼 수 있게.")) throw new Error("Old class reading copy remains");
+  body=await check("/v33/store",["종이책·전자책","무료 강의","앞으로 제공할 콘텐츠","www.yes24.com/product/goods/171660478","www.yes24.com/product/goods/195224748","수강 내역 확인"]);
+  if(body.includes("다음에 열릴 것")||body.includes("전자책</span><strong>준비 중")) throw new Error("Published ebook must not appear unavailable");
+  body=await check("/v33/support",["수강·주문·환불","주문이나 결제 내용을 확인","취소·환불 대상 주문 확인하기","강의 질문 게시판 보기","https://neverjustsell.cafe24.com/myshop/order/list.html"]);
+  if(body.includes("취소·환불 신청")) throw new Error("Order listing is not direct refund application");
+  await check("/v33/about",["저자이자 사업가","어떤 경험에서 나온 이야기인가요?","영업·상품기획","제조·유통"]);
+  body=await check("/v33/book",["그냥 팔지 말라 스마트스토어","종이책 서점에서 보기","전자책 서점에서 보기","9791124121061"]);
+  if(body.includes('href="/book">책 자세히 보기')) throw new Error("Book page self-link remains");
+  await check("/v33/lecture",["조직의 마케팅·브랜드 문제","어떤 내용을 함께 살펴볼 수 있나요?","온라인 문의 접수는 아직 준비 중"]);
+  for(const route of ["/v33/content","/v33/knowledge","/v33/class","/v33/store","/v33/support","/v33/about","/v33/book","/v33/lecture"]){
+    const page=await check(route,['id="main-content"','class="r38-page"']);
+    if(page.includes("<h1>필요할 때")||page.includes("<h1>읽은 것을")) throw new Error("Abstract page headline regression: "+route);
+  }
 
   const prod=await runtime.fetch(new Request("https://www.neverjustsell.com/"),env,{});
   const prodBody=await prod.text();

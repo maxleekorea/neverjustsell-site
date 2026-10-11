@@ -11,6 +11,7 @@ on:
       - "site/public/v33.css"
       - "site/v33-release-preview-server.mjs"
       - "site/v33-release-test.mjs"
+      - "site/scripts/njs-typography-audit.mjs"
       - "site/wrangler.jsonc"
       - ".github/workflows/v33-release-visual-qa.yml"
 
@@ -35,7 +36,7 @@ jobs:
           node v33-release-preview-server.mjs > /tmp/v33-release-preview.log 2>&1 &
           for i in $(seq 1 20); do
             page="$(curl -fsSL http://127.0.0.1:8790/ || true)"
-            if [[ "$page" == *"v33-20261002-01"* && "$page" == *"팔기 전에"* && "$page" != *"재구성 프리뷰"* ]]; then
+            if [[ "$page" == *"v33-20261002-01"* && "$page" == *'data-home-design="journey-v2"'* && "$page" != *"재구성 프리뷰"* ]]; then
               exit 0
             fi
             sleep 1
@@ -57,13 +58,13 @@ jobs:
           [[ "$home" == *'<link rel="canonical" href="https://www.neverjustsell.com/">'* ]]
           [[ "$content" == *'<link rel="canonical" href="https://www.neverjustsell.com/content">'* ]]
           [[ "$knowledge" == *'<link rel="canonical" href="https://www.neverjustsell.com/knowledge">'* ]]
-          [[ "$knowledge" == *"찾고 싶은 지식"* ]]
+          [[ "$knowledge" == *'id="r38-search"'* ]]
           [[ "$class_page" == *'<link rel="canonical" href="https://www.neverjustsell.com/class">'* ]]
-          [[ "$class_page" == *"읽은 것을"* ]]
+          [[ "$class_page" == *"무료 강의 내용 보기"* ]]
           [[ "$store" == *'<link rel="canonical" href="https://www.neverjustsell.com/store">'* ]]
-          [[ "$store" == *"지금 이용할 수 있는"* ]]
+          [[ "$store" == *"종이책·전자책"* ]]
           [[ "$support" == *'<link rel="canonical" href="https://www.neverjustsell.com/support">'* ]]
-          [[ "$support" == *"필요한 곳으로"* ]]
+          [[ "$support" == *"취소·환불 대상 주문 확인하기"* ]]
 
       - name: Capture exact release routes
         shell: bash
@@ -78,12 +79,25 @@ jobs:
             google-chrome "${common[@]}" --window-size=1440,5000 --screenshot="screenshots/${name}-desktop.png" "http://127.0.0.1:8790$path"
             google-chrome "${common[@]}" --window-size=390,7000 --screenshot="screenshots/${name}-mobile.png" "http://127.0.0.1:8790$path"
           done
+          # Additional narrow-width review only; preserve previously approved home layout.
+          for item in "${pages[@]}"; do
+            name="${item%%:*}"
+            path="${item#*:}"
+            google-chrome "${common[@]}" --window-size=360,2600 --screenshot="screenshots/${name}-mobile-360.png" "http://127.0.0.1:8790$path"
+            google-chrome "${common[@]}" --window-size=320,2600 --screenshot="screenshots/${name}-mobile-320.png" "http://127.0.0.1:8790$path"
+          done
           file screenshots/*.png
+
+      - name: Measure title lines and clipping (1440, 1280, 390, 360, 320)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node site/scripts/njs-typography-audit.mjs
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
           name: njs-v33-release-visual-qa
-          path: screenshots/*.png
+          path: screenshots/*
           if-no-files-found: error
           retention-days: 7
