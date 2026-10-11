@@ -32,9 +32,16 @@ height:+r.height.toFixed(2),overflowX:el.scrollWidth>el.clientWidth+2,
 clipped:css.textOverflow==='ellipsis'||css.webkitLineClamp!=='none'&&css.webkitLineClamp!==''};
 });
 const html=document.documentElement;
+const infoGrid=document.querySelector('.r38-about-grid');
+const infoHeading=infoGrid?.querySelector('h1');
+const infoImage=infoGrid?.querySelector('figure');
+const infoOrder=infoHeading&&infoImage?{
+ headingTop:+infoHeading.getBoundingClientRect().top.toFixed(2),
+ imageTop:+infoImage.getBoundingClientRect().top.toFixed(2)
+}:null;
 return {path:location.pathname,width:innerWidth,viewportWidth:html.clientWidth,
 scrollWidth:html.scrollWidth,scrollOverflow:html.scrollWidth>html.clientWidth+2,
-mainPresent:!!document.querySelector('main'),headings};
+mainPresent:!!document.querySelector('main'),headings,infoOrder};
 })()`;
 function stop(){
  if(closed)return;closed=true;
@@ -113,11 +120,17 @@ try{
       alerts.push({type:"long-h1",width:report.requestedWidth,route:report.route,lines:h.lines,title:h.text});
     }
   }
+  if((report.route==="/about"||report.route==="/lecture")&&report.requestedWidth<=640){
+    const order=report.infoOrder;
+    if(!order || !(order.headingTop+1<order.imageTop)){
+      alerts.push({type:"mobile-subpage-message-below-image",width:report.requestedWidth,route:report.route,order});
+    }
+  }
   if(h1.length!==1)alerts.push({type:"heading-count",width:report.requestedWidth,route:report.route,count:h1.length});
  }
  await mkdir("screenshots",{recursive:true});
  await writeFile("screenshots/typography-audit.json",JSON.stringify({auditedAt:new Date().toISOString(),base,normal:reports,zoom200:zoomChecks,alerts},null,2)+"\n");
- const severe=alerts.filter(x=>["horizontal-overflow","title-clipped","heading-count"].includes(x.type));
+ const severe=alerts.filter(x=>["horizontal-overflow","title-clipped","heading-count","mobile-subpage-message-below-image"].includes(x.type));
  console.log("TYPOGRAPHY_AUDIT",JSON.stringify({routes:routes.length,widths:viewports,measurements:reports.length,alerts:alerts.slice(0,30),severe:severe.length}));
  if(severe.length)process.exitCode=1;
 }catch(e){console.error("Typography audit failed:",e.stack||e);process.exitCode=1}
