@@ -43,8 +43,15 @@ html.njs-visitor-login .njs-visitor-login-back {
   font-weight: 700;
   text-underline-offset: 4px;
 }
-/* Commerce layout elements must be explicitly tagged in Smart Design after
- * inspection. Do not hide member_login, fieldsets, SNS login or auth messages. */
+/* Inspector-observed header candidate selectors from cloned Cafe24 skin4:
+ * couponBanner (first-shopping coupon), gnb (product categories), cart (cart link).
+ * All hiding requires html.njs-visitor-login, added ONLY after safe NJS OAuth
+ * or un-applied skin4 QA context AND finding the actual member_login module.
+ * Confirm selectors on real 1440/390/320 preview before any production release.
+ * Never hide authentication fields, validation errors, SNS login or checkout. */
+html.njs-visitor-login .couponBanner,
+html.njs-visitor-login .gnb,
+html.njs-visitor-login .cart,
 html.njs-visitor-login [data-njs-commerce-only] { display: none !important; }
 @media (max-width: 600px) {
   html.njs-visitor-login .njs-visitor-login-guide {
