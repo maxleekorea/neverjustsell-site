@@ -4,7 +4,7 @@ import {
   findPaidCourseByProductNo,
   getVisiblePaidCourses
 } from "./courses.js";
-import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN } from "./config.js";
+import { SITE_ORIGIN, COMMUNITY_ORIGIN, CLASSROOM_ORIGIN, validCustomerReturn } from "./config.js";
 import {
   listCatalogD1Courses,
   getCatalogD1Course,
@@ -94,8 +94,18 @@ function classroomShell(title, content) {
 </html>`;
 }
 
-function redirectToCustomerAuth() {
-  return Response.redirect(`${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start`, 302);
+function redirectToCustomerAuth(request, afterLoginPath = null) {
+  // Visitor continuity: send users back to their original safe GET destination.
+  // An expired POST is never replayed after login (enrollment/progress must be retried).
+  const url = new URL(request.url);
+  const path = afterLoginPath || (
+    request.method === "GET" ? url.pathname + url.search : "/library"
+  );
+  const target = validCustomerReturn(CLASSROOM_ORIGIN + path)
+    || (CLASSROOM_ORIGIN + "/courses");
+  const auth = new URL("/oauth/cafe24/customer/start", CLASSROOM_ORIGIN);
+  auth.searchParams.set("return_to", target);
+  return Response.redirect(auth.toString(), 302);
 }
 
 function renderClassroomError(title = "내 강의실") {
@@ -353,16 +363,19 @@ async function renderCourseCatalog(request, env) {
       : (course.access_type === "paid"
           ? (salesState === "presale" ? "사전판매 보기" : "강의 보기")
           : "무료 수강 신청");
+    const summaryText = String(course.summary || "").trim();
+    const sentences = summaryText.split(/(?<=[.!?])\s+/u).filter(Boolean);
+    const summaryPreview = sentences.slice(0, 2).join(" ") || summaryText;
     return '<a class="course" href="/courses/' + encodeURIComponent(course.slug) + '">' +
       '<div class="eyebrow">' + escapeHtml(label) + '</div>' +
       '<h2>' + escapeHtml(course.title) + '</h2>' +
-      '<p>' + escapeHtml(course.summary || "") + '</p>' +
+      '<p>' + escapeHtml(summaryPreview) + '</p>' +
       '<div class="action" style="margin-top:16px">' + escapeHtml(cta) + '</div></a>';
   }).join("");
 
   const content = courses.length
-    ? '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">수강할 강의를 선택하세요. 무료 강의도 수강 신청 후 내 강의실에 추가됩니다.</p></section><div class="grid">' + cards + '</div>'
-    : '<section class="card"><div class="eyebrow">COURSE CATALOG</div><h1 class="title">강의 찾기</h1><p class="desc">현재 신청 가능한 강의가 없습니다.</p></section>';
+    ? '<section class="card"><div class="eyebrow">온라인 강의</div><h1 class="title">온라인 유통과 마케팅 강의를 찾아보세요.</h1><p class="desc">지금 수강할 수 있는 무료 강의부터 살펴보세요. 이미 신청한 강의는 내 강의실에서 이어볼 수 있습니다.</p></section><div class="grid">' + cards + '</div>'
+    : '<section class="card"><div class="eyebrow">온라인 강의</div><h1 class="title">온라인 유통과 마케팅 강의를 찾아보세요.</h1><p class="desc">현재 신청 가능한 강의가 없습니다. 이미 신청한 강의는 내 강의에서 확인해 주세요.</p></section>';
 
   return html(classroomShell("강의 찾기", content));
 }
@@ -403,7 +416,7 @@ async function renderCourseLanding(request, env, slug) {
       cta = '<form method="post" action="/courses/enroll"><input type="hidden" name="course_slug" value="' + escapeHtml(course.slug) + '"><button class="action" style="border:0;cursor:pointer" type="submit">무료 수강 신청</button></form>';
     } else {
       const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
-      cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
+      cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 이 강의로 돌아오기</a>';
     }
   } else if (paidAccess && contentPublished) {
     cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
@@ -456,7 +469,9 @@ async function renderCourseLanding(request, env, slug) {
         selling: 'Cafe24 회원으로 구매 후 수강권을 확인하고 게시된 강의를 바로 수강할 수 있습니다.',
         paused: '현재 신규 구매가 중단되어 있습니다. 기존 수강생의 수강권은 유지됩니다.'
       }[courseSalesState(course)] || '현재 신규 구매는 준비 중입니다.')
-    : 'Cafe24 회원 로그인 후 무료 수강 신청할 수 있습니다.';
+    : (memberId
+      ? '이 강의는 NJS 회원에게 무료로 제공됩니다.'
+      : 'NJS 회원으로 로그인하면 이 강의로 돌아옵니다. 돌아온 뒤 무료 수강 신청 버튼을 눌러 주세요.');
 
   return html(classroomShell(
     course.title,
@@ -480,7 +495,14 @@ async function renderCourseLanding(request, env, slug) {
 async function handleFreeEnrollment(request, env) {
   const session = await getCustomerSession(request, env);
   if (!session?.record?.member_id) {
-    return redirectToCustomerAuth();
+    // We cannot replay a submitted form across OAuth. Return to the precise
+    // course details instead of dropping the learner at the generic dashboard.
+    const guestForm = await request.clone().formData().catch(() => null);
+    const slug = String(guestForm?.get("course_slug") || "").trim().slice(0, 160);
+    const destination = /^[a-z0-9][a-z0-9-]{0,159}$/i.test(slug)
+      ? "/courses/" + encodeURIComponent(slug)
+      : "/courses";
+    return redirectToCustomerAuth(request, destination);
   }
 
   const form = await request.formData().catch(() => null);
@@ -565,7 +587,7 @@ function renderD1CoursePlayer(course, progress, slug, url) {
 
 async function renderPublishedD1Course(request, env, url, course) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   if (course.access_type === "public") {
     const enrolled = await isCourseEnrolled(env, session.record.member_id, course.id);
@@ -686,7 +708,7 @@ function learningPlayerTrackingScript() {
 
 async function handleProgressPost(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
   const form = await request.formData().catch(() => null);
   const slug = String(form?.get("course_slug") || "").trim();
   const lessonId = String(form?.get("lesson_id") || "").trim();
@@ -755,7 +777,7 @@ async function buildLearnerCourseRows(request, env, memberId) {
 
 async function renderMySpace(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const memberId = session.record.member_id;
   const [courseRows, programProjection] = await Promise.all([
@@ -781,25 +803,25 @@ async function renderMySpace(request, env) {
 
   const ebookEmpty =
     '<section class="card"><div class="eyebrow">EBOOK</div><h2 style="margin:0 0 10px">내 전자책</h2>' +
-    '<p class="desc">구매한 전자책은 이곳에서 바로 열람하게 됩니다. 현재 연결된 전자책은 없습니다.</p></section>';
+    '<p class="desc">이 계정에 연결된 전자책이 없습니다. 이용 가능한 전자책이 연결되면 이곳에서 확인할 수 있습니다.</p></section>';
 
   const sections = [
-    dashboardSection("내 강의", "구매하거나 신청한 강의를 바로 이어서 학습합니다.", courseCards, "/library", "전체 내 강의"),
-    dashboardSection("참여 프로그램", "결제 또는 초대로 참여 권한이 있는 프로그램입니다.", programCards, COMMUNITY_ORIGIN + "/", "커뮤니티"),
+    dashboardSection("내 강의", "신청한 강의를 다시 보거나, 보던 곳부터 이어서 학습하세요.", courseCards, "/library", "전체 내 강의"),
+    dashboardSection("참여 프로그램", "참여 중인 프로그램이 있다면 이곳에서 확인하세요.", programCards, COMMUNITY_ORIGIN + "/", "커뮤니티"),
     ebookEmpty
   ].join("");
 
   return html(classroomShell(
     "내 공간",
-    '<section class="card"><div class="eyebrow">MY SPACE</div><h1 class="title">내 공간</h1>' +
-    '<p class="desc">구매하거나 신청한 디지털 콘텐츠와 프로그램을 이곳에서 바로 이용합니다.</p></section>' +
+    '<section class="card"><div class="eyebrow">회원 메뉴</div><h1 class="title">내 공간</h1>' +
+    '<p class="desc">구매했거나 신청한 강의를 이어 보고, 참여 프로그램과 저장한 자료도 확인하세요.</p></section>' +
     sections
   ));
 }
 
 async function renderLearnerLibrary(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const rows = await buildLearnerCourseRows(request, env, session.record.member_id);
   const cards = rows.map(({ course, playerCourse, progress }) =>
@@ -829,7 +851,7 @@ async function renderLearnerLibrary(request, env) {
 
 async function renderClassroomHome(request, env) {
   const session = await getCustomerSession(request, env);
-  if (!session?.record?.member_id) return redirectToCustomerAuth();
+  if (!session?.record?.member_id) return redirectToCustomerAuth(request);
 
   const memberId = session.record.member_id;
   const rows = await buildLearnerCourseRows(request, env, memberId);
@@ -899,13 +921,13 @@ async function renderClassroom(request, env, url) {
 
   if (course.accessType === "public") {
     const session = await getCustomerSession(request, env);
-    if (!session?.record?.member_id) return redirectToCustomerAuth();
+    if (!session?.record?.member_id) return redirectToCustomerAuth(request);
     return renderCoursePlayer(course, "FREE CLASS", slug, url);
   }
 
   const result = await getCourseAccessDecision(request, env, course.productNo);
   if (result.status >= 500) return renderClassroomError(course.title);
-  if (!result.body.authenticated) return redirectToCustomerAuth();
+  if (!result.body.authenticated) return redirectToCustomerAuth(request);
   if (!result.body.access) {
     return html(classroomShell(course.title, `<section class="card"><div class="eyebrow">MY CLASSROOM</div><h1 class="title">현재 수강할 수 없습니다.</h1><p class="desc">구매가 확인되지 않았거나 주문이 취소·환불된 강의입니다.</p><a class="action" href="/classroom">내 강의실로</a><a class="action secondary" href="${SITE_ORIGIN}/">강의 둘러보기</a></section>`), { status: 403 });
   }

@@ -46,10 +46,17 @@ export function validCustomerReturn(value) {
     }
 
     if (url.origin === CLASSROOM_ORIGIN) {
+      // Keep returning members on the task they chose before Cafe24 login.
+      // Only known classroom-owned routes are allowed; never trust an arbitrary URL.
       const allowed =
         url.pathname === "/classroom" ||
+        url.pathname === "/my-space" ||
+        url.pathname === "/library" ||
         url.pathname === "/courses" ||
-        url.pathname.startsWith("/courses/");
+        url.pathname.startsWith("/courses/") ||
+        url.pathname === "/programs" ||
+        url.pathname === "/programs/" ||
+        /^\/programs\/[A-Za-z0-9_-]{1,160}\/?$/.test(url.pathname);
       return allowed ? url.toString() : null;
     }
 

@@ -46,20 +46,20 @@ function accumulationCards(state) {
   const cards = [];
 
   if (state.knowledgeSaved > 0) {
-    cards.push(`<a class="member-next-card" href="${SITE_ORIGIN}/knowledge/saved"><span>KNOWLEDGE</span><strong>저장한 지식 ${state.knowledgeSaved}개</strong><p>필요해서 남겨둔 지식을 다시 찾고 이어서 읽습니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="${SITE_ORIGIN}/knowledge/saved"><span>저장한 자료</span><strong>저장한 자료 ${state.knowledgeSaved}개</strong><p>관심 있어서 저장한 자료를 다시 읽어보세요.</p></a>`);
   } else {
-    cards.push(`<a class="member-next-card" href="${SITE_ORIGIN}/knowledge"><span>KNOWLEDGE</span><strong>첫 지식을 저장해 보세요</strong><p>유용한 지식을 저장하면 내 공간에서 다시 이어볼 수 있습니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="${SITE_ORIGIN}/knowledge"><span>자료 둘러보기</span><strong>마케팅 사례·자료 살펴보기</strong><p>관심 있는 내용을 찾고 나중에 다시 보도록 저장할 수 있습니다.</p></a>`);
   }
 
   if (state.lessonsTracked > 0) {
-    cards.push(`<a class="member-next-card" href="/library"><span>LEARNING</span><strong>학습 기록 ${state.lessonsTracked}개 차시</strong><p>${state.lessonsCompleted}개 차시를 완료했습니다. 마지막 학습에서 이어갑니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="/library"><span>내 강의</span><strong>학습한 강의 ${state.lessonsTracked}개 차시</strong><p>${state.lessonsCompleted}개 차시를 완료했습니다. 내 강의에서 이어서 보세요.</p></a>`);
   } else {
-    cards.push(`<a class="member-next-card" href="/courses"><span>LEARNING</span><strong>첫 학습 기록 만들기</strong><p>강의를 시작하면 진행과 완료 기록이 이곳에 쌓입니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="/courses"><span>강의 살펴보기</span><strong>무료 강의부터 확인하기</strong><p>처음이라면 지금 수강할 수 있는 강의를 찾아보세요.</p></a>`);
   }
 
   const programCount = state.programsActive + state.programsCompleted;
   if (programCount > 0) {
-    cards.push(`<a class="member-next-card" href="/programs"><span>PROGRAM</span><strong>참여 프로그램 ${programCount}개</strong><p>진행 중 ${state.programsActive}개 · 완료 ${state.programsCompleted}개. 지금 해야 할 활동과 남긴 기록을 이어갑니다.</p></a>`);
+    cards.push(`<a class="member-next-card" href="/programs"><span>참여 프로그램</span><strong>참여한 프로그램 ${programCount}개</strong><p>진행 중 ${state.programsActive}개 · 완료 ${state.programsCompleted}개. 참여 중인 프로그램의 안내를 확인하세요.</p></a>`);
   }
 
   return cards.join("");
@@ -86,7 +86,7 @@ export async function injectMemberNextActions(response, request, env) {
   const cards = accumulationCards(state);
   const section = `<style id="member-next-actions-style">
 .member-next-actions{margin-top:34px}.member-next-actions h2{font-size:22px;margin:0 0 6px}.member-next-actions>p{margin:0 0 14px;color:#888;font-size:13px;line-height:1.6}.member-next-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.member-next-card{display:block;background:#151515;border:1px solid #292929;border-radius:16px;padding:19px;text-decoration:none}.member-next-card span{font-size:10px;letter-spacing:.1em;color:#888}.member-next-card strong{display:block;margin-top:8px;font-size:17px}.member-next-card p{margin:7px 0 0;color:#8d8d8d;font-size:12px;line-height:1.55}@media(max-width:650px){.member-next-grid{grid-template-columns:1fr}.member-next-card{padding:17px}}
-</style><section class="member-next-actions" id="member-next-actions"><h2>내가 쌓아둔 것</h2><p>저장하고 배우고 참여한 기록이 한곳에 남습니다. 다음 방문은 여기에서 이어갑니다.</p><div class="member-next-grid">${cards}</div></section>`;
+</style><section class="member-next-actions" id="member-next-actions"><h2>저장한 자료와 학습</h2><p>내가 저장한 자료를 다시 읽고, 수강 중인 강의나 참여 프로그램을 확인하세요.</p><div class="member-next-grid">${cards}</div></section>`;
 
   const headers = new Headers(response.headers);
   headers.delete("Content-Length");

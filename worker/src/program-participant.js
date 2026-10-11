@@ -2,7 +2,7 @@ import { getCustomerSession } from "./session-orders.js";
 import { ensureProgramSchema } from "./program-schema.js";
 import { reconcilePurchasedProgramEnrollments } from "./program-access.js";
 import { recordValueEvent } from "./value-events.js";
-import { CLASSROOM_ORIGIN, SITE_ORIGIN, COMMUNITY_ORIGIN } from "./config.js";
+import { CLASSROOM_ORIGIN, SITE_ORIGIN, COMMUNITY_ORIGIN, validCustomerReturn } from "./config.js";
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -52,10 +52,16 @@ async function currentMember(request, env) {
   return String(session?.record?.member_id || "").trim() || null;
 }
 
-function loginRedirect(request) {
+export function programLoginRedirect(request) {
   const url = new URL(request.url);
-  const returnTo = `${url.pathname}${url.search}`;
-  return redirect(`${CLASSROOM_ORIGIN}/oauth/cafe24/customer/start?return_to=${encodeURIComponent(returnTo)}`);
+  // Only return to a safe GET detail or program index. Never replay a submitted mission after OAuth.
+  const destination = request.method === "GET"
+    ? new URL(url.pathname + url.search, CLASSROOM_ORIGIN).toString()
+    : CLASSROOM_ORIGIN + "/programs";
+  const returnTo = validCustomerReturn(destination) || (CLASSROOM_ORIGIN + "/programs");
+  const auth = new URL("/oauth/cafe24/customer/start", CLASSROOM_ORIGIN);
+  auth.searchParams.set("return_to", returnTo);
+  return redirect(auth.toString());
 }
 
 export function completionThreshold(snapshot) {
@@ -344,7 +350,7 @@ export default {
     }
 
     const memberId = await currentMember(request, env);
-    if (!memberId) return loginRedirect(request);
+    if (!memberId) return programLoginRedirect(request);
     const url = new URL(request.url);
 
     if (request.method === "GET" && (url.pathname === "/programs" || url.pathname === "/programs/")) {

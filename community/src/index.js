@@ -9,7 +9,10 @@ const PROGRAM_ACCESS_REFRESH_SECONDS = 60;
 
 function validReturnPath(value) {
   const path = String(value || "/");
-  return path.startsWith("/") && !path.startsWith("//") ? path : "/";
+  return path.startsWith("/") &&
+    !path.startsWith("//") &&
+    !path.includes("\\") &&
+    !/[\u0000-\u001F\u007F]/.test(path) ? path : "/";
 }
 
 function sqliteTime(date) {
