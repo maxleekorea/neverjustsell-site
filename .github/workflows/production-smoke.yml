@@ -37,6 +37,8 @@ jobs:
         run: node tests/worker-contract.mjs
       - name: Verify login intent and safe return-to contract
         run: node tests/visitor-login-continuity-contract.mjs
+      - name: Verify Cafe24 login UX skin leaves commerce auth intact
+        run: node tests/cafe24-login-visitor-contract.mjs
       - name: Verify classroom mobile UX contract
         run: node tests/classroom-mobile-ux-contract.mjs
       - name: Verify purchase and entitlement contract
