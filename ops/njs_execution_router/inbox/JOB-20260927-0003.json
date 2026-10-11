@@ -1,0 +1,21 @@
+{
+  "job_id": "JOB-20260927-0003",
+  "protocol_version": "NJS-CMD-0.1",
+  "created_at": "2026-09-27T18:10:00+09:00",
+  "project_id": "P30",
+  "action": "P30.DEPLOY_STATUS.GET",
+  "target_type": "PROJECT",
+  "target_ref": "P30",
+  "refs_json": [],
+  "approval_level": "A0",
+  "requested_by": "ChatGPT Plus",
+  "idempotency_key": "P30|P30.DEPLOY_STATUS.GET|20260927-0003",
+  "expected_state": "NO_STATE_CHANGE",
+  "precondition_json": {},
+  "payload_json": {},
+  "mode": "SHADOW_ENCODE",
+  "status": "VALIDATED",
+  "command_hash": "36a090546ef6c97ee26855fcd65e5c5159a26c9add90aa83c0c094b4a56f0dc6",
+  "shadow_ir": "N1|C:36a090546ef6c97ee26855fcd65e5c5159a26c9add90aa83c0c094b4a56f0dc6|P:P30|A:02|L:0|M:1",
+  "notes": "NJS-IR-0.2-REF; new immutable relay command; read-only"
+}

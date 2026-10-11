@@ -1,0 +1,33 @@
+{
+  "job_id": "JOB-20260927-0007",
+  "protocol_version": "NJS-CMD-0.1",
+  "created_at": "2026-09-27T19:56:32+09:00",
+  "project_id": "P30",
+  "action": "CAFE24.PRODUCT_STATUS.UPDATE",
+  "target_type": "SHOP",
+  "target_ref": "P30_CAFE24",
+  "refs_json": [],
+  "approval_level": "A2",
+  "requested_by": "ChatGPT Plus",
+  "idempotency_key": "P30|CAFE24.PRODUCT_STATUS.UPDATE|20260927-0007",
+  "expected_state": "NO_STATE_CHANGE_SHADOW",
+  "precondition_json": {
+    "before_state_read_required": true,
+    "compare_fields": ["display", "selling"],
+    "exact_readback_required": true,
+    "rollback_required": true
+  },
+  "payload_json": {
+    "api_version": "2026-09-01",
+    "display": "T",
+    "mall_id_ref": "CAFE24_MALL_ID",
+    "product_no_ref": "CAFE24_SHADOW_PRODUCT_NO",
+    "selling": "T",
+    "shop_no": 1
+  },
+  "mode": "SHADOW_EXECUTION",
+  "status": "VALIDATED",
+  "command_hash": "1758e20efa278a4e4c0139636f415fb86b6de3443456936195e83d4c49d82c0e",
+  "shadow_ir": "N1|C:1758e20efa278a4e4c0139636f415fb86b6de3443456936195e83d4c49d82c0e|P:P30|A:05|L:2|M:3",
+  "notes": "Shadow verification-contract pilot; before-state/readback/rollback plan; no Cafe24 network call"
+}

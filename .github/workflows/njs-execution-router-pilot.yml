@@ -1,0 +1,52 @@
+name: NJS Execution Relay Pilot
+
+on:
+  push:
+    branches:
+      - ops/njs-execution-router-v0
+    paths:
+      - 'ops/njs_execution_router/inbox/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  execute-new-command:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests before execution
+        run: python -m unittest discover -s ops/njs_execution_router/tests -v
+      - name: Select newly added immutable command
+        id: command
+        shell: bash
+        run: |
+          mapfile -t files < <(git diff --diff-filter=A --name-only "${{ github.event.before }}" "${{ github.sha }}" -- 'ops/njs_execution_router/inbox/*.json')
+          if [ ${#files[@]} -eq 0 ]; then
+            echo 'execute=false' >> "$GITHUB_OUTPUT"
+            echo 'No newly added command. Modified existing inbox objects are never re-executed.'
+          elif [ ${#files[@]} -eq 1 ]; then
+            echo 'execute=true' >> "$GITHUB_OUTPUT"
+            echo "path=${files[0]}" >> "$GITHUB_OUTPUT"
+          else
+            echo 'Multiple commands in one relay commit are blocked in pilot.' >&2
+            exit 2
+          fi
+      - name: Execute read-only command
+        if: steps.command.outputs.execute == 'true'
+        run: |
+          python ops/njs_execution_router/router.py \
+            --command "${{ steps.command.outputs.path }}" \
+            --registry ops/njs_execution_router/fixtures/action-registry.json \
+            --phase ROUND_TRIP \
+            --output njs-router-result.json
+      - uses: actions/upload-artifact@v4
+        if: steps.command.outputs.execute == 'true'
+        with:
+          name: njs-router-result
+          path: njs-router-result.json
