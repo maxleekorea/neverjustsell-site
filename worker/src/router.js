@@ -413,7 +413,7 @@ async function renderCourseLanding(request, env, slug) {
       cta = '<form method="post" action="/courses/enroll"><input type="hidden" name="course_slug" value="' + escapeHtml(course.slug) + '"><button class="action" style="border:0;cursor:pointer" type="submit">무료 수강 신청</button></form>';
     } else {
       const returnTo = CLASSROOM_ORIGIN + '/courses/' + encodeURIComponent(course.slug);
-      cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 무료 수강 신청</a>';
+      cta = '<a class="action" href="/oauth/cafe24/customer/start?return_to=' + encodeURIComponent(returnTo) + '">로그인하고 이 강의로 돌아오기</a>';
     }
   } else if (paidAccess && contentPublished) {
     cta = '<a class="action" href="/classroom?course=' + encodeURIComponent(course.slug) + '">수강 계속하기</a>';
@@ -466,7 +466,9 @@ async function renderCourseLanding(request, env, slug) {
         selling: 'Cafe24 회원으로 구매 후 수강권을 확인하고 게시된 강의를 바로 수강할 수 있습니다.',
         paused: '현재 신규 구매가 중단되어 있습니다. 기존 수강생의 수강권은 유지됩니다.'
       }[courseSalesState(course)] || '현재 신규 구매는 준비 중입니다.')
-    : 'Cafe24 회원 로그인 후 무료 수강 신청할 수 있습니다.';
+    : (memberId
+      ? '이 강의는 NJS 회원에게 무료로 제공됩니다.'
+      : 'NJS 회원으로 로그인하면 이 강의로 돌아옵니다. 돌아온 뒤 무료 수강 신청 버튼을 눌러 주세요.');
 
   return html(classroomShell(
     course.title,
