@@ -148,7 +148,7 @@ assert(
 for (const [entry,target] of [
   ["/my-space","https://classroom.neverjustsell.com/my-space"],
   ["/library","https://classroom.neverjustsell.com/library"],
-  ["/classroom?course=online-commerce-basics","https://classroom.neverjustsell.com/classroom?course=online-commerce-basics"]
+  ["/classroom?course=free-lesson-1","https://classroom.neverjustsell.com/classroom?course=free-lesson-1"]
 ]) {
   const landing = await get("https://classroom.neverjustsell.com" + entry);
   assert(landing.status===302,"anonymous destination must require login: "+entry);
