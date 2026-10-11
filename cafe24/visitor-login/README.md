@@ -49,4 +49,19 @@
 - `node tests/cafe24-login-visitor-contract.mjs`: OAuth 상황 판별/일반 쇼핑 로그인 불간섭/안내 한 번만 삽입/폼 유지 테스트.
 - GitHub CI: PR #102 Production cross-domain smoke. 이는 **테스트 스킨 후보 코드**에 대한 검증일 뿐 Cafe24 실제 스킨의 스테이징/적용 검증이 아니다.
 - 이전 PR #101과 #102 모두 Worker/커뮤니티 소스의 일부 경로를 수정하므로 A2 승인 시 병합 순서를 정하고 두 변경사항을 함께 회귀 테스트한다.
-- 현재 고객/관리자 유효 로그인 브라우저 프로필이 연결되어 있지 않아 실제 테스트 회원 인증과 관리자 스킨 변경은 진행하지 않았다. **운영 배포 및 추가 비용 발생 작업 모두 별도 승인 Gate.**
+- 회원 프로필에서 이미 로그인된 학습·질문 화면 접근은 검증했고, 관리자 프로필에서 쇼핑몰 관리자 및 현행 로그인 템플릿 READ-ONLY 접근을 검증했다. 다만 **로그아웃 → Cafe24 재로그인 → 기존 고객 과업 복귀**와 복제 스킨의 실제 작동은 아직 검증하지 않았다. **운영 배포 및 추가 비용 발생 작업 모두 별도 승인 Gate.**
+
+
+## 2026-10-11 운영 관리자 READ-ONLY 검증으로 확인된 파일 위치
+
+- **관리자 접속 확인:** 직접 `https://neverjustsell.cafe24.com/admin`으로 접속한 관리자 프로필에서 대시보드 접근. `https://eclogin.cafe24.com/Shop/` 로그인센터는 별도 입구라 로그인 폼만 보였으며 '프로필 저장 실패'로 잘못 단정하지 않는다.
+- **현재 PC 디자인:** `Never Just Sell`, Cafe24 Easy 반응형, 디자인 번호 `4`, 스킨코드 `skin2` (등록 2026-09-16). 실제 열람한 편집기 파일: `/member/login.html`; 파일의 스킨 디렉터리 `/skin-skin2/member/login.html`.
+- 관리자 편집 진입 링크: `https://neverjustsell.cafe24.com/disp/admin/editor/main?skin_no=4&skin_code=skin2&shop_no=1&editorFile=/member/login.html` (별도 관리자 인증 필요).
+- 템플릿의 `@layout(/layout/basic/layout.html)` 선언 및 Cafe24 `member_login` 모듈, `@css(/css/module/member/login.css)`, `@js(/js/module/member/login.js)` 인클루드를 읽기 전용 편집기에서 확인.
+- 공통 헤더·쇼핑 카테고리·쇼핑 혜택 배너의 소유 지점은 `/layout/basic/layout.html`로 확인. **모든 방문자/상품·주문 페이지가 공유**하므로 공통 영역을 삭제·전역 숨김 처리하지 않는다.
+- **모바일 대표 디자인:** 관리자 화면에는 별도 `쇼핑몰 기본디자인` 항목이 있으나 모바일 전용 디자인은 사용하지 않는 것으로 표시됐다. 편집기에서 보인 모바일 전용 경로 후보는 **현재 실제 모바일 렌더링에 사용되는 소스라고 독립 확인되지 않음**. 공개 사이트에 적용된 CSS와 관리자 설정을 추가 대조해 결정한다.
+- **미확인:** 쿠폰·상품 카테고리·장바구니·추천 팝업 각각의 확정적인 DOM 래퍼 셀렉터, FTP 실물 원본, NJS OAuth 호출 때의 실제 중첩된 `returnUrl` 매개변수, PC/모바일 스킨 우선순위. 자동화가 제시한 `ez_banner`, `gnb` 등 명칭은 후보 단서이며 확정된 셀렉터로 사용하지 않는다.
+- 관리자 접근 및 파일 트리 readback: [실제 스킨 파일 확인](https://agent.tinyfish.ai/runs/5e13d057-2346-4263-8c9b-4f7482810b0b); [관리자 접근](https://agent.tinyfish.ai/runs/e4f62211-4b03-491d-a189-11bccc1b980a). 변경/저장/적용/배포는 수행하지 않았다.
+- 고객 과업 판단: `member_login`에 손대지 않고 **OAuth 학습 로그인만** 인식한 페이지 안내·색상·정보순서를 바꾼다. 일반 스토어 로그인을 바꾸는 전역 HTML/CSS 패치는 거부. 고객의 취소·회원가입·비밀번호 찾기·결제 흐름을 실제 스킨 복제 미리보기에서 테스트한 후 A2 공개 여부 결정.
+
+**다음 안전한 Gate:** 현재 활성 스킨 `skin2`의 복제본에서만 `member/login.html` 파일에 NJS 전용 CSS/JS include와 명확히 확인된 비필수 쇼핑 홍보 래퍼 표식을 반영한다. 적용 전/후 1440·390·320px, NJS OAuth 경유 대 일반 주문 로그인, 로그인 취소/완료/복귀, 접근성, 세션·구매 회귀를 검증한다. 아직 스킨 복제/코드 업로드 자체는 하지 않았다.
