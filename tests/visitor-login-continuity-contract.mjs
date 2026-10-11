@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { onRequest } from "../community/functions/[[path]].js";
 import {validCustomerReturn,validCommunityReturn} from "../worker/src/config.js";
+import {programLoginRedirect} from "../worker/src/program-participant.js";
 
 const C="https://community.neverjustsell.com";
 const AUTH="https://classroom.neverjustsell.com";
@@ -53,5 +54,21 @@ assert.equal(validCustomerReturn(AUTH+"/library"),AUTH+"/library");
 assert.equal(validCustomerReturn(AUTH+"/classroom?course=online-commerce-basics"),AUTH+"/classroom?course=online-commerce-basics");
 assert.equal(validCustomerReturn("https://evil.example/my-space"),null);
 assert.equal(validCustomerReturn(AUTH+"/oauth/cafe24/customer/start"),null);
+
+// Program participation uses the SAME customer OAuth return contract; GET may resume,
+// but a submitted POST must not be repeated after login.
+for (const path of ["/programs", "/programs/", "/programs/run-1?from=my-space"]) {
+  assert.equal(validCustomerReturn(AUTH+path),AUTH+path);
+  const response=programLoginRedirect(new Request(AUTH+path));
+  assert.equal(response.status,303,"guest program access should redirect to existing Cafe24 bridge");
+  const auth=new URL(response.headers.get("Location"));
+  assert.equal(auth.origin,AUTH);
+  assert.equal(auth.pathname,"/oauth/cafe24/customer/start");
+  assert.equal(auth.searchParams.get("return_to"),AUTH+path);
+}
+assert.equal(validCustomerReturn(AUTH+"/programs/run-1/missions/mission-1/submit"),null);
+assert.equal(validCustomerReturn("https://evil.example/programs/run-1"),null);
+const missionPost=programLoginRedirect(new Request(AUTH+"/programs/run-1/missions/mission-1/submit",{method:"POST"}));
+assert.equal(new URL(missionPost.headers.get("Location")).searchParams.get("return_to"),AUTH+"/programs","mission POST must not replay after login");
 assert.equal(validCommunityReturn("https://evil.example/auth/callback",{}),null);
 console.log("PASS: guest question/case intent + safe classroom return paths + cross-site denial");

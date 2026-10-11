@@ -53,7 +53,10 @@ export function validCustomerReturn(value) {
         url.pathname === "/my-space" ||
         url.pathname === "/library" ||
         url.pathname === "/courses" ||
-        url.pathname.startsWith("/courses/");
+        url.pathname.startsWith("/courses/") ||
+        url.pathname === "/programs" ||
+        url.pathname === "/programs/" ||
+        /^\/programs\/[A-Za-z0-9_-]{1,160}\/?$/.test(url.pathname);
       return allowed ? url.toString() : null;
     }
 
