@@ -65,3 +65,37 @@
 - 고객 과업 판단: `member_login`에 손대지 않고 **OAuth 학습 로그인만** 인식한 페이지 안내·색상·정보순서를 바꾼다. 일반 스토어 로그인을 바꾸는 전역 HTML/CSS 패치는 거부. 고객의 취소·회원가입·비밀번호 찾기·결제 흐름을 실제 스킨 복제 미리보기에서 테스트한 후 A2 공개 여부 결정.
 
 **다음 안전한 Gate:** 현재 활성 스킨 `skin2`의 복제본에서만 `member/login.html` 파일에 NJS 전용 CSS/JS include와 명확히 확인된 비필수 쇼핑 홍보 래퍼 표식을 반영한다. 적용 전/후 1440·390·320px, NJS OAuth 경유 대 일반 주문 로그인, 로그인 취소/완료/복귀, 접근성, 세션·구매 회귀를 검증한다. 아직 스킨 복제/코드 업로드 자체는 하지 않았다.
+
+
+## 2026-10-11 / 사용자가 승인한 비공개 디자인 복제 실행 및 후속 차단 기록
+
+### 미적용 복제 완료 — LIVE 원본 유지
+
+- 사용자 명시 승인 후, Cafe24 관리자 디자인 보관함에서 **정확히 한 개의 비공개 PC 스킨 복제본** `NJS 로그인 UX QA 20261011` 생성.
+- **원본 PC 대표:** `Never Just Sell`, `skin2`, `skin_no=4` — 현재도 대표 디자인 그대로.
+- **복제본 PC 테스트:** `skin4`, `skin_no=6`, **미적용**. [복제본 편집기](https://neverjustsell.cafe24.com/disp/admin/editor/ezstframe?skin_no=6&skin_code=skin4&shop_no=1). [복제본 회원 로그인 미리보기](https://neverjustsell.cafe24.com/skin-skin4/member/login.html). 증거 [Design Clone Task](https://agent.tinyfish.ai/runs/a1280f01-9874-4041-a503-b67f7d25772f).
+- 처음 CodeMirror 자동 편집에서 `Ctrl+A` 이후 문자열 입력 도구가 편집기 텍스트를 *저장 전* 대체하는 오류 발생. **Save를 누르지 않고 즉시 중단.** 같은 자동 입력 방식 재시도 금지. [중단 실행 기록](https://agent.tinyfish.ai/runs/99e39c64-31dd-424d-8dcb-89473c90501a).
+- 독립 신규 관리자 브라우저 세션에서 `skin4`의 `/member/login.html` 원본 재조회: `<!--@layout-->`, `module="member_login"`, `{$form.member_id}`, `{$form.member_passwd}`, 기존 로그인 버튼·비밀번호 찾기·CSS/JS 포함 모두 보존, 신규 NJS 마커 없음. 공개 skin4 로그인과 skin2 원본 모두 정상 로그인 폼 렌더링. **서버 파일 손상 없음.** [독립 원본 검증](https://agent.tinyfish.ai/runs/10019ec2-74b7-44a6-ada0-870208a8fe44).
+- CodeMirror API를 통해 안전하게 `replaceRange()`로 append하는 두 번째 시도는 브라우저 도구에 페이지 JS 실행/evaluate 기능이 없어 **수정 전에 중단**. 추가 파일 변경 없음. [CodeMirror JS 쓰기 제한 검증](https://agent.tinyfish.ai/runs/34e7847c-b78a-4ec1-805a-e35b4eb39eed).
+- 따라서 **스킨 복제 완료 / 로그인 HTML·JS·CSS 실제 설치 미완료 / 운영 배포 미실시**로 명확히 구분한다.
+
+### 코드와 테스트 자산 (GitHub Draft만)
+
+- `visitor-login.js`: Cafe24 고객 OAuth(`mall.read_customer_identifier`, 등록된 classroom callback)에서만 방문자 안내 삽입. 미적용 `/skin-skin4/member/login.html?njs_login_qa=1`로 QA 미리보기 조건을 별도 추가. 운영 `/member/login.html?njs_login_qa=1`이나 운영 skin2는 해당 QA 파라미터로 활성화되지 않는다.
+- `visitor-login.css`: `html.njs-visitor-login`이 붙은 상태에서만 `.couponBanner`, `.gnb`, `.cart`와 **명시적으로 표기된** `[data-njs-commerce-only]`를 숨기는 프로젝트 로컬 후보. 정확한 DOM 래퍼·모바일은 복제본 실제 미리보기에서 재확인 후 채택 여부 판정.
+- `skin4-append-qa.html`: 원본 `member/login.html`을 **전체 교체하지 말고 원본 뒤에 추가**하도록 합쳐 놓은 단일 CSS+JS 코드. **아직 Cafe24에 설치되지 않았으며 미리보기에서도 실제 실행되지 않음.**
+- `tests/cafe24-login-visitor-contract.mjs`: NJS OAuth/복제본 전용 QA 경로 인식, 일반 쇼핑몰/외부 OAuth/운영 skin2 불간섭, 로그인 폼 원본 불변 체크. [CI](https://github.com/maxleekorea/neverjustsell-site/actions/runs/38118465922) 성공(코드 단위검사)이나 실제 Cafe24 스킨 적용 테스트는 아님.
+
+### 연결 가능한 실제 파일 수정 경로 — 최신 공식 자료
+
+- [Cafe24 디자인 FTP/웹 FTP](https://support.cafe24.com/hc/ko/articles/8467004548249-%EC%9B%B9-FTP%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%82%AC%EC%9A%A9%ED%95%98%EB%82%98%EC%9A%94): 디자인 스킨 파일은 `sde_design/skin4` 폴더에 해당. 실제 FTP 파일 편집·업로드에는 해당 FTP 권한과 안전한 파일 전달 경로 필요.
+- [Cafe24 REST design API](https://developers.cafe24.com/docs/en/api/admin/?version=2024-03-01): theme page `POST /api/v2/admin/themes/{skin_no}/pages`는 `mall.write_design` 범위 필요하며 *특정 클라이언트만 허용*. 현재 연결된 도구·계정에 이 권한이 있다는 근거 없음.
+- 현재 TinyFish 브라우저 자동화는 CodeMirror에 안전한 원본 보존형 소스 patch를 실행할 `page.evaluate` 기능을 제공하지 않음. **다른 불확실한 Ctrl+A/입력 스크립트로 대체하지 않는다.**
+
+### 다음 검증 Gate
+
+1. 안전한 Design FTP 파일 업로드 또는 CodeMirror 직접 편집이 가능한 **실제 컴퓨터 조작/Work 환경**으로 미적용 `skin4`에 append-only QA 코드를 적용(사용자 승인 범위).
+2. 새 브라우저에서 서버 원본 보존과 마커 1회 존재 확인 후 비공개 skin4 로그인 `?njs_login_qa=1`과 일반 로그인 구분 검증.
+3. 로그인 모듈/SNS/회원가입/아이디 찾기, 일반 구매자 로그인·주문/결제, 1440/390/320 CSS px와 터치·확대 비교.
+4. Cafe24 고객 OAuth로 **실제 비회원 → 로그인 → 강의/질문 작성 복귀**를 검증할 때는 기존 인증 서비스의 운영·PR #102 배포 승인 순서를 구분한다.
+5. 사용자 A2 운영 반영 승인 전에는 대표 스킨 변경, PR #100/101/102 병합·배포를 수행하지 않는다.
