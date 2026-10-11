@@ -795,7 +795,7 @@ async function renderMySpace(request, env) {
   return html(classroomShell(
     "내 공간",
     '<section class="card"><div class="eyebrow">회원 메뉴</div><h1 class="title">내 공간</h1>' +
-    '<p class="desc">신청한 강의와 참여 프로그램을 확인하고, 저장한 자료를 다시 찾아보세요.</p></section>' +
+    '<p class="desc">구매했거나 신청한 강의를 이어 보고, 참여 프로그램과 저장한 자료도 확인하세요.</p></section>' +
     sections
   ));
 }
