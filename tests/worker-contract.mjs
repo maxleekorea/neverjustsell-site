@@ -177,6 +177,37 @@ assert(
   "non-replayable enrollment POST must return to the course detail after login"
 );
 
+// End-to-end AUTH STATE UNIT SIMULATION: mock only Cafe24 token + identifier,
+// then verify the genuine worker callback restores the selected visitor screen.
+// This deliberately does NOT claim a real Cafe24 password/login session was tested.
+{
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=async (url) => {
+    const target=String(url);
+    if (target==="https://neverjustsell.cafe24.com/api/v2/oauth/token") {
+      return new Response(JSON.stringify({access_token:"mock-visitor-token",user_id:"visitor-test",shop_no:1,scopes:["mall.read_customer_identifier"]}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    if (target==="https://neverjustsell.cafe24.com/api/v2/customers/identifier") {
+      return new Response(JSON.stringify({identifier:{user_identifier:"visitor-identity",shop_no:1}}),{status:200,headers:{"Content-Type":"application/json"}});
+    }
+    throw new Error("Unexpected network call during simulated login");
+  };
+  try {
+    for (const destination of ["/my-space","/library","/classroom?course=free-lesson-1"]) {
+      const returnTo="https://classroom.neverjustsell.com"+destination;
+      const start=await get("https://classroom.neverjustsell.com/oauth/cafe24/customer/start?return_to="+encodeURIComponent(returnTo));
+      assert(start.status===302,"simulated OAuth start failed");
+      const state=new URL(start.headers.get("location")).searchParams.get("state");
+      const callback=await get("https://classroom.neverjustsell.com/oauth/cafe24/callback?state="+encodeURIComponent(state)+"&code=mock-code");
+      assert(callback.status===302,"simulated OAuth callback must redirect");
+      assert(callback.headers.get("location")===returnTo,"callback must return to exact visitor destination "+destination);
+      assert(String(callback.headers.get("set-cookie")||"").includes("njs_session="),"callback must issue classroom session");
+    }
+  } finally {
+    globalThis.fetch=originalFetch;
+  }
+}
+
 r = await get("https://classroom.neverjustsell.com/session/status", {
   headers: { Origin: "https://www.neverjustsell.com" }
 });
