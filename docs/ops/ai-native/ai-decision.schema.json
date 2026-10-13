@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://neverjustsell.com/schemas/ai-decision-v1.json",
+  "title": "AI Decision Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "operation_id",
+    "project_id",
+    "decision_type",
+    "source_refs",
+    "confidence",
+    "status",
+    "result"
+  ],
+  "properties": {
+    "schema_version": {"const": "AI-DECISION-v1"},
+    "operation_id": {"type": "string", "minLength": 1},
+    "project_id": {"type": "string", "pattern": "^P[0-9]{2}$"},
+    "decision_type": {
+      "type": "string",
+      "enum": [
+        "CLASSIFY",
+        "SEMANTIC_DEDUPE",
+        "REFINE",
+        "CONFLICT",
+        "EXCEPTION",
+        "INSIGHT",
+        "CONTENT_GENERATION"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PROPOSED", "VALIDATED", "BLOCKED", "CONFLICT"]
+    },
+    "result": {"type": "object"},
+    "evidence_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "reason_code": {"type": "string"},
+    "model_version": {"type": "string"},
+    "rule_version": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "VALIDATED"}}},
+      "then": {"required": ["evidence_refs"]}
+    }
+  ]
+}

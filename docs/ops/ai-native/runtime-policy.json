@@ -1,0 +1,75 @@
+{
+  "version": "AI-NATIVE-v1",
+  "status": "active",
+  "execution": {
+    "default_mode": "deterministic_first",
+    "idempotent": true,
+    "fail_closed": true,
+    "read_before_write": true,
+    "readback_required": true,
+    "batch_preferred": true,
+    "delta_preferred": true
+  },
+  "layers": [
+    "DATA",
+    "PROCESSING",
+    "AI",
+    "KNOWLEDGE",
+    "OPERATION",
+    "PRESENTATION"
+  ],
+  "retention": {
+    "R0_RAW": "persist",
+    "R1_CANONICAL": "persist_versioned",
+    "R2_ACTIVE_DERIVED": "keep_latest_or_archive_when_needed",
+    "R3_EPHEMERAL": "do_not_persist_by_default"
+  },
+  "ai": {
+    "allowed_roles": [
+      "semantic_classification",
+      "semantic_dedupe",
+      "refine_or_conflict_detection",
+      "exception_resolution",
+      "insight_generation",
+      "content_generation"
+    ],
+    "disallowed_as_default": [
+      "sorting",
+      "id_assignment",
+      "file_routing",
+      "state_transition",
+      "format_validation",
+      "exact_duplicate_detection",
+      "date_parsing",
+      "hashing"
+    ],
+    "official_state_requires_schema": true,
+    "evidence_reference_required": true,
+    "free_text_is_not_canonical_state": true
+  },
+  "project_runtime": {
+    "load_order": [
+      "AI_NATIVE_RUNTIME_SPEC",
+      "PROJECT_REGISTRY_ROW",
+      "PROJECT_CHARTER",
+      "OPEN_DIRECTIVE",
+      "ACTIVE_WORK_OBJECT",
+      "APPROVED_ACTIVE_KNOWLEDGE_WHEN_NEEDED"
+    ],
+    "legacy_default": "ignore",
+    "cross_project_default": "deny_without_handoff_or_source_ref",
+    "chat_memory_role": "discovery_only_not_canonical"
+  },
+  "human_gate": {
+    "A0": "automatic",
+    "A1": "automatic_with_log",
+    "A2": "execute_when_reversible_and_validated",
+    "A3": "user_judgment_required"
+  },
+  "storage": {
+    "drive_role": "canonical_files_docs_registries_human_views",
+    "github_role": "code_schema_workflow_versioning",
+    "avoid_duplicate_content": true,
+    "prefer_reference_ids": true
+  }
+}
