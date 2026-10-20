@@ -25,3 +25,7 @@ jobs:
         with:
           node-version: 22
       - run: npm test
+      - name: Verify existing P30 QA inventory parser
+        run: |
+          node scripts/p30-qa-summary.mjs --self-test
+          node scripts/p30-qa-summary.mjs --inventory
