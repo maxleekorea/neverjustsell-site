@@ -48,6 +48,31 @@ If these conflict with this file, verified canonical decisions take precedence.
 6. Record findings only in the existing P30 Handoff and applicable evidence
    index after actual host or CI readback. A GitHub candidate is not deployed.
 
+
+## P30 evidence schema and harness routing
+- Source of truth for QA fields and approvals:
+  https://docs.google.com/document/d/13htGaua3Ls_kF0JoF8_ibOp9MmvombRVam0DuBYPrag/edit
+  (section 14, P30_QA_EVIDENCE_v0.1); workflow/eval evidence:
+  https://docs.google.com/document/d/15ZkxQqGykC7Rf9LxprOqThfUlngzQQ5d-ZuzPdKCeOM/edit
+  (WF-08, 2026-10-20). Current Handoff sections 25.25-25.26
+  supersede older broad "ALL PASS" claims when scopes differ.
+- Label evidence by actual proof: CODE_CI_CONTRACT, BROWSER_LAYOUT,
+  BROWSER_CLICK_FLOW, ROUTER_REDIRECT_CONTRACT, REAL_MEMBER_E2E,
+  PRODUCTION_DEPLOYED. A direct URL load or screenshot is not proof
+  of clicking a CTA; mocked OAuth routing is not real Cafe24 login.
+- Read the actual test workflow before interpreting the output.
+  Local QA uses only unconditional Node steps of smoke job plus site
+  npm tests. Three conditional post-release production probes are
+  NOT local test failures or local test obligations.
+- Preserve history: the earlier 27-run/1-failure report stays FAIL
+  with a documented scope error, not retroactive PASS. CI inventory
+  7+17=24 is manifest evidence, not automatic proof of a later host
+  --run or new Antigravity browser E2E.
+- Capture PR/commit SHA, execution actor, passed/failed test paths,
+  source manifest hash, artifact SHA/readback, approval gate and all
+  unverified stages. Route evidence into existing P30 Handoff, not
+  a new database or generic P00 Command/Result action.
+
 ## Safe local reference
 - PR #103: https://github.com/maxleekorea/neverjustsell-site/pull/103
 - Local fixture preview: site/v33-release-preview-server.mjs,
