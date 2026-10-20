@@ -7,8 +7,9 @@
  *   node site/scripts/p30-qa-summary.mjs --self-test
  *   node site/scripts/p30-qa-summary.mjs --run
  *
- * --run executes ONLY explicitly listed local Node tests. No deploy, auth,
- * browser login, database writes, or external production actions are added.
+ * --run executes only unconditional Node test steps from the existing smoke
+ * workflow. Live production checks guarded by workflow step conditions are
+ * excluded. This does not perform deployment, browser login or real E2E.
  */
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
@@ -21,7 +22,7 @@ const root = resolve(fileURLToPath(new URL('../../', import.meta.url)));
 const siteRoot = join(root, 'site');
 const siteManifest = join(siteRoot, 'package.json');
 const workflowManifest = join(root, '.github/workflows/production-smoke.yml');
-const reportPath = join(root, 'screenshots/p30-test-summary.json');
+const reportPath = join(root, 'screenshots/p30-test-summary-safe.json');
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 
 function unique(tests, label) {
@@ -43,21 +44,72 @@ function parseSiteTests(manifest) {
 }
 
 function parseContractTests(yaml) {
+  // Only unconditional Node contracts in the existing smoke job qualify as
+  // safe, isolated PR-style checks. Conditional steps may query live production.
   const tests = [];
+  let inSmoke = false;
+  let inSteps = false;
+  let step = null;
+  const append = () => {
+    if (step?.entry && !step.conditional) {
+      tests.push({ group: 'contract', path: step.entry, cwd: root, entry: step.entry });
+    }
+    step = null;
+  };
   for (const line of yaml.split(/\r?\n/)) {
-    const match = /^\s*(?:-\s*)?run:\s*node\s+(tests\/[a-zA-Z0-9_.-]+\.mjs)\s*$/.exec(line);
-    if (match) tests.push({ group: 'contract', path: match[1], cwd: root, entry: match[1] });
+    if (/^  smoke:\s*$/.test(line)) {
+      inSmoke = true;
+      continue;
+    }
+    if (!inSmoke) continue;
+    if (/^  [a-zA-Z0-9_-]+:\s*$/.test(line)) {
+      append();
+      break;
+    }
+    if (/^    if:\s*/.test(line)) throw Error('Conditional smoke job is not eligible for local execution');
+    if (/^    steps:\s*$/.test(line)) {
+      inSteps = true;
+      continue;
+    }
+    if (!inSteps) continue;
+    if (/^      - /.test(line)) {
+      append();
+      step = { entry: null, conditional: false };
+    }
+    if (!step) continue;
+    if (/^        if:\s*/.test(line)) {
+      step.conditional = true;
+      continue;
+    }
+    const match = /^        run:\s*node\s+(tests\/[a-zA-Z0-9_.-]+\.mjs)\s*$/.exec(line)
+      || /^      - run:\s*node\s+(tests\/[a-zA-Z0-9_.-]+\.mjs)\s*$/.exec(line);
+    if (match) step.entry = match[1];
   }
+  append();
   return unique(tests, 'contract');
 }
 
 function selfTest() {
   assert.deepEqual(parseSiteTests(JSON.stringify({ scripts: { test: 'node alpha.mjs && node beta.mjs' } })).map((t) => t.entry), ['alpha.mjs', 'beta.mjs']);
-  assert.deepEqual(parseContractTests('    run: node tests/a.mjs\n  run: node tests/b.mjs').map((t) => t.entry), ['tests/a.mjs', 'tests/b.mjs']);
+  const workflow = [
+    'jobs:', '  smoke:', '    steps:',
+    '      - name: Unconditional A', '        run: node tests/a.mjs',
+    '      - name: Unconditional B', '        run: node tests/b.mjs',
+    '      - name: Live run conditional after', '        run: node tests/live-smoke.mjs',
+    "        if: github.event_name != 'pull_request'",
+    '      - name: Live run conditional before',
+    "        if: github.event_name != 'pull_request'",
+    '        run: node tests/public-site-crawl.mjs',
+    '      - name: Run block is not a single Node command', '        run: |',
+    '          node tests/not-a-direct-command.mjs',
+    '  other:', '    steps:', '      - run: node tests/not-this-job.mjs',
+  ].join('\n');
+  assert.deepEqual(parseContractTests(workflow).map((t) => t.entry), ['tests/a.mjs', 'tests/b.mjs']);
   assert.throws(() => parseSiteTests(JSON.stringify({ scripts: { test: 'node alpha.mjs && curl example.com' } })), /Unrecognized site test/);
-  assert.throws(() => parseContractTests('run: node tests/a.mjs\nrun: node tests/a.mjs'), /Duplicate/);
-  assert.throws(() => parseContractTests('run: echo empty'), /No contract tests/);
-  process.stdout.write('P30 QA summary parser self-test: PASS\n');
+  assert.throws(() => parseContractTests('jobs:\n  smoke:\n    steps:\n      - run: node tests/a.mjs\n      - run: node tests/a.mjs'), /Duplicate/);
+  assert.throws(() => parseContractTests('jobs:\n  smoke:\n    if: always()\n    steps:\n      - run: node tests/a.mjs'), /Conditional smoke job/);
+  assert.throws(() => parseContractTests('jobs:\n  smoke:\n    steps:\n      - run: echo empty'), /No contract tests/);
+  process.stdout.write('P30 QA summary parser self-test (exclude production-only steps): PASS\n');
 }
 
 async function inventory() {

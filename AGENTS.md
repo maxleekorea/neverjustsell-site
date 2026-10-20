@@ -27,6 +27,8 @@ If these conflict with this file, verified canonical decisions take precedence.
    from executable inventory, never from a manually copied PASS total:
    - node site/scripts/p30-qa-summary.mjs --inventory
    - node site/scripts/p30-qa-summary.mjs --run  (only in isolated QA worktree)
+   - This runs only unconditional PR-style Node tests; never run the conditional
+     live production smoke/crawl/Cafe24 audits from local QA.
    Use existing site/package.json and .github/workflows/production-smoke.yml;
    do not duplicate or replace those tests.
 3. For site/UX changes, reuse site/scripts/njs-typography-audit.mjs, approved
