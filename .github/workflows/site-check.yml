@@ -29,3 +29,12 @@ jobs:
         run: |
           node scripts/p30-qa-summary.mjs --self-test
           node scripts/p30-qa-summary.mjs --inventory
+      - name: Execute existing safe P30 QA tests
+        run: node scripts/p30-qa-summary.mjs --run
+      - name: Preserve P30 QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p30-qa-summary-safe
+          path: screenshots/p30-test-summary-safe.json
+          if-no-files-found: warn
