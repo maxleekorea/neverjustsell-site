@@ -220,11 +220,9 @@ def _validate_draft_progress(packet, state, gate):
         prior_gate = DRAFT_GATES[idx - 1]
         prior = state["gates"][prior_gate]
         prior_sha = prior.get("script_sha256")
-        prior_chars = prior.get("script_chars")
         if prior_sha == digest:
             raise GateError(f"{gate}: persistent draft did not change from {prior_gate}")
-        if gate in {"draft_level_b", "draft_level_c"} and prior_chars is not None and size <= prior_chars:
-            raise GateError(f"{gate}: draft must grow from prior level (prior={prior_chars}, current={size})")
+        # Growth is not a quality condition: revising away filler can shorten a valid draft.
     return digest, size
 
 
@@ -244,6 +242,7 @@ def complete_gate(packet_dir, gate, *, evidence_refs=None, note=""):
         _validate_author_gate(packet)
     elif gate == "source_freeze":
         _validate_source_freeze(packet)
+        state["frozen_source_sha256"] = sha256_path(packet / "11_frozen_source_pack.json")
     elif gate in DRAFT_GATES:
         digest, size = _validate_draft_progress(packet, state, gate)
         state["gates"][gate]["script_sha256"] = digest
@@ -300,4 +299,17 @@ def validate_state(packet_dir):
     current = first_incomplete_gate(state)
     if current and state["gates"][current]["status"] == "LOCKED":
         raise GateError(f"First incomplete gate is incorrectly locked: {current}")
+    # Recheck immutable inputs against the hash captured on the freeze transition.
+    # A file and its adjacent .sha256 could both change without this state anchor.
+    if state["gates"]["source_freeze"]["status"] == "PASS":
+        pack = packet / "11_frozen_source_pack.json"
+        if not pack.exists() or sha256_path(pack) != state.get("frozen_source_sha256"):
+            raise GateError("SOURCE_FREEZE_DRIFT: source pack changed after freeze")
+        _validate_source_freeze(packet)
+    # A previously reviewed manuscript must not be edited without reopening QA.
+    if state["gates"]["korean_quality"]["status"] == "PASS":
+        draft = packet / "14_script.md"
+        expected = state["gates"]["draft_level_d"].get("script_sha256")
+        if not draft.exists() or not expected or sha256_path(draft) != expected:
+            raise GateError("POST_QA_DRAFT_DRIFT: reviewed draft was changed")
     return state
