@@ -228,7 +228,7 @@ def _validate_draft_progress(packet, state, gate):
 
 def complete_gate(packet_dir, gate, *, evidence_refs=None, note=""):
     packet = pathlib.Path(packet_dir)
-    state = load_state(packet)
+    state = validate_state(packet)
     if gate not in GATE_ORDER:
         raise GateError(f"Unknown gate: {gate}")
     current = first_incomplete_gate(state)
