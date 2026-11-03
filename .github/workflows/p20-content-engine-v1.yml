@@ -1,7 +1,7 @@
 name: P20 Content Engine V1
 on:
   push:
-    branches: [ops/p20-content-engine-v1]
+    branches: [ops/p20-content-engine-v1, audit/p20-qfep-v1-gates-20261103]
     paths: ["ops/p20-content-engine-v1/**", ".github/workflows/p20-content-engine-v1.yml"]
   pull_request:
     branches: [main]
