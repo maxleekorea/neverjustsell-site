@@ -91,8 +91,8 @@ def dry_run(args, out):
         "openai_key_present": bool(os.environ.get("OPENAI_API_KEY")),
         "naver_credentials_present": bool(os.environ.get("NAVER_CLIENT_ID") and os.environ.get("NAVER_CLIENT_SECRET")),
         "first_incomplete_gate": first_incomplete_gate(state),
-        "result": "PASS",
-        "note": "No external network/API calls were made. Gate-enforced packet initialized.",
+        "result": "STRUCTURAL_PACKET_INITIALIZED",
+        "note": "Structural initialization only: no source, manuscript, independent quality or A2 validation performed.",
     }
     write_json(out / "run_manifest.json", manifest)
     return manifest
@@ -163,7 +163,7 @@ def main():
             "content_id": state["content_id"],
             "mode": "packet_validate",
             "first_incomplete_gate": first_incomplete_gate(state),
-            "result": "PASS",
+            "result": "STRUCTURAL_PACKET_VALIDATED_ONLY",
         }
         write_json(out / "run_manifest.json", manifest)
         print(json.dumps(manifest, ensure_ascii=False))
