@@ -8,7 +8,7 @@ Your output replaces the same persistent draft file and must preserve valid mate
 Inputs are limited to the frozen research/source packet, approved Narrative Strategy, Segment Blueprint, the current persistent draft, and the current draft level. Do not browse and do not use prior chat context.
 
 ## Level A — Story skeleton
-Create only the 5–8 major story moves needed by the approved Narrative Strategy and Segment Blueprint. Preserve the intended opening scene, tension, turning point, final payoff, author role, and source roles. Do not pad the skeleton into generic prose.
+Create the necessary story moves identified by the approved Narrative Strategy and Segment Blueprint; do not impose a fixed scene count. Preserve the intended opening scene, tension, turning point, final payoff, author role, and source roles. Do not pad the skeleton into generic prose.
 
 ## Level B — Narrative development
 Expand the important event/case/scene so a listener can follow situation → expectation → change signal → conflict → choice/result where supported. Add concrete sourced detail and payoff sentences. Do not add facts or anecdotes outside the frozen packet.
