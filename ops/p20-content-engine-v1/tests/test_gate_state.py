@@ -113,7 +113,7 @@ class GateStateTests(unittest.TestCase):
         self._complete_simple("narrative_strategy", "12_narrative_strategy.md")
         self._complete_simple("segment_blueprint", "13_segment_blueprint.md")
 
-    def test_persistent_draft_must_change_and_grow(self):
+    def test_persistent_draft_must_change_but_may_shrink(self):
         self._advance_to_drafts()
         self._write("14_script.md", "# draft\n" + "a" * 300)
         complete_gate(self.packet, "draft_level_a")
@@ -121,7 +121,8 @@ class GateStateTests(unittest.TestCase):
             complete_gate(self.packet, "draft_level_b")
         self._write("14_script.md", "# draft\n" + "a" * 500)
         complete_gate(self.packet, "draft_level_b")
-        self._write("14_script.md", "# draft\n" + "a" * 700)
+        # Removing repetition is a valid improvement; the text may shrink.
+        self._write("14_script.md", "# draft\n" + "a" * 400)
         complete_gate(self.packet, "draft_level_c")
         self._write("14_script.md", "# draft\n" + "b" * 650)
         state = complete_gate(self.packet, "draft_level_d")
@@ -148,6 +149,31 @@ class GateStateTests(unittest.TestCase):
         self._write("16_independent_eval.json", json.dumps(good_eval))
         state=complete_gate(self.packet,"independent_evaluation")
         self.assertEqual(first_incomplete_gate(state),"a2_approval")
+
+
+    def test_frozen_source_cannot_be_replaced_and_rehashed(self):
+        self._advance_to_drafts()
+        # Even when both file and sidecar digest are rewritten, the state pin holds.
+        self._write("11_frozen_source_pack.json", '{"a":2}\n')
+        digest = sha256_path(self.packet / "11_frozen_source_pack.json")
+        self._write("11_frozen_source_pack.sha256", digest + "  11_frozen_source_pack.json\n")
+        with self.assertRaisesRegex(GateError, "SOURCE_FREEZE_DRIFT"):
+            validate_state(self.packet)
+
+    def test_post_qa_manuscript_edit_fails_validation(self):
+        self._advance_to_drafts()
+        for gate, n in [("draft_level_a", 300), ("draft_level_b", 500),
+                        ("draft_level_c", 400), ("draft_level_d", 390)]:
+            self._write("14_script.md", f"# {gate}\n" + gate[0] * n)
+            complete_gate(self.packet, gate)
+        digest = sha256_path(self.packet / "14_script.md")
+        payload = {"script_sha256": digest, "evaluator_context": "FINAL_SCRIPT_ONLY",
+                   "checks": {f"KS{i:02d}": "PASS" for i in range(1, 10)}}
+        self._write("15_korean_quality.json", json.dumps(payload))
+        complete_gate(self.packet, "korean_quality")
+        self._write("14_script.md", "Changed after quality review.\n")
+        with self.assertRaisesRegex(GateError, "POST_QA_DRAFT_DRIFT"):
+            validate_state(self.packet)
 
 
 if __name__ == "__main__":
